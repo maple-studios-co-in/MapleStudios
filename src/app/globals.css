@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&display=swap');
+@import "tailwindcss";
+
+/* ——— Catilde (licensed display face used throughout the Figma design) ——— */
+@font-face {
+  font-family: 'Catilde';
+  src: url('/fonts/catilde-light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Catilde';
+  src: url('/fonts/catilde-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Catilde';
+  src: url('/fonts/catilde-semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Catilde';
+  src: url('/fonts/catilde-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Catilde Condensed';
+  src: url('/fonts/catilde-semicondensed.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --font-serif: 'Catilde', 'Instrument Serif', 'Playfair Display', Georgia, serif;
+    --font-sans: 'Red Hat Display', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+    --bg-maroon: #5d1411;
+    --bg-maroon-dark: #4b0e0c;
+    --bg-maroon-card: #741a14;
+    --bg-cream: #fff3d3;
+    --text-cream: #fff3d3;
+    --text-maroon: #741a14;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-sans);
+    background-color: var(--bg-maroon);
+    color: var(--text-cream);
+  }
+
+  body {
+    /* clip (not hidden): kills horizontal scrollbars WITHOUT creating a scroll
+       container, so position:sticky (horizontal work track) keeps working */
+    overflow-x: clip;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.font-serif-luxury {
+  font-family: 'Catilde', 'Instrument Serif', 'Playfair Display', Georgia, serif;
+}
+
+.font-sans-luxury {
+  font-family: 'Red Hat Display', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Custom dashed border line for partner section */
+.dashed-line {
+  background-image: linear-gradient(to right, #5d1411 50%, rgba(255, 255, 255, 0) 0%);
+  background-position: bottom;
+  background-size: 10px 1px;
+  background-repeat: repeat-x;
+}
+
+/* Smooth glass effect */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.glass-pill-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Auto-cycling reddish gradients: 4 variants crossfade on a 16s loop
+   (delay (i-1)*4s per layer) and each layer slowly pans/zooms while lit, so
+   the light visibly travels — the change reads clearly, not subliminally. */
+@keyframes gradientCycle {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  25% { opacity: 1; }
+  35% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes gradientDrift {
+  0% { transform: scale(1.02) translate3d(0, 0, 0); }
+  50% { transform: scale(1.18) translate3d(2.5%, -2%, 0); }
+  100% { transform: scale(1.02) translate3d(-1.5%, 1.5%, 0); }
+}
+
+.gradient-cycle {
+  opacity: 0;
+  animation:
+    gradientCycle 16s linear infinite,
+    gradientDrift 16s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+/* Hero breathing gradient — compositor-only (opacity/transform) */
+@keyframes heroGlow {
+  0%, 100% {
+    opacity: 0.18;
+    transform: translate3d(-2%, 1%, 0) scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: translate3d(2%, -1.5%, 0) scale(1.07);
+  }
+}
+
+.hero-glow {
+  animation: heroGlow 9s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #4b0e0c;
+}
+::-webkit-scrollbar-thumb {
+  background: #761c17;
+  border-radius: 3px;
+}
