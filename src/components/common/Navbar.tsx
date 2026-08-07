@@ -12,6 +12,9 @@ export default function Navbar() {
   // true when the section under the navbar is light (cream) — swaps the
   // cream/white chrome for maroon so the nav never disappears.
   const [onLight, setOnLight] = useState(false);
+  // true once scrolled past the hero — the Maple Studios lockup dims so the
+  // fixed logo never fights the content underneath it.
+  const [pastHero, setPastHero] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
   const toggleSound = () => {
@@ -37,6 +40,7 @@ export default function Navbar() {
         break;
       }
       setOnLight(light);
+      setPastHero(window.scrollY > window.innerHeight * 0.8);
     };
     const onScroll = () => {
       cancelAnimationFrame(raf);
@@ -60,10 +64,16 @@ export default function Navbar() {
       <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 px-5 sm:px-8 py-6 transition-all duration-300">
         {/* Full-bleed: logo pinned to the far left, controls to the far right */}
         <div className="flex w-full items-center justify-between">
-          {/* Logo (Figma P8Asset mark + wordmark) */}
-          <Link href="/" className="flex items-center gap-3 group">
+          {/* Logo (Figma P8Asset mark + wordmark) — full strength over the
+              hero, dimmed once scrolled into the content (hover restores) */}
+          <Link
+            href="/"
+            className={`flex items-center gap-3 group transition-opacity duration-500 ${
+              pastHero ? "opacity-40 hover:opacity-90" : "opacity-100"
+            }`}
+          >
             <LogoMark className={`h-[27px] w-auto transition-colors duration-300 ${ink}`} />
-            <span className={`font-serif-luxury text-2xl tracking-wide transition-colors duration-300 ${ink} group-hover:opacity-80`}>
+            <span className={`font-serif-luxury text-2xl tracking-wide transition-colors duration-300 ${ink}`}>
               Maple Studios
             </span>
           </Link>

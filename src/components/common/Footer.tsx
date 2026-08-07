@@ -12,7 +12,11 @@ export default function Footer() {
   return (
     <footer
       id="contact"
-      className="relative overflow-hidden rounded-t-[8px] bg-[#741a14] px-[max(20px,2.12%)] pb-[clamp(150px,17vw,260px)] pt-[clamp(96px,12.9vw,195px)] text-[#fff3d3]"
+      // min-h-[100svh] + flex: at full scroll the footer top aligns with the
+      // viewport top, so the kicker always rests at its own pt (≥120px) —
+      // clear of the fixed navbar on EVERY viewport height (a fixed-height
+      // footer parks the kicker in the navbar band on tall screens).
+      className="relative flex min-h-[100svh] flex-col overflow-hidden rounded-t-[8px] bg-[#741a14] px-[max(20px,2.12%)] pb-[clamp(140px,15.5vw,235px)] pt-[clamp(120px,12.9vw,195px)] text-[#fff3d3]"
     >
       {/* Kicker */}
       <motion.p
@@ -62,8 +66,9 @@ export default function Footer() {
         </motion.a>
       </div>
 
-      {/* Contact columns */}
-      <div className="mt-[clamp(40px,3.8vw,58px)] grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:gap-x-[clamp(48px,8vw,180px)]">
+      {/* Contact columns — mt-auto pins them to the footer's bottom band so
+          extra viewport height opens up between heading and columns */}
+      <div className="mt-auto grid grid-cols-1 gap-10 pt-[clamp(40px,3.8vw,58px)] sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:gap-x-[clamp(48px,8vw,180px)]">
         <p className="font-sans-luxury text-[14px] font-bold uppercase text-[#fff3d3]">
           {FOOTER_DATA.copyright}
         </p>
@@ -117,7 +122,7 @@ export default function Footer() {
         viewport={{ once: true, margin: "0px 0px -10% 0px" }}
         transition={{ duration: 1, ease: "easeOut" }}
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[26%] select-none whitespace-nowrap font-serif-luxury text-[clamp(76px,15.54vw,235px)] font-semibold leading-[0.95] text-[#93352f]"
+        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[26%] select-none whitespace-nowrap font-serif-luxury text-[clamp(76px,15.54vw,235px)] font-semibold leading-[0.95] text-[#93352f]/50"
       >
         {FOOTER_DATA.giant}
       </motion.p>
