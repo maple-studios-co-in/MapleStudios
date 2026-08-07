@@ -523,7 +523,52 @@ with its **own mask trailing behind** the main draw
 (`twinProgress = progress mapped [0.16, 0.96] → [0, 1]`) and both strands
 spring-smoothed. Verified: two masks, main 0.40 drawn while twin at 0.30.
 
-## 17. Gotchas worth remembering
+## 17. Cream-arrival stage, 7-shade gradients & the hero-about continuum (ninth pass, 2026-08-07)
+
+- **Stage arrival like the reference**: the services stage now arrives ON CREAM with
+  maroon type (sliding in with the track), then the screen fades to black while the
+  film fades in and the ink crossfades maroon → cream (`useTransform` color
+  interpolation), then burst → DNA emission. Card emission slowed (1.4 cycles,
+  0.2-wide materialise, 0.32-wide dissolve).
+- **7-shade gradient cycle**: the supplied pack (Default → Variant7) converted to
+  `shade-1..7.webp` (~4 KB each), cycling 3.5s/shade over 24.5s with pan/zoom drift;
+  applied to every gradient hero — including the contact and about heroes, which
+  switched from cream to the gradient (cream ink, outline mark, cream marquee).
+- **Hero → About continuum**: the hero pins in a 170vh wrapper; its content (orbits,
+  M, type, badge) dissolves upward over the persistent gradient while About — now on
+  the same gradient family (mirrored focus) — lands with its word-by-word reveal.
+- **Tighter transition overlap**: strips complete by 45% of the runway; the next
+  section overlaps by **-60vh** (arrives at 50%), padding trimmed again.
+- **Hydration fix**: with unmeasured dims the track's seq range was a degenerate
+  `[1,1]`, so SSR rendered the stage at its END state (burst letters scattered) and
+  hydration mismatched. Seq now maps from an unreachable range until real dims
+  exist; burst values are rounded to 2dp so server/client strings agree.
+- **WAAPI ScrollTimeline trap**: array-form `useTransform(scrollYProgress, [a,b],
+  [1,0])` driving OPACITY got compiled by motion into a hardware WAAPI
+  scroll-animation whose projected range broke inside the sticky wrapper (opacity
+  ran 1→0→1). FUNCTION-form transforms cannot be expressed as keyframes and stay on
+  the JS path — use them for any scroll-linked style inside sticky/pinned wrappers.
+- Also: exact 20.72×20.955 star inlined on the work divider (fill #000, stroke
+  #741A14), nav brand back to full opacity, ABOUT tag flush-left under the logo.
+
+## 18. Star box, hero-about crossfade & card tuning (tenth pass, 2026-08-07)
+
+- **Star finally bulletproof**: two root causes — (1) its top half straddled the
+  section boundary and the -mt-overlapping Key-facts (z-20) painted over it → the
+  divider is now a 21px-tall box so the WHOLE star lives inside its own section;
+  (2) the panels used `w-screen` (100vw includes the scrollbar) while the star
+  centres on clientWidth → panels now get measured clientWidth, so the 50% column
+  rule and the star agree in real browsers too. Verified: fully inside, both halves
+  painted, 0px to rule and to centre.
+- **Hero → About, reference-exact**: About's StripExit wrapper overlaps the hero pin
+  by -35vh (z-20) and About's backdrop lives on a -z-10 layer with a 45vh
+  transparent mask ramp — while overlapping, the hero's pinned gradient shows
+  through and the statement rises dim (0.12) then brightens, exactly the video: one
+  scene, no blank screen. Hero content fade tightened to [0.18, 0.6].
+- **DNA cards**: single slow emission pass (CYCLES 1), sweep 130°, scale to ~1.6×,
+  base width clamp(260px, 23vw, 360px) — measured up to 487px wide mid-flight.
+
+## 19. Gotchas worth remembering
 
 - **OneDrive + `.next`**: delete `.next` if the dev server ever crashes with `EINVAL readlink`.
 - Never run `next build` while `next dev` is up — they share `.next`.

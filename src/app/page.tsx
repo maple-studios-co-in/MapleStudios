@@ -19,21 +19,22 @@ export default function Home() {
       {/* 1) Hero (Figma node 120-980: headline top-left, orbits, glassy M) */}
       <HeroSection />
 
-      {/* 2) About & Mission — its marquee screen pins while cream strips grow
-          over it (trionn exit), then releases into Key Facts */}
-      <StripExit>
+      {/* 2) About & Mission — the statement headline itself transitions inside
+          the hero pin (Scene B in HeroSection); this block carries the rest of
+          About and its marquee screen pins under the cream strip exit. */}
+      <StripExit backdrop>
         <AboutSection />
       </StripExit>
 
       {/* 3) Key Facts (cream #FFF3D3 canvas) */}
       <KeyFactsSection />
 
-      {/* 4) Selected work & explorations + OUR SERVICES typography */}
-      <WorkSection />
-
-      {/* 5) Services cards over the new-era background video (Figma 2001-19),
-          exiting through the same pinned strip transition */}
+      {/* 4+5) Selected work — the horizontal track flows straight into the
+          services stage (video, type burst, DNA-spawned cards) with no
+          vertical hop, then exits through the pinned strip transition.
+          ServicesVideoSection is the mobile-only fallback. */}
       <StripExit>
+        <WorkSection />
         <ServicesVideoSection />
       </StripExit>
 

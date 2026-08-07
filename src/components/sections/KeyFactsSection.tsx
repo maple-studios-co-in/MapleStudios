@@ -8,15 +8,23 @@ export default function KeyFactsSection() {
   return (
     <section
       id="key-facts"
-      className="relative bg-[#fff3d3] text-[#5d1411] pt-10 pb-24 px-6 sm:px-12 transition-colors"
+      // -mt-[60vh]: rides up OVER the strip exit WHILE the strips are still
+      // completing (~2/3 through their run), so the heading is already
+      // entering from the bottom as the cream takes over — no dead cream
+      // screen between the transition and Key facts (its predecessor is the
+      // compact marquee band, short-mode pin with a 120vh runway). z-20
+      // keeps it above the strip overlay.
+      className="relative z-20 -mt-[60vh] bg-[#fff3d3] text-[#5d1411] pt-4 pb-24 px-6 sm:px-12"
     >
       <div className="max-w-7xl mx-auto w-full flex flex-col gap-16">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          // Fast, early reveal: during the strip hand-off the heading must be
+          // readable the moment it clears the viewport bottom, not 0.8s later.
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ duration: 0.45 }}
           className="text-center flex flex-col items-center gap-2"
         >
           <h2 className="font-serif-luxury text-[clamp(56px,6.61vw,100px)] font-normal leading-normal text-[#741a14]">

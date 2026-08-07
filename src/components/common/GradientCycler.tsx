@@ -1,12 +1,9 @@
 /**
- * Auto-cycling reddish gradient (the four "Maple Studio Gradient" variants).
- * Each webp crossfades in for a quarter of the 28s `.gradient-cycle` loop, so
- * the light keeps moving — drop this inside any section that used the static
- * radial. Host element needs `isolate` (the cycler sits at -z-10, below the
- * host's content but above its background).
- *
- * `fixed` renders viewport-locked (equivalent of background-attachment: fixed)
- * for whole-page use like /work.
+ * Auto-cycling reddish gradient — the 7 supplied shades (Default → Variant7)
+ * crossfade sequentially on a 24.5s `.gradient-cycle` loop (3.5s per shade)
+ * while each pans/zooms, so the light keeps travelling. Host element needs
+ * `relative isolate` (the cycler sits at -z-10, below the host's content but
+ * above its background). `fixed` renders viewport-locked for whole-page use.
  */
 export default function GradientCycler({
   fixed = false,
@@ -20,18 +17,14 @@ export default function GradientCycler({
       aria-hidden="true"
       className={`${fixed ? "fixed" : "absolute"} inset-0 -z-10 overflow-hidden pointer-events-none ${className}`}
     >
-      {[1, 2, 3, 4].map((i) => (
+      {[1, 2, 3, 4, 5, 6, 7].map((i) => (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           key={i}
-          src={`/figma/gradients/gradient-${i}.webp`}
+          src={`/figma/gradients/shade-${i}.webp`}
           alt=""
           className="gradient-cycle absolute inset-0 size-full object-cover"
-          style={{
-            animationDelay: `${(i - 1) * 4}s`,
-            // slight per-variant exposure difference makes each shade read distinct
-            filter: `brightness(${1 + ((i - 1) % 2) * 0.12}) saturate(${1 + (i % 2) * 0.08})`,
-          }}
+          style={{ animationDelay: `${(i - 1) * 3.5}s` }}
         />
       ))}
     </div>

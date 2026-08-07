@@ -1,19 +1,75 @@
 "use client";
 
-import { motion } from "motion/react";
-import { HERO_DATA } from "@/lib/constants";
+import { useRef } from "react";
+import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { ArrowRight } from "lucide-react";
+import { ABOUT_DATA, HERO_DATA } from "@/lib/constants";
 import MapleMark from "@/components/common/MapleMark";
 import GradientCycler from "@/components/common/GradientCycler";
+
+/** One word of the pinned About statement — lights up over its own slice of
+    the pin progress (function-form transform: WAAPI-safe inside sticky). */
+function PinnedWord({
+  progress,
+  word,
+  index,
+  total,
+}: {
+  progress: MotionValue<number>;
+  word: string;
+  index: number;
+  total: number;
+}) {
+  const start = 0.32 + (index / total) * 0.3;
+  const opacity = useTransform(progress, (p) =>
+    p <= start ? 0.1 : p >= start + 0.12 ? 1 : 0.1 + ((p - start) / 0.12) * 0.9
+  );
+  return (
+    <motion.span style={{ opacity }} className="inline-block">
+      {word}
+    </motion.span>
+  );
+}
 
 /**
  * Hero — Figma node 120:980 (canvas 1512 x 797).
  * All absolute positions are % of that canvas so the layout scales.
  */
 export default function HeroSection() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: wrapRef,
+    offset: ["start start", "end end"],
+  });
+  // Scene A (hero content) moves up and fades out; Scene B (the About
+  // statement) then fades in word-by-word IN PLACE on the same pinned
+  // backdrop — only the texts transition, the screen never appears to move
+  // to another section.
+  // FUNCTION-form transforms on purpose: array-form opacity here gets compiled
+  // by motion into a WAAPI ScrollTimeline animation whose projected range
+  // breaks inside this sticky wrapper (opacity ran 1→0→1). Function transforms
+  // cannot become keyframes, so they stay on the reliable JS path.
+  // Long runway (260vh wrapper) so every stage breathes.
+  const ramp = (p: number, a: number, b: number) =>
+    p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a);
+  const contentOpacity = useTransform(scrollYProgress, (p) => 1 - ramp(p, 0.08, 0.3));
+  const contentY = useTransform(scrollYProgress, (p) => ramp(p, 0.08, 0.3) * -80);
+  // Scene B container: gate + gentle settle while its words light up
+  // (starts before Scene A fully exits so the swap never has a dim gap)
+  const aboutOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.26, 0.4));
+  const aboutY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.26, 0.4)) * 40);
+  const aboutWords = ABOUT_DATA.headline.split(" ");
+  // Stage 2 of the About screen: divider, mission columns and vision line
+  // compose themselves after the statement has fully lit (~0.72)
+  const dividerOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.7, 0.78));
+  const colsOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.74, 0.84));
+  const colsY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.74, 0.84)) * 30);
+  const visionOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.78, 0.88));
+
   return (
+    <div ref={wrapRef} id="hero" className="relative h-[260vh]">
     <section
-      id="hero"
-      className="relative isolate min-h-svh overflow-hidden text-white"
+      className="sticky top-0 isolate h-svh overflow-hidden text-white"
       style={{
         background:
           "radial-gradient(53% 240% at 50% 68%, #741A14 18.5%, #520F0A 59%, #2F0500 100%)",
@@ -31,6 +87,9 @@ export default function HeroSection() {
             "radial-gradient(48% 90% at 46% 55%, rgba(190,62,45,0.55) 0%, rgba(139,42,32,0.32) 42%, transparent 74%)",
         }}
       />
+
+      {/* Everything below dissolves while the hero is pinned */}
+      <motion.div style={{ opacity: contentOpacity, y: contentY }} className="absolute inset-0">
 
       {/* ——— Orbit lines (behind everything) ——— */}
       <div
@@ -208,6 +267,74 @@ export default function HeroSection() {
         alt=""
         className="absolute left-[90.09%] top-[81.43%] w-[clamp(26px,2.64vw,40px)] pointer-events-none select-none"
       />
+      </motion.div>
+
+      {/* ——— Scene B: the full About screen composes itself IN PLACE on the
+          pinned backdrop — statement word by word first, then the divider,
+          mission columns and vision line transition in beneath it ——— */}
+      <motion.div
+        style={{ opacity: aboutOpacity, y: aboutY }}
+        className="absolute inset-0 z-10 flex flex-col justify-center gap-[clamp(28px,4.5vh,56px)] px-6 sm:px-12"
+      >
+        <span className="absolute left-5 top-[92px] text-xs font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
+          {ABOUT_DATA.tag}
+        </span>
+
+        {/* Stage 1: statement */}
+        <div className="mx-auto w-full max-w-6xl">
+          <p className="font-serif-luxury text-[clamp(34px,4.6vw,70px)] font-light leading-none text-[#fff3d3]">
+            {aboutWords.map((word, i) => (
+              <span key={`${word}-${i}`}>
+                <PinnedWord progress={scrollYProgress} word={word} index={i} total={aboutWords.length} />{" "}
+              </span>
+            ))}
+          </p>
+        </div>
+
+        {/* Stage 2a: divider with star */}
+        <motion.div style={{ opacity: dividerOpacity }} className="relative mx-auto w-full max-w-7xl">
+          <div className="h-px w-full bg-white/20" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-4 text-amber-200 text-sm">
+            ✦
+          </div>
+        </motion.div>
+
+        {/* Stage 2b: mission columns */}
+        <motion.div
+          style={{ opacity: colsOpacity, y: colsY }}
+          className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-8 md:grid-cols-12"
+        >
+          <div className="md:col-span-5 flex flex-col gap-1 text-xs font-sans-luxury tracking-widest text-white/70 uppercase leading-relaxed font-medium">
+            {ABOUT_DATA.leftColumn.map((line, idx) => (
+              <p key={idx}>{line}</p>
+            ))}
+          </div>
+          <div className="md:col-span-7 flex flex-col items-start gap-6">
+            <p className="text-base sm:text-xl font-sans-luxury text-white/90 leading-relaxed font-light">
+              {ABOUT_DATA.rightText}
+            </p>
+            <a
+              href="/about"
+              className="inline-flex items-center gap-3 text-xs tracking-widest uppercase font-sans-luxury font-semibold text-white hover:text-amber-200 transition-colors group"
+            >
+              <span>{ABOUT_DATA.cta}</span>
+              <div className="w-7 h-7 rounded-full border border-white/30 flex items-center justify-center group-hover:border-amber-200 group-hover:translate-x-1 transition-all">
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Stage 2c: vision line */}
+        <motion.div style={{ opacity: visionOpacity }} className="mx-auto w-full max-w-7xl">
+          <p className="text-[11px] font-sans-luxury tracking-widest uppercase text-white/60 font-medium">
+            {ABOUT_DATA.focusedVision}
+            <br />
+            {ABOUT_DATA.measuredExecution}
+          </p>
+        </motion.div>
+      </motion.div>
     </section>
+    </div>
   );
 }

@@ -248,22 +248,79 @@ export const WORK_DETAIL = {
 
 // /services — Figma frame 14:8638 ("Services", 1512x6719)
 export const SERVICES_PAGE = {
-  hero: { title: "Our services", subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact." },
+  hero: {
+    title: "Area of expertise",
+    subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact.",
+    eyebrow: "WHAT WE DO BEST",
+    // Figma 14:8896 (typos "8. MOBILE DESION" corrected)
+    listLines: [
+      "AI & INTELLIGENT AUTOMATION WEB DEVELOPMENT PRODUCT DESIGN",
+      "WEBSITE & MOBILE DESIGN WORDPRESS DEVELOPMENT BRANDING",
+    ],
+  },
   intro: "Focused disciplines where strategy, design, and technology work as one",
+  introLinks: [
+    { label: "VIEW ALL PROJECTS", href: "/work" },
+    { label: "LET'S CONNECT", href: "/contact" },
+  ],
   words: ["BRANDING", "DESIGN", "AI"],
   wordsCaption: "CAPABILITIES SHAPED TO SCALE WITH AMBITION.",
-  blocks: [
-    { id: "ai", n: "01", title: "AI & Intelligent Automation", lead: "Not a chatbot. A colleague that never sleeps.", body: "We build AI that actually does your business's job — talks to customers, recommends the right thing, runs the boring parts — so your team does the interesting parts." },
-    { id: "web", n: "02", title: "Web & App Development", lead: "Fast to ship. Built to last.", body: "Sites and apps that don't buckle under real traffic — or real growth. Modern stack, zero duct tape." },
-    { id: "immersive", n: "03", title: "Immersive & 3D Experiences", lead: "Let people touch the product before they buy it.", body: "3D rooms, configurators, AR previews — the difference between \"looks nice\" and \"I need this.\"" },
+  // Split-screen service panels (Figma Groups 29-31): pinned left visual,
+  // heading + capabilities list right — one panel per discipline.
+  panels: [
+    {
+      id: "ai",
+      title: "AI & Intelligent Automation",
+      description: "AI that does your business's job — talks to customers,\nruns the boring parts, and never sleeps.",
+      capsLabel: "OUR CORE CAPABILITIES",
+      caps: [
+        "AI-powered digital experiences",
+        "Custom agents and copilots",
+        "Retrieval and knowledge systems",
+        "Workflow automation across teams",
+        "Semantic search & recommendations",
+        "AI-powered business automation",
+      ],
+      image: "/figma/worker-ai-card.png",
+    },
+    {
+      id: "web",
+      title: "Web & App Development",
+      description: "Sites and apps that don't buckle under real traffic —\nmodern stack, zero duct tape.",
+      capsLabel: "OUR CORE CAPABILITIES",
+      caps: [
+        "High-performance marketing sites",
+        "Web apps & customer portals",
+        "Design systems at scale",
+        "Commerce and CMS builds",
+        "Performance engineering",
+        "API design & integrations",
+      ],
+      image: "/figma/worker-ai-card.png",
+    },
+    {
+      id: "immersive",
+      title: "Immersive & 3D Experiences",
+      description: "Let people touch the product before they buy it —\n3D rooms, configurators, AR previews.",
+      capsLabel: "OUR CORE CAPABILITIES",
+      caps: [
+        "Interactive 3D scenes",
+        "Product configurators",
+        "AR previews",
+        "WebGL & WebGPU pipelines",
+        "Motion & interaction design",
+        "Immersive storytelling",
+      ],
+      image: "/figma/worker-ai-card.png",
+    },
   ],
   stackHeading: ["TECHNOLOGY", "STACK"],
   stackNote: "WE DESIGN FOR LONGEVITY CLARITY FIRST, CRAFT ALWAYS, BUILT TO SCALE",
   capabilities: [
-    { n: "1.", title: "AI & Intelligent Automation", platformsLabel: "AI PLATFORMS", platforms: ["OpenAI API", "Anthropic Claude"], coreLabel: "OUR CORE CAPABILITIES", core: ["Custom agents and copilots", "Retrieval and knowledge systems", "Workflow automation"] },
-    { n: "2.", title: "Web & Product Engineering", platformsLabel: "FRAMEWORKS", platforms: ["Next.js / React", "Node & Edge runtimes"], coreLabel: "OUR CORE CAPABILITIES", core: ["Design systems at scale", "Commerce and CMS builds", "Performance engineering"] },
-    { n: "3.", title: "Brand & Identity", platformsLabel: "TOOLING", platforms: ["Figma", "Adobe Suite"], coreLabel: "OUR CORE CAPABILITIES", core: ["Naming and positioning", "Visual identity systems", "Brand guidelines"] },
-    { n: "4.", title: "Immersive & 3D", platformsLabel: "ENGINES", platforms: ["Three.js / R3F", "WebGL & WebGPU"], coreLabel: "OUR CORE CAPABILITIES", core: ["Product configurators", "Interactive 3D scenes", "AR previews"] },
+    { n: "1.", title: "AI & Intelligent Automation", platformsLabel: "AI PLATFORMS", platforms: ["OpenAI API", "Anthropic Claude"], coreLabel: "OUR CORE CAPABILITIES", core: ["Custom agents and copilots", "Retrieval and knowledge systems", "Workflow automation across teams", "Evaluation and guardrails built in", "Fine-tuned prompt systems"] },
+    { n: "2.", title: "Web & Product Engineering", platformsLabel: "FRAMEWORKS", platforms: ["Next.js / React", "Node & Edge runtimes"], coreLabel: "OUR CORE CAPABILITIES", core: ["Design systems at scale", "Commerce and CMS builds", "Performance engineering", "Accessibility by default", "CI/CD and preview environments"] },
+    { n: "3.", title: "Brand & Identity", platformsLabel: "TOOLING", platforms: ["Figma", "Adobe Suite"], coreLabel: "OUR CORE CAPABILITIES", core: ["Naming and positioning", "Visual identity systems", "Brand guidelines", "Art direction", "Launch and rollout kits"] },
+    { n: "4.", title: "Immersive & 3D", platformsLabel: "ENGINES", platforms: ["Three.js / R3F", "WebGL & WebGPU"], coreLabel: "OUR CORE CAPABILITIES", core: ["Product configurators", "Interactive 3D scenes", "AR previews", "Real-time rendering pipelines", "Spatial interaction design"] },
   ],
   processLabel: "OUR PROCESS",
   processHeading: "How we work",

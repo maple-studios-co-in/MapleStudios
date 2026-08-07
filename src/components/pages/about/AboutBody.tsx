@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { ABOUT_PAGE } from "@/lib/constants";
 import { Eyebrow, Reveal, Rule, UnderlineLink } from "../PageKit";
 import { WordMarquee } from "../services/ServicesBody";
+import GradientCycler from "@/components/common/GradientCycler";
 
 /**
  * About hero — Figma 22:625: big maroon Catilde statement over a cut-out eagle,
@@ -12,12 +13,19 @@ import { WordMarquee } from "../services/ServicesBody";
  */
 export function AboutHero() {
   return (
-    <section className="relative overflow-hidden bg-[#fff3d3] px-[8%] pb-[clamp(40px,5vw,72px)] pt-[clamp(140px,15vw,220px)] text-center">
+    <section
+      className="relative isolate overflow-hidden px-[8%] pb-[clamp(40px,5vw,72px)] pt-[clamp(140px,15vw,220px)] text-center"
+      style={{
+        background:
+          "radial-gradient(53% 240% at 50% 68%, #741A14 18.5%, #520F0A 59%, #2F0500 100%)",
+      }}
+    >
+      <GradientCycler />
       <motion.h1
         initial={{ opacity: 0, y: 26 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9 }}
-        className="relative z-10 mx-auto max-w-[1150px] font-serif-luxury text-[clamp(30px,3.7vw,56px)] font-normal leading-[1.18] text-[#741a14]"
+        className="relative z-10 mx-auto max-w-[1150px] font-serif-luxury text-[clamp(30px,3.7vw,56px)] font-normal leading-[1.18] text-[#fff3d3]"
       >
         {ABOUT_PAGE.hero.title}
       </motion.h1>
@@ -25,7 +33,7 @@ export function AboutHero() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.15 }}
-        className="relative z-10 mx-auto mt-5 max-w-[430px] font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-black"
+        className="relative z-10 mx-auto mt-5 max-w-[430px] font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-white"
       >
         {ABOUT_PAGE.hero.subtitle}
       </motion.p>
@@ -49,7 +57,7 @@ export function AboutHero() {
         </motion.div>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-[18%]">
-          <WordMarquee words={ABOUT_PAGE.words} caption={ABOUT_PAGE.wordsCaption} />
+          <WordMarquee words={ABOUT_PAGE.words} caption={ABOUT_PAGE.wordsCaption} color="#fff3d3" />
         </div>
       </div>
     </section>

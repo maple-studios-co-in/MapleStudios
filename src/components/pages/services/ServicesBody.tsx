@@ -1,19 +1,52 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "motion/react";
+import { Fragment, useRef, useState } from "react";
+import Image from "next/image";
+import {
+  motion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
 import { SERVICES_PAGE } from "@/lib/constants";
-import { Eyebrow, Reveal, Rule, UnderlineLink } from "../PageKit";
+import { Eyebrow, Reveal, UnderlineLink, HERO_GRADIENT } from "../PageKit";
+import GradientCycler from "@/components/common/GradientCycler";
+
+/* Linear 0→1 ramp between two progress marks (function-form transforms stay
+   on motion's JS path — see HeroSection's WAAPI note). */
+const ramp = (p: number, a: number, b: number) =>
+  p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a);
+
+/** Figma 4-point star (24 viewBox) in any fill — hero eyebrow, marquee, caption. */
+function Star4({ className = "", fill = "#FFF3D3" }: { className?: string; fill?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 ${className}`}
+      aria-hidden="true"
+    >
+      <path
+        d="M11.9824 0.876953C12.5356 3.9958 13.7265 6.52544 15.5811 8.42188C17.424 10.3064 19.9115 11.5525 23.0479 12.1406C19.9126 12.646 17.4512 13.8353 15.6152 15.6768C13.763 17.5346 12.5587 20.0435 11.9326 23.1494C11.3843 20.0429 10.2538 17.5178 8.43652 15.6611C6.62345 13.8088 4.14106 12.6354 0.912109 12.2012C4.11282 11.4892 6.57827 10.2661 8.39551 8.41113C10.2177 6.55112 11.3739 4.07043 11.9824 0.876953Z"
+        fill={fill}
+      />
+    </svg>
+  );
+}
 
 /** Marquee word row: BRANDING ✦ DESIGN ✦ AI ✦ (Catilde 141.6px). */
 export function WordMarquee({
   words,
   caption,
   color = "#741a14",
+  star = "/figma/about/star-maroon-sm.svg",
 }: {
   words: string[];
   caption: string;
   color?: string;
+  star?: string;
 }) {
   const row = [...words, ...words, ...words];
   return (
@@ -28,163 +61,561 @@ export function WordMarquee({
               {w}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/figma/about/star-maroon-sm.svg" alt="" className="w-[21px] shrink-0" />
+            <img src={star} alt="" className="w-[21px] shrink-0" />
           </span>
         ))}
       </div>
       <p className="mt-6 text-center">
-        <Eyebrow>✦ {caption}</Eyebrow>
+        <Eyebrow color={color}>✦ {caption}</Eyebrow>
       </p>
     </div>
   );
 }
 
-export default function ServicesBody() {
+/* ————— Hero + intro + marquee: one continuous maroon gradient scene
+   (Figma 14:8640 + 14:8680 + Group 21 + 14:8697xx, bg rect 0→1700) ————— */
+function ServicesHero() {
+  return (
+    <section
+      className="relative isolate overflow-hidden text-center"
+      style={{ background: HERO_GRADIENT }}
+    >
+      <GradientCycler />
+
+      {/* Eyebrow — ✦ WHAT WE DO BEST (14:8895) */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="flex items-center justify-center gap-[5px] pt-[clamp(140px,17.5vw,265px)]"
+      >
+        <Star4 className="w-[12px]" />
+        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#fff3d3]">
+          {SERVICES_PAGE.hero.eyebrow}
+        </span>
+      </motion.div>
+
+      {/* Area of expertise — Catilde 80, tracking 4px (14:8662) */}
+      <motion.h1
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, delay: 0.1 }}
+        className="mt-[clamp(14px,2vw,30px)] font-serif-luxury text-[clamp(44px,5.29vw,80px)] font-normal leading-normal tracking-[0.05em] text-[#fff3d3]"
+      >
+        {SERVICES_PAGE.hero.title}
+      </motion.h1>
+
+      {/* Discipline list — Red Hat Bold 16, two centred lines (14:8896) */}
+      <motion.p
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.3 }}
+        className="mx-auto mt-[clamp(64px,10.8vw,164px)] max-w-[90%] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-[#fff3d3]"
+      >
+        {SERVICES_PAGE.hero.listLines[0]}
+        <br className="hidden sm:block" /> {SERVICES_PAGE.hero.listLines[1]}
+      </motion.p>
+
+      {/* Scroll cue — left rail (14:8670/8671) */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8, duration: 0.8 }}
+        className="absolute left-[2.18%] top-[38.7vw] hidden size-[20px] lg:block"
+        aria-hidden="true"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
+        <motion.span
+          animate={{ y: [0, 3.5, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[7.8px] rotate-90" />
+        </motion.span>
+      </motion.div>
+
+      {/* Intro statement — Catilde Light 80, cream (14:8680) */}
+      <Reveal>
+        <h2 className="mx-auto mt-[clamp(96px,14.95vw,226px)] max-w-[80%] font-serif-luxury text-[clamp(38px,5.29vw,80px)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
+          {SERVICES_PAGE.intro}
+        </h2>
+      </Reveal>
+
+      {/* Twin links — VIEW ALL PROJECTS / LET'S CONNECT (Group 21) */}
+      <Reveal className="mt-[clamp(40px,5.29vw,80px)] flex flex-wrap items-center justify-center gap-[clamp(24px,5.29vw,80px)] px-6">
+        {SERVICES_PAGE.introLinks.map((l) => (
+          <UnderlineLink
+            key={l.label}
+            label={l.label}
+            href={l.href}
+            color="#fff3d3"
+            arrow="/figma/arrow-cream.svg"
+            width="191px"
+          />
+        ))}
+      </Reveal>
+
+      {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on the gradient (14:8697xx) */}
+      <div className="mt-[clamp(56px,11vw,166px)] w-full select-none overflow-hidden">
+        <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
+          {[...Array(6)].map((_, i) => (
+            <span
+              key={i}
+              className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
+            >
+              {SERVICES_PAGE.words.map((word) => (
+                <span key={word} className="flex items-center gap-[3vw]">
+                  {word}
+                  <Star4 className="aspect-square w-[clamp(14px,1.59vw,24px)]" />
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ✦ CAPABILITIES SHAPED TO SCALE WITH AMBITION. (Group 22) */}
+      <div className="mt-[clamp(24px,3.9vw,60px)] flex items-center justify-center gap-[5px] pb-[clamp(48px,6.35vw,96px)]">
+        <Star4 className="w-[12px]" />
+        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#fff3d3]">
+          {SERVICES_PAGE.wordsCaption}
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/* ————— Split-screen service panels (Figma Groups 29-31) with the
+   trionn.com/services hand-off: each panel pins at the top of the viewport
+   and the NEXT panel slides up OVER it (its pinned content never moves),
+   exactly like the reference capture. Sibling sticky stack: later panels
+   cover earlier ones; spacers between panels give each a pinned dwell. ————— */
+function ServicePanel({
+  panel,
+  index,
+}: {
+  panel: (typeof SERVICES_PAGE.panels)[number];
+  index: number;
+}) {
+  return (
+    <div
+      className="relative bg-[#fff3d3] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden"
+      style={{ zIndex: index + 1 }}
+    >
+      {/* Top rule + crossing star riding the panel's leading edge (Line 7 +
+          Vector) — seated 11px inside the edge so the straddling ✦ is never
+          clipped by the panel's overflow-hidden */}
+      <div
+        aria-hidden="true"
+        className="absolute left-[7.87%] right-[6.08%] top-[11px] hidden h-px bg-black/60 lg:block"
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/figma/about/star-maroon.svg"
+        alt=""
+        className="absolute left-[50.86%] top-[11px] hidden w-[21px] -translate-x-1/2 -translate-y-1/2 lg:block"
+      />
+      {/* Continuous centre divider (Line 8) — starts at the rule */}
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-[50.86%] top-[11px] hidden w-px bg-black/60 lg:block"
+      />
+
+      <div className="flex h-full items-center py-16 lg:py-0">
+        <div className="grid w-full grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-0">
+          {/* Left visual — 600x380, r7 (Link 14:8812) */}
+          <div className="px-[8%] lg:pl-[10.28%] lg:pr-[10.32%]">
+            <div className="overflow-hidden rounded-[7px] lg:translate-y-[2.9vw]">
+              <Image
+                src={panel.image}
+                alt={panel.title}
+                width={600}
+                height={380}
+                className="aspect-[600/380] w-full object-cover"
+              />
+            </div>
+          </div>
+
+          {/* Right column — heading, description, capabilities (14:8930-8959) */}
+          <div className="px-[8%] lg:pl-[17.06%] lg:pr-[15.87%]">
+            <h3 className="font-sans-luxury text-[clamp(22px,2.12vw,32px)] font-bold leading-[0.85] text-black">
+              {panel.title}
+            </h3>
+            <p className="mt-[clamp(12px,1.79vw,27px)] whitespace-pre-line font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black">
+              {panel.description}
+            </p>
+            <p className="mt-[clamp(40px,7.34vw,111px)] font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[16.88px] text-black">
+              {panel.capsLabel}
+            </p>
+            <ul className="mt-[clamp(14px,2.31vw,35px)] flex flex-col gap-[0.79vw]">
+              {panel.caps.map((c) => (
+                <li
+                  key={c}
+                  className="border-b border-black/60 pb-[clamp(8px,1.06vw,16px)] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black lg:max-w-[84.8%]"
+                >
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ServicePanels() {
+  return (
+    <section className="relative bg-[#fff3d3] pt-[clamp(48px,8.93vw,135px)]">
+      {SERVICES_PAGE.panels.map((p, i) => (
+        <Fragment key={p.id}>
+          {/* Dwell runway: the previous panel stays pinned while this scrolls by */}
+          {i > 0 ? <div aria-hidden="true" className="hidden lg:block lg:h-[35vh]" /> : null}
+          <ServicePanel panel={p} index={i} />
+        </Fragment>
+      ))}
+      {/* Trailing runway so the LAST panel also dwells pinned before releasing */}
+      <div aria-hidden="true" className="hidden lg:block lg:h-[35vh]" />
+    </section>
+  );
+}
+
+/* ————— TECHNOLOGY STACK — staggered Catilde 141.6/0.7 lines (14:8827,
+   15:9021) that light up character-by-character on scroll, exactly like the
+   About statement's word-by-word reveal (HeroSection PinnedWord). ————— */
+function LightChars({
+  progress,
+  text,
+  from,
+  total,
+}: {
+  progress: MotionValue<number>;
+  text: string;
+  from: number;
+  total: number;
+}) {
+  return (
+    <>
+      {text.split("").map((ch, i) => (
+        <LightChar key={`${ch}-${i}`} progress={progress} index={from + i} total={total}>
+          {ch}
+        </LightChar>
+      ))}
+    </>
+  );
+}
+
+function LightChar({
+  progress,
+  index,
+  total,
+  children,
+}: {
+  progress: MotionValue<number>;
+  index: number;
+  total: number;
+  children: string;
+}) {
+  const start = (index / total) * 0.7;
+  const opacity = useTransform(progress, (p) =>
+    p <= start ? 0.1 : p >= start + 0.3 ? 1 : 0.1 + (ramp(p, start, start + 0.3) * 0.9)
+  );
+  return (
+    <motion.span style={{ opacity }} className="inline-block">
+      {children}
+    </motion.span>
+  );
+}
+
+function TechStack() {
+  const ref = useRef<HTMLDivElement>(null);
+  // Long window — the reveal rides nearly the section's whole trip up the
+  // viewport, so the chars light up slowly like the About statement
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 0.95", "start 0.05"],
+  });
+  const [l1, l2] = SERVICES_PAGE.stackHeading;
+  const total = l1.length + l2.length;
+  const noteOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.72, 0.95));
+  const noteY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.72, 0.95)) * 20);
+
+  return (
+    <section className="pt-[clamp(110px,15.28vw,231px)]">
+      <h2 className="sr-only">{`${l1} ${l2}`}</h2>
+      {/* Scroll target is the heading block itself (not the padded section),
+          so the char reveal spans its ENTIRE climb up the viewport */}
+      <div
+        ref={ref}
+        aria-hidden="true"
+        className="font-serif-luxury text-[clamp(40px,9.37vw,141.6px)] leading-[0.7] text-[#741a14]"
+      >
+        {/* TECHNOLOGY — left edge 18.52% (x=280) */}
+        <p className="pl-[8%] whitespace-nowrap lg:pl-[18.52%]">
+          <LightChars progress={scrollYProgress} text={l1} from={0} total={total} />
+        </p>
+        {/* STACK at 58.6% (x=886) with the note beside it (15:9023) */}
+        <div className="relative mt-[clamp(8px,0.86vw,13px)]">
+          <p className="pl-[24%] whitespace-nowrap lg:pl-[58.6%]">
+            <LightChars progress={scrollYProgress} text={l2} from={l1.length} total={total} />
+          </p>
+          <motion.p
+            style={{ opacity: noteOpacity, y: noteY }}
+            className="mt-6 pl-[8%] font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-black lg:absolute lg:bottom-0 lg:mt-0 lg:w-[20.63%] lg:pl-0 lg:left-[34.52%]"
+          >
+            {SERVICES_PAGE.stackNote}
+          </motion.p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ————— Numbered capability accordion (Figma 16:90xx) — Red Hat Bold 32
+   number + title, platforms 18px, core list 15px. ————— */
+function CapabilityAccordion() {
   const [open, setOpen] = useState(0);
 
   return (
-    <div className="bg-[#fff3d3] text-black">
-      {/* Intro statement */}
-      <section className="px-[8%] pb-[clamp(40px,5vw,72px)] pt-[clamp(64px,8vw,120px)]">
-        <Reveal>
-          <h2 className="mx-auto max-w-[1150px] text-center font-serif-luxury text-[clamp(34px,4.1vw,62px)] font-normal leading-[1.15] text-[#741a14]">
-            {SERVICES_PAGE.intro}
-          </h2>
-        </Reveal>
-      </section>
-
-      <WordMarquee words={SERVICES_PAGE.words} caption={SERVICES_PAGE.wordsCaption} />
-
-      <Rule className="my-[clamp(40px,5vw,80px)]" />
-
-      {/* Three service blocks */}
-      <section className="flex flex-col gap-[clamp(56px,6vw,90px)] px-[8%]">
-        {SERVICES_PAGE.blocks.map((b, i) => (
-          <Reveal key={b.id} delay={i * 0.06}>
-            <article className="grid grid-cols-1 gap-6 border-t border-[#741a14]/25 pt-8 lg:grid-cols-[120px_1fr_1fr] lg:gap-10">
-              <span className="font-serif-luxury text-[clamp(28px,2.6vw,40px)] text-[#741a14]">
-                {b.n}
+    <section className="mx-[0.4%] pt-[clamp(64px,7.8vw,118px)]">
+      {SERVICES_PAGE.capabilities.map((c, i) => {
+        const isOpen = open === i;
+        return (
+          <div key={c.n} className="border-t border-black/30 last:border-b">
+            <button
+              type="button"
+              onClick={() => setOpen(isOpen ? -1 : i)}
+              aria-expanded={isOpen}
+              className="grid w-full cursor-pointer grid-cols-[40px_1fr_32px] items-center gap-2 py-[clamp(24px,2.8vw,43px)] pl-[1.85%] pr-[2.38%] text-left lg:grid-cols-[32.28%_1fr_48px]"
+            >
+              <span className="font-sans-luxury text-[clamp(20px,2.12vw,32px)] font-bold leading-[0.85] text-black">
+                {c.n}
               </span>
-              <h3 className="font-sans-luxury text-[clamp(22px,1.98vw,30px)] font-bold leading-[1.13] text-black">
-                {b.title}
-              </h3>
-              <p className="font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-black">
-                <span className="font-bold">{b.lead}</span>
-                <br />
-                {b.body}
-              </p>
-            </article>
-          </Reveal>
-        ))}
-      </section>
-
-      {/* TECHNOLOGY STACK */}
-      <section className="px-[8%] pb-[clamp(40px,5vw,72px)] pt-[clamp(80px,10vw,150px)] text-center">
-        <Reveal>
-          <p className="font-serif-luxury text-[clamp(48px,6.55vw,99px)] leading-[0.95] text-[#741a14]">
-            {SERVICES_PAGE.stackHeading[0]}
-          </p>
-          <p className="font-serif-luxury text-[clamp(48px,6.55vw,99px)] leading-[0.95] text-[#741a14]">
-            {SERVICES_PAGE.stackHeading[1]}
-          </p>
-          <p className="mx-auto mt-6 max-w-[320px] font-sans-luxury text-[16px] font-bold uppercase leading-[1.5] text-black">
-            {SERVICES_PAGE.stackNote}
-          </p>
-        </Reveal>
-      </section>
-
-      {/* Numbered capability accordion */}
-      <section className="px-[2%] pb-[clamp(64px,8vw,120px)]">
-        {SERVICES_PAGE.capabilities.map((c, i) => {
-          const isOpen = open === i;
-          return (
-            <div key={c.n} className="border-t border-black/30 last:border-b">
-              <button
-                type="button"
-                onClick={() => setOpen(isOpen ? -1 : i)}
-                aria-expanded={isOpen}
-                className="grid w-full cursor-pointer grid-cols-[48px_1fr_48px] items-center gap-4 px-[2%] py-7 text-left"
+              <span className="font-sans-luxury text-[clamp(20px,2.12vw,32px)] font-bold leading-[0.85] text-black">
+                {c.title}
+              </span>
+              <motion.span
+                animate={{ rotate: isOpen ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+                className="justify-self-end font-sans-luxury text-[18px] text-black"
+                aria-hidden="true"
               >
-                <span className="font-sans-luxury text-[clamp(15px,1.32vw,20px)] text-black">{c.n}</span>
-                <span className="font-sans-luxury text-[clamp(17px,1.65vw,25px)] font-bold text-black">
-                  {c.title}
-                </span>
-                <motion.span
-                  animate={{ rotate: isOpen ? 180 : 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="justify-self-end font-sans-luxury text-[18px] text-[#741a14]"
-                  aria-hidden="true"
-                >
-                  ↓
-                </motion.span>
-              </button>
+                ↓
+              </motion.span>
+            </button>
 
-              <motion.div
-                initial={false}
-                animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden"
-              >
-                <div className="grid grid-cols-1 gap-8 px-[2%] pb-10 pl-[calc(2%+48px)] md:grid-cols-2">
+            <motion.div
+              initial={false}
+              animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="pb-[clamp(28px,3.1vw,47px)] pl-[1.85%] pr-[2.38%] lg:pl-[34.13%]">
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-[47%_1fr]">
                   <div>
-                    <Eyebrow color="#000">{c.platformsLabel}</Eyebrow>
-                    <ul className="mt-3 flex flex-col gap-1">
+                    <span className="font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[16.88px] text-black">
+                      {c.platformsLabel}
+                    </span>
+                    <ul className="mt-[clamp(10px,1.2vw,18px)] flex flex-col">
                       {c.platforms.map((p) => (
-                        <li key={p} className="font-sans-luxury text-[14px] text-black">
+                        <li
+                          key={p}
+                          className="font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black"
+                        >
                           {p}
                         </li>
                       ))}
                     </ul>
                   </div>
                   <div>
-                    <Eyebrow color="#000">{c.coreLabel}</Eyebrow>
-                    <ul className="mt-3 flex flex-col gap-1">
+                    <span className="font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[16.88px] text-black">
+                      {c.coreLabel}
+                    </span>
+                    <ul className="mt-[clamp(10px,1.2vw,18px)] flex flex-col gap-[4px]">
                       {c.core.map((p) => (
-                        <li key={p} className="font-sans-luxury text-[14px] text-black">
+                        <li
+                          key={p}
+                          className="font-sans-luxury text-[clamp(12px,0.99vw,15px)] leading-normal text-black"
+                        >
                           {p}
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
-              </motion.div>
-            </div>
-          );
-        })}
-      </section>
-
-      {/* OUR PROCESS */}
-      <section className="px-[8%] pb-[clamp(80px,10vw,150px)]">
-        <Reveal>
-          <Eyebrow>{SERVICES_PAGE.processLabel}</Eyebrow>
-          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_330px] lg:items-end">
-            <h2 className="font-serif-luxury text-[clamp(40px,4.76vw,72px)] leading-[1.05] text-[#741a14]">
-              {SERVICES_PAGE.processHeading}
-            </h2>
-            <p className="font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black">
-              {SERVICES_PAGE.processIntro}
-            </p>
+              </div>
+            </motion.div>
           </div>
-        </Reveal>
+        );
+      })}
+    </section>
+  );
+}
 
-        <div className="mt-[clamp(48px,6vw,90px)] grid grid-cols-1 gap-10 md:grid-cols-3">
-          {SERVICES_PAGE.steps.map((s, i) => (
-            <Reveal key={s.step} delay={i * 0.08}>
-              <Eyebrow color="#000">{s.step}</Eyebrow>
-              <h3 className="mt-3 font-sans-luxury text-[clamp(20px,1.98vw,30px)] font-bold text-black">
-                {s.title}
-              </h3>
-              <p className="mt-3 font-sans-luxury text-[14px] leading-normal text-black">{s.body}</p>
-            </Reveal>
-          ))}
+/* ————— OUR PROCESS / How we work (Figma 17:90xx-18:91xx): the screen PINS
+   here and YOUR SCROLL is what loads the scene — the rule draws left→right
+   with a small spinning ✦ riding its tip, planting a ✦ stop at each column
+   whose arrival reveals that step (label → title → body de-blurring in).
+   The pin releases and the page scrolls on ONLY once the show is complete;
+   scrolling back up rewinds it. A spring smooths the scrub so wheel flicks
+   read as fluid motion instead of jumps. ————— */
+const STAR_STOPS = [0.1218, 0.3993, 0.6768, 0.9542];
+
+function ProcessStep({
+  progress,
+  index,
+  step,
+}: {
+  progress: MotionValue<number>;
+  index: number;
+  step: (typeof SERVICES_PAGE.steps)[number];
+}) {
+  // Reveal starts the moment the line tip reaches this column's ✦ stop
+  const f = STAR_STOPS[index];
+  const labelOpacity = useTransform(progress, (p) => ramp(p, f, f + 0.06));
+  const labelY = useTransform(progress, (p) => (1 - ramp(p, f, f + 0.06)) * 14);
+  const titleOpacity = useTransform(progress, (p) => ramp(p, f + 0.02, f + 0.1));
+  const titleY = useTransform(progress, (p) => (1 - ramp(p, f + 0.02, f + 0.1)) * 14);
+  // Body: slow faint→full fade with de-blur (~0.8s), like the capture
+  const bodyOpacity = useTransform(progress, (p) => 0.1 + ramp(p, f + 0.04, f + 0.26) * 0.9);
+  const bodyY = useTransform(progress, (p) => (1 - ramp(p, f + 0.04, f + 0.26)) * 10);
+  const bodyBlur = useTransform(
+    progress,
+    (p) => `blur(${(1 - ramp(p, f + 0.04, f + 0.26)) * 5}px)`
+  );
+
+  return (
+    <div>
+      <motion.p
+        style={{ opacity: labelOpacity, y: labelY }}
+        className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-black"
+      >
+        {step.step}
+      </motion.p>
+      <motion.h3
+        style={{ opacity: titleOpacity, y: titleY }}
+        className="mt-[clamp(20px,2.9vw,44px)] font-serif-luxury text-[clamp(24px,2.12vw,32px)] font-normal leading-normal text-black"
+      >
+        {step.title}
+      </motion.h3>
+      <motion.p
+        style={{ opacity: bodyOpacity, y: bodyY, filter: bodyBlur }}
+        className="mt-[clamp(12px,1.92vw,29px)] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black"
+      >
+        {step.body}
+      </motion.p>
+    </div>
+  );
+}
+
+function ProcessStar({
+  progress,
+  stop,
+}: {
+  progress: MotionValue<number>;
+  stop: number;
+}) {
+  // Plants (quick pop) exactly when the travelling tip passes this stop
+  const opacity = useTransform(progress, (p) => ramp(p, stop - 0.005, stop + 0.02));
+  const scale = useTransform(progress, (p) => 0.4 + ramp(p, stop - 0.005, stop + 0.02) * 0.6);
+  return (
+    <motion.img
+      src="/figma/about/star-maroon.svg"
+      alt=""
+      aria-hidden="true"
+      style={{ opacity, scale, left: `${stop * 100}%` }}
+      className="absolute top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
+    />
+  );
+}
+
+function ProcessSection() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // Pin runway (desktop): 100vh pinned screen + 250vh of scroll that drives
+  // the show. On small screens the wrapper has no extra height, so the same
+  // scrub simply rides the section's own travel through the viewport.
+  const { scrollYProgress } = useScroll({
+    target: wrapRef,
+    offset: ["start start", "end end"],
+  });
+  const smooth = useSpring(scrollYProgress, {
+    stiffness: 80,
+    damping: 24,
+    restDelta: 0.001,
+  });
+  // Show completes at 90% of the runway — the finished scene dwells a beat
+  // before the pin releases and the page scrolls on
+  const progress = useTransform(smooth, (p) => ramp(p, 0, 0.9));
+
+  const tipLeft = useTransform(progress, (p) => `${Math.min(p, 1) * 100}%`);
+  // Tip: spins while travelling (reads ×/+/× like the capture), then hands
+  // off into the final ✦ stop and fades
+  const tipRotate = useTransform(progress, (p) => 45 + p * 450);
+  const tipOpacity = useTransform(progress, (p) =>
+    p < 0.005 ? 0 : p < 0.94 ? 1 : 1 - ramp(p, 0.94, 0.985)
+  );
+
+  return (
+    <section className="relative pt-[clamp(64px,8vw,120px)] pb-[clamp(96px,10vw,150px)]">
+      <div ref={wrapRef} className="relative lg:h-[350vh]">
+        <div className="lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center lg:overflow-hidden">
+          <div className="grid grid-cols-1 gap-8 pl-[8%] pr-[8%] lg:grid-cols-[16.4%_1fr] lg:gap-0 lg:pl-[2.05%] lg:pr-[6.08%]">
+            <div>
+              <Reveal>
+                <Eyebrow color="#000">{SERVICES_PAGE.processLabel}</Eyebrow>
+              </Reveal>
+            </div>
+            <div>
+              <Reveal>
+                <h2 className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] font-normal leading-normal text-[#741a14]">
+                  {SERVICES_PAGE.processHeading}
+                </h2>
+                <p className="mt-[clamp(6px,0.6vw,9px)] max-w-[249px] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black">
+                  {SERVICES_PAGE.processIntro}
+                </p>
+              </Reveal>
+
+              <div className="mt-[clamp(40px,5.09vw,77px)] grid grid-cols-1 gap-y-12 md:grid-cols-3 md:gap-x-[2.7%]">
+                {SERVICES_PAGE.steps.map((s, i) => (
+                  <ProcessStep key={s.step} progress={progress} index={i} step={s} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Self-drawing rule with ✦ stops + spinning tip (Line 18 + Vectors) */}
+          <div className="relative ml-[7.87%] mt-[clamp(48px,6.15vw,93px)] h-[21px] w-[86.05%]">
+            <motion.div
+              style={{ scaleX: progress }}
+              className="absolute top-1/2 h-px w-full origin-left bg-black/40"
+            />
+            <motion.img
+              src="/figma/about/star-maroon.svg"
+              alt=""
+              aria-hidden="true"
+              style={{ left: tipLeft, opacity: tipOpacity, rotate: tipRotate }}
+              className="absolute top-1/2 w-[17px] -translate-x-1/2 -translate-y-1/2"
+            />
+            {STAR_STOPS.map((stop) => (
+              <ProcessStar key={stop} progress={progress} stop={stop} />
+            ))}
+          </div>
         </div>
+      </div>
+    </section>
+  );
+}
 
-        <Rule className="mt-[clamp(56px,7vw,100px)]" starLeft="42%" />
-
-        <Reveal className="mt-[clamp(40px,5vw,72px)] flex justify-center">
-          <UnderlineLink label="START A COLLABORATION" href="/contact" width="241px" />
-        </Reveal>
-      </section>
+export default function ServicesBody() {
+  return (
+    <div className="bg-[#fff3d3] text-black">
+      <ServicesHero />
+      <ServicePanels />
+      <TechStack />
+      <CapabilityAccordion />
+      <ProcessSection />
     </div>
   );
 }

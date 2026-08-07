@@ -117,14 +117,14 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Auto-cycling reddish gradients: 4 variants crossfade on a 16s loop
-   (delay (i-1)*4s per layer) and each layer slowly pans/zooms while lit, so
-   the light visibly travels — the change reads clearly, not subliminally. */
+/* Auto-cycling reddish gradients: 7 shades (Default → Variant7) crossfade on
+   a 24.5s loop (delay (i-1)*3.5s per layer) and each layer slowly pans/zooms
+   while lit, so the light visibly travels — clearly, not subliminally. */
 @keyframes gradientCycle {
   0% { opacity: 0; }
-  10% { opacity: 1; }
-  25% { opacity: 1; }
-  35% { opacity: 0; }
+  5% { opacity: 1; }
+  14.3% { opacity: 1; }
+  20% { opacity: 0; }
   100% { opacity: 0; }
 }
 
@@ -137,8 +137,8 @@
 .gradient-cycle {
   opacity: 0;
   animation:
-    gradientCycle 16s linear infinite,
-    gradientDrift 16s ease-in-out infinite;
+    gradientCycle 24.5s linear infinite,
+    gradientDrift 24.5s ease-in-out infinite;
   will-change: opacity, transform;
 }
 

@@ -5,24 +5,28 @@ import { motion } from "motion/react";
 import { CONTACT_PAGE } from "@/lib/constants";
 import { Eyebrow, HERO_GRADIENT, Reveal, Rule } from "../PageKit";
 import GradientCycler from "@/components/common/GradientCycler";
+import MapleOutlineMark from "@/components/common/MapleOutlineMark";
 
-/** Cream hero: maroon M mark + star, big Catilde title, subtitle, scroll cue. */
+/** Gradient hero: cream outline M mark, big Catilde title, cycling shades. */
 export function ContactHero() {
   return (
-    <section className="relative flex flex-col items-center justify-center overflow-hidden bg-[#fff3d3] px-6 pb-[clamp(56px,7vw,100px)] pt-[clamp(140px,15vw,220px)] text-center">
-      <motion.img
-        src="/figma/contact/mark-hero.svg"
-        alt="Maple Studios"
+    <section
+      className="relative isolate flex flex-col items-center justify-center overflow-hidden px-6 pb-[clamp(56px,7vw,100px)] pt-[clamp(140px,15vw,220px)] text-center"
+      style={{ background: HERO_GRADIENT }}
+    >
+      <GradientCycler />
+      <motion.div
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, ease: "easeOut" }}
-        className="w-[clamp(150px,18.5vw,280px)]"
-      />
+      >
+        <MapleOutlineMark className="w-[clamp(150px,18.5vw,280px)]" />
+      </motion.div>
       <motion.h1
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.15 }}
-        className="mt-[clamp(20px,2.6vw,40px)] font-serif-luxury text-[clamp(40px,5.29vw,80px)] font-normal leading-normal text-[#741a14]"
+        className="mt-[clamp(20px,2.6vw,40px)] font-serif-luxury text-[clamp(40px,5.29vw,80px)] font-normal leading-normal text-[#fff3d3]"
       >
         {CONTACT_PAGE.hero.title}
       </motion.h1>
@@ -30,14 +34,14 @@ export function ContactHero() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.3 }}
-        className="mt-4 max-w-[430px] font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-black"
+        className="mt-4 max-w-[430px] font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-white"
       >
         {CONTACT_PAGE.hero.subtitle}
       </motion.p>
 
       <div className="relative mt-10 size-[20px]" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/figma/contact/scroll-cue-maroon.svg" alt="" className="absolute inset-0 size-full" />
+        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
       </div>
     </section>
   );
