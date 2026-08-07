@@ -72,8 +72,8 @@ export default function HeroSection() {
         className="absolute left-1/2 top-[40.9%] z-20 w-[clamp(300px,37.83vw,572px)] -translate-x-1/2 -translate-y-1/2 pointer-events-none"
       >
         <motion.div
-          animate={{ y: [0, -9, 0] }}
-          transition={{ duration: 7, ease: "easeInOut", repeat: Infinity }}
+          animate={{ y: [0, -26, 0], rotate: [0, 1.4, 0] }}
+          transition={{ duration: 5.5, ease: "easeInOut", repeat: Infinity }}
         >
           <MapleMark className="h-auto w-full" />
         </motion.div>
@@ -183,13 +183,16 @@ export default function HeroSection() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
-        <motion.img
-          src="/figma/arrow-down-sm.svg"
-          alt=""
-          animate={{ y: [0, 2.5, 0] }}
+        {/* rotation lives on the img, bob on the wrapper — motion's transform
+            would otherwise discard the rotate class and the arrow reads sideways */}
+        <motion.span
+          animate={{ y: [0, 3.5, 0] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute left-1/2 top-1/2 w-[7.8px] -translate-x-1/2 -translate-y-1/2 rotate-90"
-        />
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[7.8px] rotate-90" />
+        </motion.span>
       </motion.div>
 
       {/* ——— Bottom corner ornaments (from bg component 91:58) ——— */}

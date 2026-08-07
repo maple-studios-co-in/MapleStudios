@@ -74,11 +74,11 @@ export default function StripExit({
     };
   }, []);
 
-  // 170vh runway = slower, more deliberate transition; the spring interpolates
-  // between scroll events so the strips glide instead of stepping (de-lag).
+  // 120vh runway: deliberate but without a long blank tail after completion;
+  // the spring interpolates between scroll events so strips glide, not step.
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["end 2.7", "end 1"],
+    offset: ["end 2.2", "end 1"],
   });
   const smooth = useSpring(scrollYProgress, {
     stiffness: 70,
@@ -105,7 +105,7 @@ export default function StripExit({
         </div>
       </div>
       {/* Runway consumed while the section stays pinned */}
-      <div aria-hidden="true" className="h-[170vh]" />
+      <div aria-hidden="true" className="h-[120vh]" />
     </div>
   );
 }

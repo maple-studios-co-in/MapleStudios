@@ -23,7 +23,7 @@ export default function ClientStoriesSection() {
   return (
     // pt (not child mt): without overflow-hidden a first-child top MARGIN
     // collapses out of the section, opening a maroon page-bg gap above it
-    <section id="stories" className="relative bg-[#fff3d3] pt-[clamp(72px,8vw,150px)] text-black">
+    <section id="stories" className="relative bg-[#fff3d3] pt-[clamp(36px,4vw,72px)] text-black">
       {/* Heading row */}
       <div className="mx-auto grid w-full grid-cols-1 items-center gap-6 px-[10.4%] lg:grid-cols-2">
         <motion.h2

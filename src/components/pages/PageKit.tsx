@@ -69,15 +69,20 @@ export function PageHero({
           alt=""
           className="absolute inset-0 size-full"
         />
-        <motion.img
-          src="/figma/arrow-down-sm.svg"
-          alt=""
-          animate={{ y: [0, 2.5, 0] }}
+        <motion.span
+          animate={{ y: [0, 3.5, 0] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          className={`absolute left-1/2 top-1/2 w-[7.8px] -translate-x-1/2 -translate-y-1/2 rotate-90 ${
-            cream ? "[filter:invert(13%)_sepia(72%)_saturate(3200%)_hue-rotate(350deg)]" : ""
-          }`}
-        />
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/figma/arrow-down-sm.svg"
+            alt=""
+            className={`w-[7.8px] rotate-90 ${
+              cream ? "[filter:invert(13%)_sepia(72%)_saturate(3200%)_hue-rotate(350deg)]" : ""
+            }`}
+          />
+        </motion.span>
       </motion.div>
     </section>
   );

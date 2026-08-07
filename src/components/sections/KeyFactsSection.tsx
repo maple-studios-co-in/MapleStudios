@@ -8,7 +8,7 @@ export default function KeyFactsSection() {
   return (
     <section
       id="key-facts"
-      className="relative bg-[#fff3d3] text-[#5d1411] py-24 px-6 sm:px-12 transition-colors"
+      className="relative bg-[#fff3d3] text-[#5d1411] pt-10 pb-24 px-6 sm:px-12 transition-colors"
     >
       <div className="max-w-7xl mx-auto w-full flex flex-col gap-16">
         {/* Section Header */}

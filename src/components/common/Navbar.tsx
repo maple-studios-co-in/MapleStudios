@@ -1,32 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Volume2, VolumeX, X, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import LogoMark from "@/components/common/LogoMark";
 
 export default function Navbar() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // true when the section under the navbar is light (cream) — swaps the
+  // cream/white chrome for maroon so the nav never disappears.
+  const [onLight, setOnLight] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   const toggleSound = () => {
     setIsPlaying(!isPlaying);
   };
 
+  useEffect(() => {
+    let raf = 0;
+    const sample = () => {
+      const header = headerRef.current;
+      // probe the element stack under the middle of the navbar
+      const els = document.elementsFromPoint(window.innerWidth / 2, 90);
+      let light = false;
+      for (const el of els) {
+        if (header && header.contains(el)) continue;
+        const bg = getComputedStyle(el).backgroundColor;
+        const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (!m) continue;
+        const alpha = m[4] === undefined ? 1 : parseFloat(m[4]);
+        if (alpha < 0.5) continue; // see through translucent layers
+        const luminance = 0.2126 * +m[1] + 0.7152 * +m[2] + 0.0722 * +m[3];
+        light = luminance > 160;
+        break;
+      }
+      setOnLight(light);
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(sample);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const ink = onLight ? "text-[#741a14]" : "text-[#fff3d3]";
+  const line = onLight ? "bg-[#741a14]" : "bg-[#d8d8d8]";
+
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 px-5 sm:px-8 py-6 transition-all duration-300">
+      <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 px-5 sm:px-8 py-6 transition-all duration-300">
         {/* Full-bleed: logo pinned to the far left, controls to the far right */}
         <div className="flex w-full items-center justify-between">
           {/* Logo (Figma P8Asset mark + wordmark) */}
           <Link href="/" className="flex items-center gap-3 group">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/figma/logo-mark.svg"
-              alt="Maple Studios logo"
-              className="h-[27px] w-auto"
-            />
-            <span className="font-serif-luxury text-2xl tracking-wide text-[#fff3d3] group-hover:text-white transition-colors">
+            <LogoMark className={`h-[27px] w-auto transition-colors duration-300 ${ink}`} />
+            <span className={`font-serif-luxury text-2xl tracking-wide transition-colors duration-300 ${ink} group-hover:opacity-80`}>
               Maple Studios
             </span>
           </Link>
@@ -37,37 +74,49 @@ export default function Navbar() {
             <button
               onClick={toggleSound}
               aria-label="Toggle Sound"
-              className="glass-pill px-3 py-2 rounded-full flex items-center gap-2 text-xs font-sans-luxury tracking-wider text-white/90 hover:bg-white/15 transition-all cursor-pointer"
+              className={`px-3 py-2 rounded-full flex items-center gap-2 text-xs font-sans-luxury tracking-wider transition-all cursor-pointer border ${
+                onLight
+                  ? "border-[#741a14]/25 bg-[#741a14]/10 text-[#741a14] hover:bg-[#741a14]/20"
+                  : "border-white/10 bg-white/10 text-white/90 hover:bg-white/15"
+              }`}
             >
               {isPlaying ? (
-                <Volume2 className="w-3.5 h-3.5 text-amber-200 animate-pulse" />
+                <Volume2 className={`w-3.5 h-3.5 animate-pulse ${onLight ? "text-[#741a14]" : "text-amber-200"}`} />
               ) : (
-                <VolumeX className="w-3.5 h-3.5 text-white/60" />
+                <VolumeX className={`w-3.5 h-3.5 ${onLight ? "text-[#741a14]/60" : "text-white/60"}`} />
               )}
               <div className="flex items-center gap-0.5 h-3">
-                <span className={`w-0.5 bg-white/80 rounded-full transition-all duration-300 ${isPlaying ? "h-3 animate-bounce" : "h-1.5"}`} />
-                <span className={`w-0.5 bg-white/80 rounded-full transition-all duration-300 delay-75 ${isPlaying ? "h-2 animate-bounce" : "h-2.5"}`} />
-                <span className={`w-0.5 bg-white/80 rounded-full transition-all duration-300 delay-150 ${isPlaying ? "h-3.5 animate-bounce" : "h-1"}`} />
+                <span className={`w-0.5 rounded-full transition-all duration-300 ${onLight ? "bg-[#741a14]/80" : "bg-white/80"} ${isPlaying ? "h-3 animate-bounce" : "h-1.5"}`} />
+                <span className={`w-0.5 rounded-full transition-all duration-300 delay-75 ${onLight ? "bg-[#741a14]/80" : "bg-white/80"} ${isPlaying ? "h-2 animate-bounce" : "h-2.5"}`} />
+                <span className={`w-0.5 rounded-full transition-all duration-300 delay-150 ${onLight ? "bg-[#741a14]/80" : "bg-white/80"} ${isPlaying ? "h-3.5 animate-bounce" : "h-1"}`} />
               </div>
             </button>
 
-            {/* Let's Talk Button — white pill per Figma 10:7423 */}
+            {/* Let's Talk Button — solid pill, inverted per background */}
             <Link
               href="/contact"
-              className="bg-white border border-white px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider text-black hover:bg-transparent hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl uppercase"
+              className={`px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider transition-all duration-300 shadow-lg hover:shadow-xl uppercase border ${
+                onLight
+                  ? "bg-[#741a14] border-[#741a14] text-[#fff3d3] hover:bg-transparent hover:text-[#741a14]"
+                  : "bg-white border-white text-black hover:bg-transparent hover:text-white"
+              }`}
             >
               LET&apos;S TALK
             </Link>
 
-            {/* Menu Button — outlined pill per Figma 10:7466 */}
+            {/* Menu Button — outlined pill, inked per background */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="border border-white px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider text-white hover:bg-white/15 transition-all duration-300 uppercase flex items-center gap-2 cursor-pointer"
+              className={`border px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider transition-all duration-300 uppercase flex items-center gap-2 cursor-pointer ${
+                onLight
+                  ? "border-[#741a14] text-[#741a14] hover:bg-[#741a14]/10"
+                  : "border-white text-white hover:bg-white/15"
+              }`}
             >
               <span>MENU</span>
               <span className="flex flex-col gap-[3px]">
-                <span className="h-px w-[11px] bg-[#d8d8d8]" />
-                <span className="h-px w-[11px] bg-[#d8d8d8]" />
+                <span className={`h-px w-[11px] transition-colors duration-300 ${line}`} />
+                <span className={`h-px w-[11px] transition-colors duration-300 ${line}`} />
               </span>
             </button>
           </div>

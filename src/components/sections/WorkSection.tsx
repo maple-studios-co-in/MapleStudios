@@ -135,7 +135,9 @@ export default function WorkSection() {
 
   return (
     <section id="work" className="relative bg-[#fff3d3] text-black">
-      <StarDivider />
+      {/* star sits exactly on the vertical column rule (50.86% of viewport →
+          51% inside the 86%-wide divider) */}
+      <StarDivider starLeft="51%" />
 
       {/* ——— Desktop: pinned horizontal track ——— */}
       <div
