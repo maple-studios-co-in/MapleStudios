@@ -24,7 +24,7 @@ export function AboutHero() {
       <motion.h1
         initial={{ opacity: 0, y: 26 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9 }}
+        transition={{ duration: 1.7 }}
         className="relative z-10 mx-auto max-w-[1150px] font-serif-luxury text-[clamp(30px,3.7vw,56px)] font-normal leading-[1.18] text-[#fff3d3]"
       >
         {ABOUT_PAGE.hero.title}
@@ -32,7 +32,7 @@ export function AboutHero() {
       <motion.p
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.15 }}
+        transition={{ duration: 1.5, delay: 0.3 }}
         className="relative z-10 mx-auto mt-5 max-w-[430px] font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-white"
       >
         {ABOUT_PAGE.hero.subtitle}
@@ -43,7 +43,7 @@ export function AboutHero() {
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
+          transition={{ duration: 2.2, delay: 0.4, ease: "easeOut" }}
           className="relative mx-auto aspect-[4096/2341] w-[clamp(320px,58vw,880px)]"
         >
           <Image

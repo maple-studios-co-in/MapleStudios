@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { FOOTER_DATA } from "@/lib/constants";
+import GradientCycler from "@/components/common/GradientCycler";
 
 /**
  * Final CTA / footer — Figma Home 13:8015 region (maroon #741A14, 1513x841).
@@ -16,14 +17,16 @@ export default function Footer() {
       // viewport top, so the kicker always rests at its own pt (≥120px) —
       // clear of the fixed navbar on EVERY viewport height (a fixed-height
       // footer parks the kicker in the navbar band on tall screens).
-      className="relative flex min-h-[100svh] flex-col overflow-hidden rounded-t-[8px] bg-[#741a14] px-[max(20px,2.12%)] pb-[clamp(140px,15.5vw,235px)] pt-[clamp(120px,12.9vw,195px)] text-[#fff3d3]"
+      className="relative isolate flex min-h-[100svh] flex-col overflow-hidden rounded-t-[8px] bg-[#741a14] px-[max(20px,2.12%)] pb-[clamp(140px,15.5vw,235px)] pt-[clamp(120px,12.9vw,195px)] text-[#fff3d3]"
     >
+      {/* same Default→Variant7 shade cycle as every other reddish surface */}
+      <GradientCycler />
       {/* Kicker */}
       <motion.p
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 1.7 }}
         className="font-sans-luxury text-[16px] font-bold uppercase leading-[1.06]"
       >
         {FOOTER_DATA.kicker}
@@ -35,7 +38,7 @@ export default function Footer() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 2.2 }}
           className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] leading-[1.11] text-[#fff3d3]"
         >
           {FOOTER_DATA.headingLines[0]}
@@ -48,7 +51,7 @@ export default function Footer() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.15 }}
+          transition={{ duration: 2, delay: 0.42 }}
           className="group flex w-[241px] shrink-0 flex-col"
         >
           <span className="flex items-center justify-between">
@@ -120,7 +123,7 @@ export default function Footer() {
         initial={{ opacity: 0, y: 60 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "0px 0px -10% 0px" }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        transition={{ duration: 2.8, ease: "easeOut" }}
         aria-hidden="true"
         className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[26%] select-none whitespace-nowrap font-serif-luxury text-[clamp(76px,15.54vw,235px)] font-semibold leading-[0.95] text-[#93352f]/50"
       >

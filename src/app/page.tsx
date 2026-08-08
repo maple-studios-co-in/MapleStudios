@@ -1,4 +1,5 @@
 import Navbar from "@/components/common/Navbar";
+import SceneBackdrop from "@/components/common/SceneBackdrop";
 import StripExit from "@/components/common/StripExit";
 import HeroSection from "@/components/sections/HeroSection";
 import AboutSection from "@/components/sections/AboutSection";
@@ -16,13 +17,17 @@ export default function Home() {
       {/* Global Navbar */}
       <Navbar />
 
+      {/* ONE fixed maroon scene shared by the hero, the About screen and the
+          marquee band — no per-section gradients, so no seam between them */}
+      <SceneBackdrop />
+
       {/* 1) Hero (Figma node 120-980: headline top-left, orbits, glassy M) */}
       <HeroSection />
 
       {/* 2) About & Mission — the statement headline itself transitions inside
           the hero pin (Scene B in HeroSection); this block carries the rest of
           About and its marquee screen pins under the cream strip exit. */}
-      <StripExit backdrop>
+      <StripExit>
         <AboutSection />
       </StripExit>
 

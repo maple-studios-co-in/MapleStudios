@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Volume2, VolumeX, X, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import LogoMark from "@/components/common/LogoMark";
+import GradientCycler from "@/components/common/GradientCycler";
 
 export default function Navbar() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -23,6 +24,22 @@ export default function Navbar() {
 
   useEffect(() => {
     let raf = 0;
+    /** An element's real on-screen alpha: its own `opacity` multiplied by
+        every ancestor's. Crossfade layers (the services stage's black sheet,
+        the film) sit at opacity 0 with a SOLID background-color — reading
+        the colour alone made the bar go dark over a cream screen. */
+    const effectiveAlpha = (el: Element) => {
+      let a = 1;
+      let n: Element | null = el;
+      while (n && n !== document.documentElement) {
+        const cs = getComputedStyle(n);
+        if (cs.visibility === "hidden" || cs.display === "none") return 0;
+        a *= parseFloat(cs.opacity || "1");
+        if (a < 0.05) return 0;
+        n = n.parentElement;
+      }
+      return a;
+    };
     const sample = () => {
       const header = headerRef.current;
       // probe the element stack under the middle of the navbar
@@ -33,8 +50,9 @@ export default function Navbar() {
         const bg = getComputedStyle(el).backgroundColor;
         const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
         if (!m) continue;
-        const alpha = m[4] === undefined ? 1 : parseFloat(m[4]);
-        if (alpha < 0.5) continue; // see through translucent layers
+        const colorAlpha = m[4] === undefined ? 1 : parseFloat(m[4]);
+        // see through translucent layers AND faded-out crossfade sheets
+        if (colorAlpha * effectiveAlpha(el) < 0.5) continue;
         const luminance = 0.2126 * +m[1] + 0.7152 * +m[2] + 0.0722 * +m[3];
         light = luminance > 160;
         break;
@@ -49,9 +67,14 @@ export default function Navbar() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+    // Springs and time-based choreographies (strip exit, pinned scenes)
+    // repaint the background WITHOUT scroll events — re-sample on a short
+    // interval too so the chrome never lags the backdrop mid-transition.
+    const tick = setInterval(onScroll, 250);
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+      clearInterval(tick);
       cancelAnimationFrame(raf);
     };
   }, []);
@@ -141,8 +164,10 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "-100%" }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 bg-[#4b0e0c] z-40 flex flex-col justify-between p-8 sm:p-16 text-white"
+            className="fixed inset-0 isolate bg-[#4b0e0c] z-40 flex flex-col justify-between p-8 sm:p-16 text-white"
           >
+            {/* same Default→Variant7 shade cycle as every reddish surface */}
+            <GradientCycler />
             <div className="flex justify-between items-center max-w-7xl mx-auto w-full pt-16">
               <span className="text-xs uppercase tracking-widest text-white/50 font-sans-luxury">
                 Navigation
@@ -173,7 +198,7 @@ export default function Navbar() {
                     <Link
                       href={item.href}
                       onClick={() => setIsMenuOpen(false)}
-                      className="group flex items-center justify-between text-4xl sm:text-6xl font-serif-luxury hover:text-amber-200 transition-colors py-2 border-b border-white/10"
+                      className="group flex items-center justify-between text-4xl sm:text-6xl font-serif-luxury hover:text-[#fff3d3] transition-colors py-2 border-b border-white/10"
                     >
                       <span>{item.name}</span>
                       <ArrowUpRight className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 group-hover:-translate-y-1" />

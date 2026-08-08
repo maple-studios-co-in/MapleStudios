@@ -19,13 +19,23 @@ const ramp = (p: number, a: number, b: number) =>
   p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a);
 
 /** Figma 4-point star (24 viewBox) in any fill — hero eyebrow, marquee, caption. */
-function Star4({ className = "", fill = "#FFF3D3" }: { className?: string; fill?: string }) {
+function Star4({
+  className = "",
+  fill = "#FFF3D3",
+  delay = 0,
+}: {
+  className?: string;
+  fill?: string;
+  /** stagger the twinkle so a row of stars never wobbles in lockstep */
+  delay?: number;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`shrink-0 ${className}`}
+      className={`star-twinkle shrink-0 ${className}`}
+      style={delay ? { animationDelay: `${delay}s` } : undefined}
       aria-hidden="true"
     >
       <path
@@ -61,7 +71,12 @@ export function WordMarquee({
               {w}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={star} alt="" className="w-[21px] shrink-0" />
+            <img
+              src={star}
+              alt=""
+              className="star-twinkle w-[21px] shrink-0"
+              style={{ animationDelay: `${(i % 5) * 0.55}s` }}
+            />
           </span>
         ))}
       </div>
@@ -165,10 +180,13 @@ function ServicesHero() {
               key={i}
               className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
             >
-              {SERVICES_PAGE.words.map((word) => (
+              {SERVICES_PAGE.words.map((word, wi) => (
                 <span key={word} className="flex items-center gap-[3vw]">
                   {word}
-                  <Star4 className="aspect-square w-[clamp(14px,1.59vw,24px)]" />
+                  <Star4
+                    className="aspect-square w-[clamp(14px,1.59vw,24px)]"
+                    delay={((i * SERVICES_PAGE.words.length + wi) % 5) * 0.55}
+                  />
                 </span>
               ))}
             </span>
@@ -215,7 +233,7 @@ function ServicePanel({
       <img
         src="/figma/about/star-maroon.svg"
         alt=""
-        className="absolute left-[50.86%] top-[11px] hidden w-[21px] -translate-x-1/2 -translate-y-1/2 lg:block"
+        className="star-twinkle absolute left-[50.86%] top-[11px] hidden w-[21px] -translate-x-1/2 -translate-y-1/2 lg:block"
       />
       {/* Continuous centre divider (Line 8) — starts at the rule */}
       <div
@@ -272,12 +290,12 @@ function ServicePanels() {
       {SERVICES_PAGE.panels.map((p, i) => (
         <Fragment key={p.id}>
           {/* Dwell runway: the previous panel stays pinned while this scrolls by */}
-          {i > 0 ? <div aria-hidden="true" className="hidden lg:block lg:h-[35vh]" /> : null}
+          {i > 0 ? <div aria-hidden="true" className="hidden lg:block lg:h-[80vh]" /> : null}
           <ServicePanel panel={p} index={i} />
         </Fragment>
       ))}
       {/* Trailing runway so the LAST panel also dwells pinned before releasing */}
-      <div aria-hidden="true" className="hidden lg:block lg:h-[35vh]" />
+      <div aria-hidden="true" className="hidden lg:block lg:h-[80vh]" />
     </section>
   );
 }
@@ -335,7 +353,7 @@ function TechStack() {
   // viewport, so the chars light up slowly like the About statement
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start 0.95", "start 0.05"],
+    offset: ["start 1", "start 0"],
   });
   const [l1, l2] = SERVICES_PAGE.stackHeading;
   const total = l1.length + l2.length;
@@ -541,8 +559,8 @@ function ProcessSection() {
     offset: ["start start", "end end"],
   });
   const smooth = useSpring(scrollYProgress, {
-    stiffness: 80,
-    damping: 24,
+    stiffness: 40,
+    damping: 17,
     restDelta: 0.001,
   });
   // Show completes at 90% of the runway — the finished scene dwells a beat
@@ -559,7 +577,7 @@ function ProcessSection() {
 
   return (
     <section className="relative pt-[clamp(64px,8vw,120px)] pb-[clamp(96px,10vw,150px)]">
-      <div ref={wrapRef} className="relative lg:h-[350vh]">
+      <div ref={wrapRef} className="relative lg:h-[800vh]">
         <div className="lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center lg:overflow-hidden">
           <div className="grid grid-cols-1 gap-8 pl-[8%] pr-[8%] lg:grid-cols-[16.4%_1fr] lg:gap-0 lg:pl-[2.05%] lg:pr-[6.08%]">
             <div>

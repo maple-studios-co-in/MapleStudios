@@ -18,14 +18,14 @@ export function ContactHero() {
       <motion.div
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        transition={{ duration: 1.9, ease: "easeOut" }}
       >
         <MapleOutlineMark className="w-[clamp(150px,18.5vw,280px)]" />
       </motion.div>
       <motion.h1
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, delay: 0.15 }}
+        transition={{ duration: 1.7, delay: 0.3 }}
         className="mt-[clamp(20px,2.6vw,40px)] font-serif-luxury text-[clamp(40px,5.29vw,80px)] font-normal leading-normal text-[#fff3d3]"
       >
         {CONTACT_PAGE.hero.title}
@@ -33,7 +33,7 @@ export function ContactHero() {
       <motion.p
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.3 }}
+        transition={{ duration: 1.5, delay: 0.55 }}
         className="mt-4 max-w-[430px] font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-white"
       >
         {CONTACT_PAGE.hero.subtitle}

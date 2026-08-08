@@ -2,10 +2,9 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
-import { ArrowRight } from "lucide-react";
 import { ABOUT_DATA, HERO_DATA } from "@/lib/constants";
 import MapleMark from "@/components/common/MapleMark";
-import GradientCycler from "@/components/common/GradientCycler";
+import BuildTimer from "@/components/common/BuildTimer";
 
 /** One word of the pinned About statement — lights up over its own slice of
     the pin progress (function-form transform: WAAPI-safe inside sticky). */
@@ -54,6 +53,13 @@ export default function HeroSection() {
     p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a);
   const contentOpacity = useTransform(scrollYProgress, (p) => 1 - ramp(p, 0.08, 0.3));
   const contentY = useTransform(scrollYProgress, (p) => ramp(p, 0.08, 0.3) * -80);
+  // The glassy M is NOT part of the dissolve: it drifts DOWN into the empty
+  // middle of the About layout (between the left rail and the mission copy,
+  // straddling the star divider) and settles there as a large faint ghost —
+  // the gap in the reference composition is exactly the mark's footprint.
+  const markOpacity = useTransform(scrollYProgress, (p) => 1 - ramp(p, 0.08, 0.34) * 0.8);
+  const markY = useTransform(scrollYProgress, (p) => `${ramp(p, 0.08, 0.34) * 19}vh`);
+  const markScale = useTransform(scrollYProgress, (p) => 1 + ramp(p, 0.08, 0.34) * 0.08);
   // Scene B container: gate + gentle settle while its words light up
   // (starts before Scene A fully exits so the swap never has a dim gap)
   const aboutOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.26, 0.4));
@@ -67,27 +73,11 @@ export default function HeroSection() {
   const visionOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.78, 0.88));
 
   return (
-    <div ref={wrapRef} id="hero" className="relative h-[260vh]">
-    <section
-      className="sticky top-0 isolate h-svh overflow-hidden text-white"
-      style={{
-        background:
-          "radial-gradient(53% 240% at 50% 68%, #741A14 18.5%, #520F0A 59%, #2F0500 100%)",
-      }}
-    >
-      {/* Auto-cycling gradient shades */}
-      <GradientCycler />
-
-      {/* Continuous breathing gradient — a lighter red that drifts and pulses */}
-      <div
-        aria-hidden="true"
-        className="hero-glow pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(48% 90% at 46% 55%, rgba(190,62,45,0.55) 0%, rgba(139,42,32,0.32) 42%, transparent 74%)",
-        }}
-      />
-
+    <div ref={wrapRef} id="hero" className="relative h-[620vh]">
+    {/* Transparent on purpose: the maroon scene (radial + cycling shades +
+        breathing glow) is painted ONCE by <SceneBackdrop /> behind the hero,
+        the About screen and the marquee — one continuous field, no seams. */}
+    <section className="sticky top-0 isolate h-svh overflow-hidden text-white">
       {/* Everything below dissolves while the hero is pinned */}
       <motion.div style={{ opacity: contentOpacity, y: contentY }} className="absolute inset-0">
 
@@ -118,25 +108,6 @@ export default function HeroSection() {
         alt=""
         className="absolute left-[-4.43%] top-[53.35%] w-[33.24%] pointer-events-none select-none"
       />
-
-      {/* ——— Glassy wireframe M ———
-          Sized per the Figma inspect (left 472 / top 140 / right 469 / bottom 285
-          on the 1512x797 canvas = centered x, center-y 40.9%, width 572).
-          Sits ABOVE the headline (z-20): fully transparent glass, so the "se."
-          of "purpose." stays readable through it, exactly like the design. */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.4, delay: 0.3, ease: "easeOut" }}
-        className="absolute left-1/2 top-[40.9%] z-20 w-[clamp(300px,37.83vw,572px)] -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-      >
-        <motion.div
-          animate={{ y: [0, -26, 0], rotate: [0, 1.4, 0] }}
-          transition={{ duration: 5.5, ease: "easeInOut", repeat: Infinity }}
-        >
-          <MapleMark className="h-auto w-full" />
-        </motion.div>
-      </motion.div>
 
       {/* Little 4-point star sparkle (Figma 47:1042 — 2s rotation loop) */}
       <motion.img
@@ -205,15 +176,15 @@ export default function HeroSection() {
         className="absolute left-[81.02%] top-[48.56%] z-10 w-[clamp(190px,14.42vw,218px)] max-md:left-auto max-md:right-[4%] max-md:top-[34%]"
       >
         <div className="flex aspect-[218/79] w-full overflow-hidden rounded-[4px] border border-white">
-          <div className="flex w-[46.79%] flex-col items-center justify-center rounded-[4px] bg-[#fff3d3] text-[#741a14]">
-            <span className="font-sans-luxury text-[clamp(15px,1.27vw,19.1px)] font-bold leading-[1.4]">
-              {HERO_DATA.badge.hours}
-            </span>
-            <span className="font-sans-luxury text-[clamp(10px,0.95vw,14.4px)] font-normal leading-[1.3] tracking-[0.133em]">
+          {/* wider than the Figma 46.79%: the live stopwatch carries a third
+              unit (seconds), which the original two-unit box cannot hold */}
+          <div className="flex w-[57%] flex-col items-center justify-center rounded-[4px] bg-[#fff3d3] px-[2%] text-[#741a14]">
+            <BuildTimer className="font-sans-luxury text-[clamp(13px,1.15vw,17.5px)] font-bold leading-[1.4]" />
+            <span className="font-sans-luxury text-[clamp(7px,0.68vw,10.2px)] font-normal leading-[1.3] tracking-[0.08em]">
               {HERO_DATA.badge.label}
             </span>
           </div>
-          <div className="flex flex-1 items-center pl-[6.4%]">
+          <div className="flex flex-1 items-center pl-[5%]">
             <span className="font-sans-luxury text-[clamp(8px,0.73vw,11px)] font-medium uppercase leading-[1.5] text-white">
               Avg. time to
               <br />
@@ -254,34 +225,48 @@ export default function HeroSection() {
         </motion.span>
       </motion.div>
 
-      {/* ——— Bottom corner ornaments (from bg component 91:58) ——— */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/figma/hero-corner-left.svg"
-        alt=""
-        className="absolute left-[7.2%] top-[81.43%] w-[clamp(26px,2.64vw,40px)] pointer-events-none select-none"
-      />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/figma/hero-corner-right.svg"
-        alt=""
-        className="absolute left-[90.09%] top-[81.43%] w-[clamp(26px,2.64vw,40px)] pointer-events-none select-none"
-      />
       </motion.div>
+
+      {/* ——— Glassy wireframe M ———
+          Sized per the Figma inspect (left 472 / top 140 / right 469 / bottom 285
+          on the 1512x797 canvas = centered x, center-y 40.9%, width 572).
+          Lives OUTSIDE the Scene A dissolve: full strength over the hero
+          (z-20 glass, so the "se." of "purpose." reads through it), then it
+          settles to a faint floating ghost behind the About statement. */}
+      <div className="absolute left-1/2 top-[40.9%] z-20 w-[clamp(300px,37.83vw,572px)] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+        {/* scroll-driven: fade to ghost, drift down, grow slightly */}
+        <motion.div style={{ opacity: markOpacity, y: markY, scale: markScale }}>
+          {/* entrance */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.4, delay: 0.3, ease: "easeOut" }}
+          >
+            {/* perpetual float — keeps breathing after it becomes the ghost */}
+            <motion.div
+              animate={{ y: [0, -26, 0], rotate: [0, 1.4, 0] }}
+              transition={{ duration: 8, ease: "easeInOut", repeat: Infinity }}
+            >
+              <MapleMark className="h-auto w-full" />
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </div>
 
       {/* ——— Scene B: the full About screen composes itself IN PLACE on the
           pinned backdrop — statement word by word first, then the divider,
           mission columns and vision line transition in beneath it ——— */}
       <motion.div
         style={{ opacity: aboutOpacity, y: aboutY }}
-        className="absolute inset-0 z-10 flex flex-col justify-center gap-[clamp(28px,4.5vh,56px)] px-6 sm:px-12"
+        className="absolute inset-0 z-10 flex flex-col justify-center gap-[clamp(28px,3.4vh,50px)] px-6 sm:px-12"
       >
         <span className="absolute left-5 top-[92px] text-xs font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
           {ABOUT_DATA.tag}
         </span>
 
-        {/* Stage 1: statement */}
-        <div className="mx-auto w-full max-w-6xl">
+        {/* Stage 1: statement — Figma insets 222 / 141 on the 1512 canvas
+            (parent already pads 48px, so 174/1416 and 93/1416) */}
+        <div className="mx-auto w-full max-w-6xl lg:mx-0 lg:ml-[12.29%] lg:mr-[6.57%] lg:w-auto lg:max-w-none pb-[clamp(20px,6vh,64px)]">
           <p className="font-serif-luxury text-[clamp(34px,4.6vw,70px)] font-light leading-none text-[#fff3d3]">
             {aboutWords.map((word, i) => (
               <span key={`${word}-${i}`}>
@@ -291,48 +276,76 @@ export default function HeroSection() {
           </p>
         </div>
 
-        {/* Stage 2a: divider with star */}
-        <motion.div style={{ opacity: dividerOpacity }} className="relative mx-auto w-full max-w-7xl">
-          <div className="h-px w-full bg-white/20" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-4 text-amber-200 text-sm">
-            ✦
-          </div>
-        </motion.div>
-
-        {/* Stage 2b: mission columns */}
-        <motion.div
-          style={{ opacity: colsOpacity, y: colsY }}
-          className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-8 md:grid-cols-12"
-        >
-          <div className="md:col-span-5 flex flex-col gap-1 text-xs font-sans-luxury tracking-widest text-white/70 uppercase leading-relaxed font-medium">
-            {ABOUT_DATA.leftColumn.map((line, idx) => (
-              <p key={idx}>{line}</p>
-            ))}
-          </div>
-          <div className="md:col-span-7 flex flex-col items-start gap-6">
-            <p className="text-base sm:text-xl font-sans-luxury text-white/90 leading-relaxed font-light">
-              {ABOUT_DATA.rightText}
-            </p>
-            <a
-              href="/about"
-              className="inline-flex items-center gap-3 text-xs tracking-widest uppercase font-sans-luxury font-semibold text-white hover:text-amber-200 transition-colors group"
+        {/* Stage 2: divider + columns + vision share the centre hairline
+            that drops from the star crossing (Figma annotation) */}
+        {/* Stage 2 block — near full-bleed rule, the left rail hard left and
+            the mission copy pushed out to ~66%: the wide middle it opens up
+            IS the mark's footprint (reference composition). */}
+        <div className="relative flex flex-col gap-[clamp(28px,3.4vh,50px)] lg:mx-[1%]">
+          {/* Stage 2a: divider with star (fill #FFF3D3, stroke #FFF @0.289) */}
+          <motion.div style={{ opacity: dividerOpacity }} className="relative w-full">
+            <div className="h-px w-full bg-white/20" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="star-twinkle absolute left-[65.5%] top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
+              aria-hidden="true"
             >
-              <span>{ABOUT_DATA.cta}</span>
-              <div className="w-7 h-7 rounded-full border border-white/30 flex items-center justify-center group-hover:border-amber-200 group-hover:translate-x-1 transition-all">
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </a>
-          </div>
-        </motion.div>
+              <path
+                d="M11.9824 0.876953C12.5356 3.9958 13.7265 6.52544 15.5811 8.42188C17.424 10.3064 19.9115 11.5525 23.0479 12.1406C19.9126 12.646 17.4512 13.8353 15.6152 15.6768C13.763 17.5346 12.5587 20.0435 11.9326 23.1494C11.3843 20.0429 10.2538 17.5178 8.43652 15.6611C6.62345 13.8088 4.14106 12.6354 0.912109 12.2012C4.11282 11.4892 6.57827 10.2661 8.39551 8.41113C10.2177 6.55112 11.3739 4.07043 11.9824 0.876953Z"
+                fill="#FFF3D3"
+                stroke="#FFF"
+                strokeWidth="0.289"
+              />
+            </svg>
+          </motion.div>
 
-        {/* Stage 2c: vision line */}
-        <motion.div style={{ opacity: visionOpacity }} className="mx-auto w-full max-w-7xl">
-          <p className="text-[11px] font-sans-luxury tracking-widest uppercase text-white/60 font-medium">
-            {ABOUT_DATA.focusedVision}
-            <br />
-            {ABOUT_DATA.measuredExecution}
-          </p>
-        </motion.div>
+          {/* Stage 2b: mission columns — left rail far left, mission copy
+              starting just right of the centre line (Figma image spec) */}
+          <motion.div
+            style={{ opacity: colsOpacity, y: colsY }}
+            className="grid w-full grid-cols-1 items-start gap-8 md:grid-cols-[65.5%_1fr]"
+          >
+            <div className="flex flex-col gap-1 text-xs font-sans-luxury tracking-widest text-white/70 uppercase leading-relaxed font-medium">
+              {ABOUT_DATA.leftColumn.map((line, idx) => (
+                <p key={idx}>{line}</p>
+              ))}
+            </div>
+            <div className="flex flex-col items-start gap-[clamp(24px,5vh,64px)] md:pl-[1.5%]">
+              <p className="max-w-[400px] text-base sm:text-lg font-sans-luxury text-white/90 leading-relaxed font-light">
+                {ABOUT_DATA.rightText}
+              </p>
+              {/* underlined CTA with arrow (site link pattern) */}
+              <a href="/about" className="group flex w-[clamp(150px,12.63vw,191px)] flex-col">
+                <span className="flex items-center justify-between">
+                  <span className="font-sans-luxury text-[clamp(11px,0.93vw,14px)] font-bold uppercase tracking-[-0.024em] text-[#fff3d3]">
+                    {ABOUT_DATA.cta}
+                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/figma/arrow-cream.svg"
+                    alt=""
+                    className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
+                  />
+                </span>
+                <span className="mt-[9px] h-px w-full bg-[#fff3d3]/90" />
+              </a>
+            </div>
+          </motion.div>
+
+          {/* Stage 2c: vision line — sits well below the columns (reference) */}
+          <motion.div
+            style={{ opacity: visionOpacity }}
+            className="w-full pt-[clamp(24px,9vh,130px)]"
+          >
+            <p className="text-[11px] font-sans-luxury tracking-widest uppercase text-white/60 font-medium">
+              {ABOUT_DATA.focusedVision}
+              <br />
+              {ABOUT_DATA.measuredExecution}
+            </p>
+          </motion.div>
+        </div>
       </motion.div>
     </section>
     </div>

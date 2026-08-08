@@ -23,14 +23,19 @@ export default function ClientStoriesSection() {
   return (
     // pt (not child mt): without overflow-hidden a first-child top MARGIN
     // collapses out of the section, opening a maroon page-bg gap above it
-    <section id="stories" className="relative z-20 -mt-[75vh] bg-[#fff3d3] pt-[clamp(16px,2vw,32px)] text-black">
+    // -mt-[90vh]: same hand-off as Key facts, measured against StripExit's
+    // RUNWAY_VH (150) for a TALL predecessor (pin offset 0) — rides up while
+    // the work/services strip exit is still closing. Rescale with RUNWAY_VH.
+    // It must also stay well under (this section + footer) height, or the
+    // container outlasts the footer and its runway shows below it.
+    <section id="stories" className="relative z-20 -mt-[90vh] bg-[#fff3d3] pt-[clamp(16px,2vw,32px)] text-black">
       {/* Heading row */}
       <div className="mx-auto grid w-full grid-cols-1 items-center gap-6 px-[10.4%] lg:grid-cols-2">
         <motion.h2
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 2 }}
           className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] leading-none text-black"
         >
           {CLIENT_STORIES_DATA.heading}
@@ -39,7 +44,7 @@ export default function ClientStoriesSection() {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.1 }}
+          transition={{ duration: 2, delay: 0.3 }}
           className="max-w-[240px] font-sans-luxury text-[clamp(15px,1.32vw,20px)] leading-[1.2] text-black"
         >
           {CLIENT_STORIES_DATA.subtitle}

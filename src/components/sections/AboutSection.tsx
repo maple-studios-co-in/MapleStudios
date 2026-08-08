@@ -16,7 +16,9 @@ export default function AboutSection() {
 
       {/* Infinite Marquee Banner — words separated by the Figma 24px star
           (exact svg); hover pauses, no color change */}
-      <div className="w-full pt-8 border-t border-white/10 overflow-hidden select-none">
+      {/* No top border — the marquee lives on the same continuous gradient
+          scene as the hero/about, a rule here read as a section break */}
+      <div className="w-full pt-8 overflow-hidden select-none">
         <div className="animate-marquee whitespace-nowrap flex items-center gap-[3vw]">
           {[...Array(6)].map((_, i) => (
             <span
@@ -27,14 +29,15 @@ export default function AboutSection() {
                 .split("✦")
                 .map((w) => w.trim())
                 .filter(Boolean)
-                .map((word) => (
+                .map((word, wi) => (
                   <span key={word} className="flex items-center gap-[3vw]">
                     {word}
                     <svg
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
-                      className="aspect-square w-[clamp(14px,1.59vw,24px)] shrink-0"
+                      className="star-twinkle aspect-square w-[clamp(14px,1.59vw,24px)] shrink-0"
+                      style={{ animationDelay: `${((i * 3 + wi) % 5) * 0.55}s` }}
                       aria-hidden="true"
                     >
                       <path
@@ -50,7 +53,7 @@ export default function AboutSection() {
           ))}
         </div>
         <div className="text-center mt-6">
-          <span className="text-[11px] font-sans-luxury tracking-widest text-amber-200/80 uppercase font-semibold">
+          <span className="text-[11px] font-sans-luxury tracking-widest text-[#fff3d3]/80 uppercase font-semibold">
             {ABOUT_DATA.bottomSub}
           </span>
         </div>

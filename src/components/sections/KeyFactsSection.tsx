@@ -8,13 +8,14 @@ export default function KeyFactsSection() {
   return (
     <section
       id="key-facts"
-      // -mt-[60vh]: rides up OVER the strip exit WHILE the strips are still
-      // completing (~2/3 through their run), so the heading is already
-      // entering from the bottom as the cream takes over — no dead cream
-      // screen between the transition and Key facts (its predecessor is the
-      // compact marquee band, short-mode pin with a 120vh runway). z-20
-      // keeps it above the strip overlay.
-      className="relative z-20 -mt-[60vh] bg-[#fff3d3] text-[#5d1411] pt-4 pb-24 px-6 sm:px-12"
+      // -mt-[92vh]: rides up OVER the strip exit WHILE the strips are still
+      // closing, so the heading is already entering from the bottom as the
+      // cream takes over — no dead cream screen between the transition and
+      // Key facts. Measured at rest against StripExit's RUNWAY_VH (150) and
+      // the short-mode pin offset of the compact marquee band: puts the
+      // heading on screen about a quarter into the strip run. Rescale if
+      // RUNWAY_VH changes. z-20 keeps it above the strip overlay.
+      className="relative z-20 -mt-[92vh] bg-[#fff3d3] text-[#5d1411] pt-4 pb-24 px-6 sm:px-12"
     >
       <div className="max-w-7xl mx-auto w-full flex flex-col gap-16">
         {/* Section Header */}
@@ -24,7 +25,7 @@ export default function KeyFactsSection() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.1 }}
-          transition={{ duration: 0.45 }}
+          transition={{ duration: 1.3 }}
           className="text-center flex flex-col items-center gap-2"
         >
           <h2 className="font-serif-luxury text-[clamp(56px,6.61vw,100px)] font-normal leading-normal text-[#741a14]">
@@ -46,7 +47,7 @@ export default function KeyFactsSection() {
             initial={{ opacity: 0, y: 120, rotate: -8, rotateX: 52, scale: 0.9 }}
             whileInView={{ opacity: 1, y: 0, rotate: 0, rotateX: 0, scale: 1 }}
             viewport={{ once: false, amount: 0.3 }}
-            transition={{ duration: 0.9, delay: 0, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 2.6, delay: 0, ease: [0.22, 1, 0.36, 1] }}
             className="relative group rounded-2xl overflow-hidden shadow-xl aspect-[3/4] flex flex-col justify-between p-6 sm:p-8 text-white border border-black/10"
           >
             {/* Background Image */}
@@ -78,7 +79,7 @@ export default function KeyFactsSection() {
             initial={{ opacity: 0, y: 120, rotate: 6, rotateX: 52, scale: 0.9 }}
             whileInView={{ opacity: 1, y: 0, rotate: 0, rotateX: 0, scale: 1 }}
             viewport={{ once: false, amount: 0.3 }}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 2.6, delay: 0.42, ease: [0.22, 1, 0.36, 1] }}
             className="relative group rounded-2xl overflow-hidden shadow-xl aspect-[3/4] flex flex-col justify-between p-6 sm:p-8 bg-[#761c17] text-[#fff3d3] border border-black/10"
           >
             {/* Top Label */}
@@ -114,7 +115,7 @@ export default function KeyFactsSection() {
             initial={{ opacity: 0, y: 120, rotate: -6, rotateX: 52, scale: 0.9 }}
             whileInView={{ opacity: 1, y: 0, rotate: 0, rotateX: 0, scale: 1 }}
             viewport={{ once: false, amount: 0.3 }}
-            transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 2.6, delay: 0.85, ease: [0.22, 1, 0.36, 1] }}
             className="relative group rounded-2xl overflow-hidden shadow-xl aspect-[3/4] flex flex-col justify-between p-6 sm:p-8 text-white border border-black/10"
           >
             {/* Background Image */}
@@ -150,7 +151,7 @@ export default function KeyFactsSection() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 2.3 }}
           className="flex flex-col items-center gap-8 pt-4"
         >
           <span className="text-xs font-sans-luxury font-bold tracking-widest uppercase text-[#5d1411]">

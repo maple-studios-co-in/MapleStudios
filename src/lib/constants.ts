@@ -6,8 +6,9 @@ export const SITE_CONFIG = {
 
 export const HERO_DATA = {
   badge: {
-    hours: "22h 40m",
-    label: "HRS : MINS",
+    // The figure itself is a live stopwatch (BuildTimer) counting from zero
+    // on every page load — there is no static value to configure here.
+    label: "HRS : MINS : SECS",
     sublabel: "Avg. time to first live build",
   },
   cta: "START A PROJECT",

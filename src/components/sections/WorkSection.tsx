@@ -19,7 +19,7 @@ export function StarDivider({ starLeft = "50%" }: { starLeft?: string }) {
         viewBox="0 0 21 21"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="absolute top-1/2 h-[20.955px] w-[20.722px] -translate-x-1/2 -translate-y-1/2"
+        className="star-twinkle absolute top-1/2 h-[20.955px] w-[20.722px] -translate-x-1/2 -translate-y-1/2"
         style={{ left: starLeft }}
         aria-hidden="true"
       >
@@ -148,7 +148,7 @@ export default function WorkSection() {
       setDims({
         shift: Math.max(0, track.scrollWidth - vw),
         // scroll budget for the stage phases (type hold → burst → emission)
-        seq: Math.round(window.innerHeight * 3.2),
+        seq: Math.round(window.innerHeight * 5.2),
         vw,
       });
     };
@@ -175,7 +175,7 @@ export default function WorkSection() {
   // the stage at its END state on the server (hydration mismatch). Map from
   // an unreachable range instead so seq stays 0 until real dims exist.
   const seqRaw = useTransform(scrollYProgress, total > 0 ? [shiftFrac, 1] : [2, 3], [0, 1]);
-  const seq = useSpring(seqRaw, { stiffness: 60, damping: 20, restDelta: 0.0005 });
+  const seq = useSpring(seqRaw, { stiffness: 30, damping: 14, restDelta: 0.0005 });
 
   return (
     <section id="work" className="relative bg-[#fff3d3] text-black">
@@ -210,7 +210,7 @@ export default function WorkSection() {
                   initial={{ y: 150, opacity: 0 }}
                   whileInView={{ y: 0, opacity: 1 }}
                   viewport={{ once: false, amount: 0.3 }}
-                  transition={{ type: "spring", stiffness: 90, damping: 15, mass: 0.9 }}
+                  transition={{ type: "spring", stiffness: 20, damping: 7, mass: 0.9 }}
                 >
                   <ProjectCard project={WORK_DATA.projects[0]} />
                 </motion.div>
@@ -224,7 +224,7 @@ export default function WorkSection() {
                 initial={{ y: 170, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 viewport={{ once: false, amount: 0.3 }}
-                transition={{ type: "spring", stiffness: 90, damping: 15, mass: 0.9 }}
+                transition={{ type: "spring", stiffness: 20, damping: 7, mass: 0.9 }}
                 className="w-[43vw] shrink-0 self-center"
               >
                 <ProjectCard project={p} />
@@ -236,7 +236,7 @@ export default function WorkSection() {
               initial={{ y: 130, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: false, amount: 0.3 }}
-              transition={{ type: "spring", stiffness: 90, damping: 16, mass: 0.9 }}
+              transition={{ type: "spring", stiffness: 20, damping: 8, mass: 0.9 }}
               className="flex w-[36vw] shrink-0 flex-col gap-8 self-center pl-[2vw]"
             >
               <p className="font-sans-luxury text-[clamp(16px,1.32vw,20px)] leading-[1.35] text-black">

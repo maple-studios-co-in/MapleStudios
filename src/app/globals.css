@@ -142,6 +142,40 @@
   will-change: opacity, transform;
 }
 
+/* 4-point star ornament: a small, continuous wobble so every star on the
+   site reads as alive rather than pasted on. Animates `transform` only —
+   Tailwind's translate utilities use the separate `translate` property in
+   v4, so centring (-translate-x-1/2 etc.) is untouched. Never apply this to
+   a star that already carries a motion transform (the process-rule stops,
+   the travelling tip) — a CSS animation would override those inline styles. */
+@keyframes starTwinkle {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(7deg) scale(1.07);
+  }
+  50% {
+    transform: rotate(0deg) scale(0.96);
+  }
+  75% {
+    transform: rotate(-7deg) scale(1.05);
+  }
+}
+
+.star-twinkle {
+  transform-origin: center;
+  animation: starTwinkle 4.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star-twinkle {
+    animation: none;
+  }
+}
+
 /* Hero breathing gradient — compositor-only (opacity/transform) */
 @keyframes heroGlow {
   0%, 100% {

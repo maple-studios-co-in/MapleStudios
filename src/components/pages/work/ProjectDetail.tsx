@@ -119,7 +119,7 @@ export default function ProjectDetail({
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
               // aspect matches the artwork (1480/1016) so the full frame —
               // including the "Hi, I'm Alex." baseline — is never cropped
               className="relative aspect-[810/556] w-full overflow-hidden rounded-[8px]"

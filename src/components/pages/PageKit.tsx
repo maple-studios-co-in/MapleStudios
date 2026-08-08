@@ -105,7 +105,7 @@ export function Rule({
       <img
         src={tone === "cream" ? "/figma/contact/star-divider-cream.svg" : "/figma/about/star-maroon.svg"}
         alt=""
-        className="absolute top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
+        className="star-twinkle absolute top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
         style={{ left: starLeft }}
       />
     </div>
@@ -181,7 +181,7 @@ export function Reveal({
       initial={{ opacity: 0, y: 34 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.75, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 2.1, delay, ease: [0.22, 1, 0.36, 1] }}
       className={className}
     >
       {children}
