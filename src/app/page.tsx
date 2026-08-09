@@ -13,7 +13,13 @@ export default function Home() {
   // overflow-x lives on <body> as `clip` (globals.css) — an overflow-x-hidden
   // wrapper here would break position:sticky for the horizontal work track
   return (
-    <main className="relative bg-[#5d1411] min-h-screen text-white selection:bg-[#761c17] selection:text-white">
+    // NO background colour here on purpose. <SceneBackdrop> sits at -z-10,
+    // and because this element is `relative` with z-index:auto it never forms
+    // a stacking context — so an opaque background here paints OVER the
+    // backdrop (negative-z children escape to the root stacking context) and
+    // hides the whole cycling gradient. The base maroon lives on <html>
+    // (globals.css), which the backdrop correctly paints above.
+    <main className="relative min-h-screen text-white selection:bg-[#761c17] selection:text-white">
       {/* Global Navbar */}
       <Navbar />
 

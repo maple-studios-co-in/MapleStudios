@@ -19,7 +19,7 @@ const ramp = (p: number, a: number, b: number) =>
   p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a);
 
 /** Figma 4-point star (24 viewBox) in any fill — hero eyebrow, marquee, caption. */
-function Star4({
+export function Star4({
   className = "",
   fill = "#FFF3D3",
   delay = 0,
@@ -80,8 +80,9 @@ export function WordMarquee({
           </span>
         ))}
       </div>
-      <p className="mt-6 text-center">
-        <Eyebrow color={color}>✦ {caption}</Eyebrow>
+      <p className="mt-6 flex items-center justify-center gap-[5px] text-center">
+        <Star4 className="w-[12px]" fill={color} />
+        <Eyebrow color={color}>{caption}</Eyebrow>
       </p>
     </div>
   );

@@ -6,25 +6,26 @@ import GradientCycler from "@/components/common/GradientCycler";
  * ONE viewport-fixed maroon scene painted behind the hero, the About screen
  * and the marquee band. Because it is `fixed`, every section above Key Facts
  * shares the exact same pixels — a seam between them is impossible by
- * construction (per-section gradients could never line up: each restarted its
- * own radial, so the marquee's top edge never matched the hero's bottom).
+ * construction.
  *
- * Sits at -z-10 inside <main>: it paints over main's flat background but
- * under all content, so the opaque cream sections (Key Facts onward) and the
- * strip-exit overlay cover it normally.
+ * LAYERING (the part that bit us): the radial MUST be this container's own
+ * background, not a sibling <div>. GradientCycler's layers sit at -z-10,
+ * which paints ABOVE an ancestor's background but BELOW a positioned sibling
+ * — as a sibling div the radial completely hid the cycling shades, so the
+ * Default→Variant7 gradient never visibly changed on the home page.
  */
 export default function SceneBackdrop() {
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundColor: "#5d1411",
-          background:
-            "radial-gradient(53% 240% at 50% 68%, #741A14 18.5%, #520F0A 59%, #2F0500 100%)",
-        }}
-      />
-      {/* Auto-cycling gradient shades */}
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 -z-10 isolate overflow-hidden"
+      style={{
+        backgroundColor: "#5d1411",
+        background:
+          "radial-gradient(53% 240% at 50% 68%, #741A14 18.5%, #520F0A 59%, #2F0500 100%)",
+      }}
+    >
+      {/* Auto-cycling shades (Default → Variant7) */}
       <GradientCycler />
       {/* Continuous breathing gradient — a lighter red that drifts and pulses */}
       <div

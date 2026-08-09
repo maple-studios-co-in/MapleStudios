@@ -258,7 +258,13 @@ export default function HeroSection() {
           mission columns and vision line transition in beneath it ——— */}
       <motion.div
         style={{ opacity: aboutOpacity, y: aboutY }}
-        className="absolute inset-0 z-10 flex flex-col justify-center gap-[clamp(28px,3.4vh,50px)] px-6 sm:px-12"
+        // pt clears the fixed navbar band (~80px): the statement centres in
+        // the space BELOW it, so its first line can never ride up into the
+        // LET'S TALK / MENU pills on shorter viewports
+        // `safe center`: centres normally, but when the content overflows a
+        // very short window it falls back to START alignment — the overflow
+        // goes below the fold instead of up under the fixed navbar
+        className="absolute inset-0 z-10 flex flex-col [justify-content:safe_center] gap-[clamp(20px,3.4vh,50px)] px-6 pt-[clamp(96px,15vh,150px)] pb-[clamp(12px,2.5vh,28px)] sm:px-12"
       >
         <span className="absolute left-5 top-[92px] text-xs font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
           {ABOUT_DATA.tag}
@@ -267,7 +273,10 @@ export default function HeroSection() {
         {/* Stage 1: statement — Figma insets 222 / 141 on the 1512 canvas
             (parent already pads 48px, so 174/1416 and 93/1416) */}
         <div className="mx-auto w-full max-w-6xl lg:mx-0 lg:ml-[12.29%] lg:mr-[6.57%] lg:w-auto lg:max-w-none pb-[clamp(20px,6vh,64px)]">
-          <p className="font-serif-luxury text-[clamp(34px,4.6vw,70px)] font-light leading-none text-[#fff3d3]">
+          {/* min(4.6vw,6.5vh): width-driven normally, but capped by viewport
+              HEIGHT on short windows so four lines + columns always fit
+              between the navbar and the fold */}
+          <p className="font-serif-luxury text-[clamp(28px,min(4.6vw,6.5vh),70px)] font-light leading-none text-[#fff3d3]">
             {aboutWords.map((word, i) => (
               <span key={`${word}-${i}`}>
                 <PinnedWord progress={scrollYProgress} word={word} index={i} total={aboutWords.length} />{" "}
@@ -337,7 +346,7 @@ export default function HeroSection() {
           {/* Stage 2c: vision line — sits well below the columns (reference) */}
           <motion.div
             style={{ opacity: visionOpacity }}
-            className="w-full pt-[clamp(24px,9vh,130px)]"
+            className="w-full pt-[clamp(12px,7vh,110px)]"
           >
             <p className="text-[11px] font-sans-luxury tracking-widest uppercase text-white/60 font-medium">
               {ABOUT_DATA.focusedVision}

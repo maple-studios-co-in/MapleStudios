@@ -371,7 +371,7 @@ export const ABOUT_PAGE = {
   wordsCaption: "CAPABILITIES SHAPED TO SCALE WITH AMBITION.",
   atMaple: "AT MAPLE,",
   atMapleBody: "We build teams around ideas. Each project is led by designers, engineers, and specialists chosen specifically for the challenge at hand.",
-  badge: "SHAPED IDEAS TO DIGITAL DIRECTION IN 24 HOURS",
+  badge: "SHAPING IDEAS TO DIGITAL DIRECTION IN 24 HOURS",
   mission: [
     "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people.",
     "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people.",
