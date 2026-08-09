@@ -4,39 +4,36 @@ import { useLayoutEffect, useRef, useState } from "react";
 import {
   motion,
   useScroll,
-  useSpring,
   useTransform,
   type MotionValue,
 } from "motion/react";
 import { ABOUT_PAGE } from "@/lib/constants";
 import { Eyebrow, Reveal, Rule, UnderlineLink } from "../PageKit";
 import { Star4, WordMarquee } from "../services/ServicesBody";
-import StripParallax from "@/components/common/StripParallax";
+import DepthParallax from "@/components/common/DepthParallax";
+import BlurTextReveal from "@/components/common/BlurTextReveal";
 
 /**
  * About hero — Figma 22:625 compressed into ONE viewport: CREAM canvas,
  * Catilde 60 maroon statement (60px exact at full size, height-capped so
  * the whole scene always fits a single screen), 18px subtitle tucked behind
- * the eagle, the strip-slice 3D parallax eagle, and the BRANDING ✦ DESIGN
- * ✦ AI row crossing its lower third with the caption at the fold.
+ * the eagle, the depth-map parallax eagle (the trionn.com lion interaction
+ * — head follows the cursor in 3D), and the BRANDING ✦ DESIGN ✦ AI row
+ * crossing its lower third with the caption at the fold.
  */
 export function AboutHero() {
   return (
     <section className="relative isolate flex h-[100svh] flex-col overflow-hidden bg-[#fff3d3] text-center text-black">
       {/* Statement (22:645) — Catilde 60px / 400 / normal / 3px tracking /
-          #741A14 / centred. min(vw, svh) keeps the exact 60px on full
-          desktop and scales it down only when a small window would
-          otherwise push the scene past one screen. */}
+          #741A14 / centred. The words materialise from blur in random
+          order on load — trionn's BlurTextReveal, same numbers. */}
       {/* No z-index: the eagle (later in the DOM) rides OVER the statement's
           lower line, exactly like the reference composition */}
-      <motion.h1
-        initial={{ opacity: 0, y: 26 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.7 }}
+      <BlurTextReveal
+        as="h1"
+        text={ABOUT_PAGE.hero.title}
         className="mx-auto max-w-[79.2%] shrink-0 pt-[clamp(56px,10.5svh,100px)] font-serif-luxury text-[clamp(22px,min(3.97vw,7.5svh),60px)] font-normal leading-[1.12] tracking-[0.05em] text-[#741a14]"
-      >
-        {ABOUT_PAGE.hero.title}
-      </motion.h1>
+      />
 
       {/* Subtitle (22:627) — sits partly behind the eagle, per the design */}
       <motion.p
@@ -58,17 +55,18 @@ export function AboutHero() {
         transition={{ duration: 2.2, delay: 0.4, ease: "easeOut" }}
         className="relative z-10 mt-[1.5svh] flex min-h-0 w-full flex-1 items-start justify-center"
       >
-        <StripParallax
+        <DepthParallax
           src="/figma/about/eagle-front.webp"
+          depthSrc="/figma/about/eagle-front-depth.jpg"
           ariaLabel="Golden eagle"
           className="aspect-[906/669] h-full max-h-full w-auto max-w-[92vw]"
         />
       </motion.div>
 
       {/* BRANDING ✦ DESIGN ✦ AI crossing the eagle's lower third, caption
-          on the fold (22:739-745). Fully pointer-transparent: its line boxes
-          reach far above the glyphs and would otherwise swallow the pointer
-          over the eagle's lower half, killing the strip-parallax hover. */}
+          on the fold (22:739-745). Pointer-transparent (the depth parallax
+          tracks the cursor window-wide, but keeping the band inert also
+          keeps text selection off the marquee). */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 pb-[1.5svh]">
         <WordMarquee words={ABOUT_PAGE.words} caption={ABOUT_PAGE.wordsCaption} />
       </div>
@@ -76,178 +74,160 @@ export function AboutHero() {
   );
 }
 
-/* ————— Our values (Figma 22:775-815) with the trionn scroll-through:
-   the screen pins, the six white cards scroll through a masked window on
-   the right — rows light up through the middle band and dim toward the
-   window's edges — then the pin releases. Scroll-scrubbed both ways. ————— */
-function ValueRow({
-  progress,
+/* ————— Our values — trionn.com's paperfold accordion, ported verbatim
+   from their shipped bundle (GSAP ScrollTrigger timeline there →
+   motion/react function-form transforms here, same math).
+
+   Their recipe: every card starts at rotateX(-90deg) hinged "top center"
+   inside a perspective:2500px stack, invisible; ONE scrubbed timeline
+   spans 150px of scroll per card on desktop (200 on tablet ≤1024, 180 on
+   mobile ≤767), starting when the stack's top crosses 80% (70% / 65%) of
+   the viewport. Card r occupies timeline slot 0.5·r: the fold opens
+   -90→0 over 0.6 units on power2.out (cubic), the white face fades in
+   over 0.36 on power1.in (quad) at +0.09, and the black shadow sheet
+   fades 0.08→0 over 0.42 on power1.out at +0.18. Scrub = pure function
+   of scroll position, fully reversible — scroll away and it folds back.
+
+   Their left "Our values" column pins while the stack unfolds
+   (ScrollTrigger pin, pinSpacing:false, ≥1024 only); CSS sticky inside
+   the section gives exactly that for free, lg-gated like theirs. ————— */
+
+const FOLD = {
+  slot: 0.5, // timeline gap between consecutive cards
+  fold: 0.6, // rotateX -90 -> 0
+  faceDelay: 0.09,
+  face: 0.36, // card face opacity 0 -> 1
+  shadowDelay: 0.18,
+  shadow: 0.42, // shadow sheet opacity 0.08 -> 0
+};
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const outCubic = (t: number) => 1 - (1 - t) ** 3; // gsap power2.out
+const inQuad = (t: number) => t * t; // gsap power1.in
+const outQuad = (t: number) => 1 - (1 - t) ** 2; // gsap power1.out
+
+function FoldCard({
+  T,
   index,
   title,
   body,
-  geom,
 }: {
-  progress: MotionValue<number>;
+  T: MotionValue<number>;
   index: number;
   title: string;
   body: string;
-  geom: React.RefObject<{ travel: number; windowH: number; rowTops: number[]; rowH: number }>;
 }) {
-  const opacity = useTransform(progress, (p) => {
-    const g = geom.current;
-    if (!g || g.travel < 10) return 1; // mobile / unmeasured: static list
-    const centerY = g.rowTops[index] + g.rowH / 2 - g.travel * p;
-    const d = Math.abs(centerY - g.windowH / 2) / g.windowH;
-    return d < 0.26 ? 1 : Math.max(0.22, 1 - (d - 0.26) * 2.6);
-  });
-  // The fold (modelled on trionn.com, then opened up further on request):
-  // each card is hinged on its TOP edge and lies back until it rises into
-  // place, then opens flat — a page being turned toward you. Their sampled
-  // angles were -58.9 -> -22.9 -> 0; taking it to -88 makes the card start
-  // nearly edge-on, so it reads as unfolding from BEHIND rather than just
-  // tilting. Eased so it hangs back late then snaps open at the end.
-  const rotateX = useTransform(progress, (p) => {
-    const g = geom.current;
-    if (!g || g.travel < 10) return 0;
-    const rowTop = g.rowTops[index] - g.travel * p;
-    const zone = g.rowH * 1.9; // longer runway so the swing is readable
-    const t = Math.max(0, Math.min(1, (rowTop - (g.windowH - zone)) / zone));
-    return -88 * (t * t * (3 - 2 * t)); // smoothstep
-  });
-  // a folded card also sits back in depth, so it clears the one in front
-  const z = useTransform(rotateX, (r) => (r / -88) * -90);
+  const at = index * FOLD.slot;
+  const rotateX = useTransform(T, (t) => -90 * (1 - outCubic(clamp01((t - at) / FOLD.fold))));
+  const visibility = useTransform(T, (t) => (t >= at ? "visible" : "hidden"));
+  const face = useTransform(T, (t) =>
+    inQuad(clamp01((t - at - FOLD.faceDelay) / FOLD.face))
+  );
+  const shadow = useTransform(
+    T,
+    (t) => 0.08 * (1 - outQuad(clamp01((t - at - FOLD.shadowDelay) / FOLD.shadow)))
+  );
   return (
     <motion.article
-      style={{
-        opacity,
-        rotateX,
-        z,
-        transformOrigin: "50% 0%",
-        transformStyle: "preserve-3d",
-        backfaceVisibility: "hidden",
-      }}
-      className="grid h-[clamp(88px,8.14vw,123px)] grid-cols-1 items-center gap-2 bg-white pl-[4.06%] pr-[1.27%] sm:grid-cols-[51.5%_1fr]"
+      style={{ rotateX, visibility, transformOrigin: "top center", backfaceVisibility: "hidden" }}
+      className="relative"
     >
-      <h3 className="font-sans-luxury text-[clamp(18px,1.98vw,30px)] font-medium leading-[1.5] text-black">
-        {title}
-      </h3>
-      <p className="hidden max-w-[373px] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-medium leading-[1.5] text-black sm:block">
-        {body}
-      </p>
+      {/* the face carries the white bg (trionn: .paperfold-card-inner) so
+          the folding plane is just a faint dark sheet until it opens */}
+      <motion.div
+        style={{ opacity: face }}
+        className="grid h-[clamp(88px,8.14vw,123px)] grid-cols-1 items-center gap-2 bg-white pl-[4.06%] pr-[1.27%] sm:grid-cols-[51.5%_1fr]"
+      >
+        <h3 className="font-sans-luxury text-[clamp(18px,1.98vw,30px)] font-medium leading-[1.5] text-black">
+          {title}
+        </h3>
+        <p className="hidden max-w-[373px] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-medium leading-[1.5] text-black sm:block">
+          {body}
+        </p>
+      </motion.div>
+      <motion.div
+        style={{ opacity: shadow }}
+        className="pointer-events-none absolute inset-0 bg-black/80"
+      />
     </motion.article>
   );
 }
 
 function ValuesSection() {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const windowRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const geom = useRef<{ travel: number; windowH: number; rowTops: number[]; rowH: number }>({
-    travel: 0,
-    windowH: 1,
-    rowTops: [],
-    rowH: 1,
-  });
-  const [travel, setTravel] = useState(0);
+  const stackRef = useRef<HTMLDivElement>(null);
+  const n = ABOUT_PAGE.values.length;
+  const total = FOLD.slot * (n - 1) + FOLD.fold;
 
+  // trigger geometry, measured the way trionn's ScrollTrigger computes it:
+  // start when the stack top crosses startFrac of the viewport, span
+  // per-card px × cards. startY=∞ until measured keeps SSR + first client
+  // render identical (everything folded) — no hydration mismatch.
+  const [geom, setGeom] = useState({ startY: Number.POSITIVE_INFINITY, span: 1 });
   useLayoutEffect(() => {
     const measure = () => {
-      const win = windowRef.current;
-      const track = trackRef.current;
-      if (!win || !track) return;
-      const rows = [...track.children] as HTMLElement[];
-      const lg = window.matchMedia("(min-width: 1024px)").matches;
-      const rowH = rows[0]?.offsetHeight ?? 1;
-      // travel past (track - window): the LAST row must reach the lit centre
-      // of the window by p=1, not stall dimmed at its bottom edge
-      const t = lg
-        ? Math.max(0, track.scrollHeight - win.clientHeight / 2 - rowH / 2)
-        : 0;
-      // rect deltas, NOT offsetTop: before motion writes a transform the
-      // track is no offsetParent, so offsetTop silently measures against a
-      // positioned ancestor (+229px here) and skews the lit band
-      const tr = track.getBoundingClientRect();
-      geom.current = {
-        travel: t,
-        windowH: win.clientHeight,
-        rowTops: rows.map((r) => r.getBoundingClientRect().top - tr.top),
-        rowH,
-      };
-      // debug-inspectable snapshot of what the opacity math actually uses
-      track.dataset.geom = JSON.stringify(geom.current);
-      setTravel(t);
+      const el = stackRef.current;
+      if (!el) return;
+      const mobile = window.matchMedia("(max-width: 767px)").matches;
+      const tablet = window.matchMedia("(min-width: 768px) and (max-width: 1024px)").matches;
+      const startFrac = mobile ? 0.65 : tablet ? 0.7 : 0.8;
+      const per = mobile ? 180 : tablet ? 200 : 150;
+      // rect + scrollY, NOT offsetTop (offsetTop measures against a
+      // positioned ancestor before motion writes transforms — learned in
+      // the previous values implementation)
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const next = { startY: top - window.innerHeight * startFrac, span: per * n };
+      setGeom((g) => (g.startY === next.startY && g.span === next.span ? g : next));
+      // debug-inspectable snapshot of what the fold math actually uses
+      el.dataset.fold = `${Math.round(next.startY)}:${next.span}`;
     };
     measure();
     window.addEventListener("resize", measure);
     const ro = new ResizeObserver(measure);
-    if (trackRef.current) ro.observe(trackRef.current);
+    ro.observe(document.body);
     return () => {
       window.removeEventListener("resize", measure);
       ro.disconnect();
     };
-  }, []);
+  }, [n]);
 
-  const { scrollYProgress } = useScroll({
-    target: wrapRef,
-    offset: ["start start", "end end"],
-  });
-  const smooth = useSpring(scrollYProgress, { stiffness: 50, damping: 20, restDelta: 0.001 });
-  const trackY = useTransform(smooth, (p) => -travel * p);
+  const { scrollY } = useScroll();
+  // T = position on trionn's timeline: 0.5 per card + 0.6 for the last fold
+  const T = useTransform(scrollY, (y) => clamp01((y - geom.startY) / geom.span) * total);
 
   return (
     <section className="pt-[clamp(64px,10.98vw,166px)]">
-      {/* 280vh runway: the screen holds while the six cards scroll through */}
-      <div ref={wrapRef} className="relative lg:h-[280vh]">
-        <div className="lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center">
-          <div className="grid grid-cols-1 items-start gap-10 pl-[9.59%] pr-[10.45%] lg:grid-cols-[34.7%_1fr] lg:gap-0">
-            {/* Our values — Catilde 70, tracking 3.5 (22:775) */}
-            <Reveal>
-              <h2 className="font-serif-luxury text-[clamp(38px,4.63vw,70px)] font-normal leading-normal tracking-[0.05em] text-[#741a14]">
-                {ABOUT_PAGE.valuesHeading}
-              </h2>
-            </Reveal>
+      <div className="grid grid-cols-1 items-start gap-10 pl-[9.59%] pr-[10.45%] lg:grid-cols-[34.7%_1fr] lg:gap-0">
+        {/* Our values — Catilde 70, tracking 3.5 (22:775); pinned (sticky)
+            while the stack unfolds, exactly trionn's pin behaviour */}
+        <div className="lg:sticky lg:top-[15svh] lg:self-start">
+          <Reveal>
+            <h2 className="font-serif-luxury text-[clamp(38px,4.63vw,70px)] font-normal leading-normal tracking-[0.05em] text-[#741a14]">
+              {ABOUT_PAGE.valuesHeading}
+            </h2>
+          </Reveal>
+        </div>
 
-            <div>
-              <Reveal>
-                <p className="max-w-[373px] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-medium leading-[1.5] text-black">
-                  {ABOUT_PAGE.valuesIntro}
-                </p>
-              </Reveal>
+        <div>
+          <Reveal>
+            <p className="max-w-[373px] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-medium leading-[1.5] text-black">
+              {ABOUT_PAGE.valuesIntro}
+            </p>
+          </Reveal>
 
-              {/* Masked window — cards drift through it on scroll (video ref) */}
-              {/* Perspective: trionn use 2500px, but their cards only lie
-                  back ~59deg. At 88deg a distance that flat flattens the
-                  swing, so this is tightened to 1100px — the viewer sits
-                  closer and the unfold reads as real depth. */}
-              <div
-                ref={windowRef}
-                style={{ perspective: "1100px", perspectiveOrigin: "50% 45%" }}
-                className="mt-[clamp(24px,4.83vw,73px)] overflow-hidden lg:h-[27.8vw] lg:max-h-[70vh]"
-              >
-                <motion.div
-                  ref={trackRef}
-                  style={{ y: trackY, transformStyle: "preserve-3d" }}
-                  className="flex flex-col gap-[4px]"
-                >
-                  {ABOUT_PAGE.values.map((v, i) => (
-                    <ValueRow
-                      key={v}
-                      progress={smooth}
-                      index={i}
-                      title={v}
-                      body={ABOUT_PAGE.valueBody}
-                      geom={geom}
-                    />
-                  ))}
-                </motion.div>
-              </div>
+          {/* the paperfold stack (trionn: inline perspective 2500px) */}
+          <div
+            ref={stackRef}
+            style={{ perspective: "2500px" }}
+            className="mt-[clamp(24px,4.83vw,73px)] flex flex-col gap-[4px]"
+          >
+            {ABOUT_PAGE.values.map((v, i) => (
+              <FoldCard key={v} T={T} index={i} title={v} body={ABOUT_PAGE.valueBody} />
+            ))}
+          </div>
 
-              {/* ✦ WHAT WE BELIEVE SHAPES BETTER WORK. (22:813) */}
-              <div className="mt-[clamp(20px,3.3vw,50px)] flex items-center gap-[5px]">
-                <Star4 className="w-[12px]" fill="#741a14" />
-                <Eyebrow>{ABOUT_PAGE.valuesCaption}</Eyebrow>
-              </div>
-            </div>
+          {/* ✦ WHAT WE BELIEVE SHAPES BETTER WORK. (22:813) */}
+          <div className="mt-[clamp(20px,3.3vw,50px)] flex items-center gap-[5px]">
+            <Star4 className="w-[12px]" fill="#741a14" />
+            <Eyebrow>{ABOUT_PAGE.valuesCaption}</Eyebrow>
           </div>
         </div>
       </div>
@@ -308,7 +288,7 @@ export default function AboutBody() {
 
       <Rule starLeft="20.5%" className="mt-[clamp(56px,14.2vw,215px)]" />
 
-      {/* Our values — pinned scroll-through (video reference) */}
+      {/* Our values — trionn paperfold (video reference) */}
       <ValuesSection />
     </div>
   );
