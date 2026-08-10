@@ -109,7 +109,7 @@ function SpawnCard({
     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
       <motion.article
         style={{ x, y, opacity, scale }}
-        className="w-[clamp(260px,23vw,360px)] rounded-[8px] border border-white/10 bg-black/35 p-5 backdrop-blur-[5px] will-change-transform"
+        className="min-h-[clamp(102px,9vw,141px)] w-[clamp(260px,23vw,360px)] rounded-[8px] border border-white/10 bg-black/35 p-5 backdrop-blur-[5px] will-change-transform"
         suppressHydrationWarning
       >
         <h3 className="font-sans-luxury text-[clamp(15px,1.15vw,18px)] font-bold leading-[1.15] text-[#fff3d3]">

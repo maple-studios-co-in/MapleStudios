@@ -65,12 +65,21 @@ export default function HeroSection() {
   const aboutOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.26, 0.4));
   const aboutY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.26, 0.4)) * 40);
   const aboutWords = ABOUT_DATA.headline.split(" ");
+  // The statement holds the COMPLETE screen alone while its words light up;
+  // one more scroll beat then slides the whole sheet: statement screen
+  // exits upward as the mission screen rides in from below — percentage y
+  // (of the 100vh panels) keeps it SSR-safe, no vh math in JS.
+  // -130%, not -100: the 120px statement can overflow its 100vh panel on
+  // short windows, and a -100% slide would leave the overflow tail peeking
+  const stmtY = useTransform(scrollYProgress, (p) => `${-ramp(p, 0.78, 0.92) * 130}%`);
+  const missionY = useTransform(scrollYProgress, (p) => `${(1 - ramp(p, 0.78, 0.92)) * 100}%`);
+  // the statement's own star-rule draws in as the last words finish
+  const stmtRuleOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.68, 0.76));
   // Stage 2 of the About screen: divider, mission columns and vision line
   // compose themselves after the statement has fully lit (~0.72)
-  const dividerOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.7, 0.78));
-  const colsOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.74, 0.84));
-  const colsY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.74, 0.84)) * 30);
-  const visionOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.78, 0.88));
+  const colsOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.82, 0.9));
+  const colsY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.82, 0.9)) * 30);
+  const visionOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.84, 0.92));
 
   return (
     <div ref={wrapRef} id="hero" className="relative h-[620vh]">
@@ -258,58 +267,67 @@ export default function HeroSection() {
           mission columns and vision line transition in beneath it ——— */}
       <motion.div
         style={{ opacity: aboutOpacity, y: aboutY }}
-        // pt clears the fixed navbar band (~80px): the statement centres in
-        // the space BELOW it, so its first line can never ride up into the
-        // LET'S TALK / MENU pills on shorter viewports
-        // `safe center`: centres normally, but when the content overflows a
-        // very short window it falls back to START alignment — the overflow
-        // goes below the fold instead of up under the fixed navbar
-        className="absolute inset-0 z-10 flex flex-col [justify-content:safe_center] gap-[clamp(20px,3.4vh,50px)] px-6 pt-[clamp(96px,15vh,150px)] pb-[clamp(12px,2.5vh,28px)] sm:px-12"
+        className="absolute inset-0 z-10 overflow-hidden"
       >
-        <span className="absolute left-5 top-[92px] text-xs font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
+        <span className="absolute left-5 top-[92px] z-20 text-xs font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
           {ABOUT_DATA.tag}
         </span>
 
-        {/* Stage 1: statement — Figma insets 222 / 141 on the 1512 canvas
-            (parent already pads 48px, so 174/1416 and 93/1416) */}
-        <div className="mx-auto w-full max-w-6xl lg:mx-0 lg:ml-[12.29%] lg:mr-[6.57%] lg:w-auto lg:max-w-none pb-[clamp(20px,6vh,64px)]">
-          {/* min(4.6vw,6.5vh): width-driven normally, but capped by viewport
-              HEIGHT on short windows so four lines + columns always fit
-              between the navbar and the fold */}
-          <p className="font-serif-luxury text-[clamp(28px,min(4.6vw,6.5vh),70px)] font-light leading-none text-[#fff3d3]">
-            {aboutWords.map((word, i) => (
-              <span key={`${word}-${i}`}>
-                <PinnedWord progress={scrollYProgress} word={word} index={i} total={aboutWords.length} />{" "}
-              </span>
-            ))}
-          </p>
-        </div>
+        {/* ——— Screen B1: the statement OWNS the full viewport while its
+            words light up — Catilde 80 / 300 / lh 100% / cream (spec).
+            80px = 5.29vw of the 1512 canvas; vh-capped for short windows.
+            pt clears the fixed navbar band so line one never rides into
+            the LET'S TALK / MENU pills. ——— */}
+        <motion.div
+          style={{ y: stmtY }}
+          className="absolute inset-0 flex [align-items:safe_center] px-6 pt-[clamp(96px,15vh,150px)] pb-[clamp(12px,2.5vh,28px)] sm:px-12"
+        >
+          <div className="mx-auto w-full max-w-6xl lg:mx-0 lg:ml-[12.29%] lg:mr-[6.57%] lg:w-auto lg:max-w-none">
+            {/* 77px = another 0.8x step down. 5.1vw slightly OVERSHOOTS 77 at
+                the 1512 canvas so the clamp max pins it to exactly 77 there
+                (an exact 5.0926vw lands at 76.96 after subpixel rounding) */}
+            <p className="font-serif-luxury text-[clamp(30px,min(5.1vw,10vh),77px)] font-light leading-none text-[#fff3d3]">
+              {aboutWords.map((word, i) => (
+                <span key={`${word}-${i}`}>
+                  <PinnedWord progress={scrollYProgress} word={word} index={i} total={aboutWords.length} />{" "}
+                </span>
+              ))}
+            </p>
+            {/* the star-rule sits SNUG under the statement (no dead band to
+                the fold) and exits upward with it */}
+            <motion.div style={{ opacity: stmtRuleOpacity }} className="relative mt-[clamp(16px,3vh,32px)] w-full">
+              <div className="h-px w-full bg-white/20" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="star-twinkle absolute left-[65.5%] top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
+                aria-hidden="true"
+              >
+                <path
+                  d="M11.9824 0.876953C12.5356 3.9958 13.7265 6.52544 15.5811 8.42188C17.424 10.3064 19.9115 11.5525 23.0479 12.1406C19.9126 12.646 17.4512 13.8353 15.6152 15.6768C13.763 17.5346 12.5587 20.0435 11.9326 23.1494C11.3843 20.0429 10.2538 17.5178 8.43652 15.6611C6.62345 13.8088 4.14106 12.6354 0.912109 12.2012C4.11282 11.4892 6.57827 10.2661 8.39551 8.41113C10.2177 6.55112 11.3739 4.07043 11.9824 0.876953Z"
+                  fill="#FFF3D3"
+                  stroke="#FFF"
+                  strokeWidth="0.289"
+                />
+              </svg>
+            </motion.div>
+          </div>
+        </motion.div>
 
-        {/* Stage 2: divider + columns + vision share the centre hairline
-            that drops from the star crossing (Figma annotation) */}
-        {/* Stage 2 block — near full-bleed rule, the left rail hard left and
-            the mission copy pushed out to ~66%: the wide middle it opens up
-            IS the mark's footprint (reference composition). */}
+        {/* ——— Screen B2: divider + mission columns + vision — rides in
+            from below as one sheet while the statement screen exits up
+            (the "screen slides, the part below comes" beat) ——— */}
+        {/* justify-START, not center: the columns must land right under the
+            rule's line (top of the screen) instead of drifting to the
+            middle/bottom of the panel */}
+        <motion.div
+          style={{ y: missionY }}
+          className="absolute inset-0 flex flex-col justify-start gap-[clamp(28px,3.4vh,50px)] px-6 pt-[clamp(120px,20vh,190px)] pb-[clamp(12px,2.5vh,28px)] sm:px-12"
+        >
         <div className="relative flex flex-col gap-[clamp(28px,3.4vh,50px)] lg:mx-[1%]">
-          {/* Stage 2a: divider with star (fill #FFF3D3, stroke #FFF @0.289) */}
-          <motion.div style={{ opacity: dividerOpacity }} className="relative w-full">
-            <div className="h-px w-full bg-white/20" />
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="star-twinkle absolute left-[65.5%] top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
-              aria-hidden="true"
-            >
-              <path
-                d="M11.9824 0.876953C12.5356 3.9958 13.7265 6.52544 15.5811 8.42188C17.424 10.3064 19.9115 11.5525 23.0479 12.1406C19.9126 12.646 17.4512 13.8353 15.6152 15.6768C13.763 17.5346 12.5587 20.0435 11.9326 23.1494C11.3843 20.0429 10.2538 17.5178 8.43652 15.6611C6.62345 13.8088 4.14106 12.6354 0.912109 12.2012C4.11282 11.4892 6.57827 10.2661 8.39551 8.41113C10.2177 6.55112 11.3739 4.07043 11.9824 0.876953Z"
-                fill="#FFF3D3"
-                stroke="#FFF"
-                strokeWidth="0.289"
-              />
-            </svg>
-          </motion.div>
-
+          {/* (the star-rule lives ONLY with the statement now — a copy here
+              doubled up on screen mid-slide) */}
           {/* Stage 2b: mission columns — left rail far left, mission copy
               starting just right of the centre line (Figma image spec) */}
           <motion.div
@@ -338,7 +356,7 @@ export default function HeroSection() {
                     className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
                   />
                 </span>
-                <span className="mt-[9px] h-px w-full bg-[#fff3d3]/90" />
+                <span className="mt-[3px] h-px w-full bg-[#fff3d3]/90" />
               </a>
             </div>
           </motion.div>
@@ -355,6 +373,7 @@ export default function HeroSection() {
             </p>
           </motion.div>
         </div>
+        </motion.div>
       </motion.div>
     </section>
     </div>

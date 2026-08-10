@@ -10,16 +10,18 @@ import {
 import { ABOUT_PAGE } from "@/lib/constants";
 import { Eyebrow, Reveal, Rule, UnderlineLink } from "../PageKit";
 import { Star4, WordMarquee } from "../services/ServicesBody";
-import DepthParallax from "@/components/common/DepthParallax";
+import EagleLive from "@/components/common/EagleLive";
 import BlurTextReveal from "@/components/common/BlurTextReveal";
+import { FounderSection, TeamSection } from "./FounderTeam";
 
 /**
  * About hero — Figma 22:625 compressed into ONE viewport: CREAM canvas,
  * Catilde 60 maroon statement (60px exact at full size, height-capped so
  * the whole scene always fits a single screen), 18px subtitle tucked behind
- * the eagle, the depth-map parallax eagle (the trionn.com lion interaction
- * — head follows the cursor in 3D), and the BRANDING ✦ DESIGN ✦ AI row
- * crossing its lower third with the caption at the fold.
+ * the eagle, the LIVE eagle (depth-parallax head + eyes that track the
+ * cursor and scroll direction, natural blink and breathing — EagleLive),
+ * and the BRANDING ✦ DESIGN ✦ AI row crossing its lower third with the
+ * caption at the fold.
  */
 export function AboutHero() {
   return (
@@ -55,11 +57,11 @@ export function AboutHero() {
         transition={{ duration: 2.2, delay: 0.4, ease: "easeOut" }}
         className="relative z-10 mt-[1.5svh] flex min-h-0 w-full flex-1 items-start justify-center"
       >
-        <DepthParallax
-          src="/figma/about/eagle-front.webp"
-          depthSrc="/figma/about/eagle-front-depth.jpg"
-          ariaLabel="Golden eagle"
-          className="aspect-[906/669] h-full max-h-full w-auto max-w-[92vw]"
+        <EagleLive
+          src="/figma/about/eagle-live.webp"
+          depthSrc="/figma/about/eagle-live-depth.jpg"
+          ariaLabel="Bald eagle"
+          className="aspect-[1024/1094] h-full max-h-full w-auto max-w-[92vw] origin-top scale-[1.08]"
         />
       </motion.div>
 
@@ -199,11 +201,13 @@ function ValuesSection() {
         {/* Our values — Catilde 70, tracking 3.5 (22:775); pinned (sticky)
             while the stack unfolds, exactly trionn's pin behaviour */}
         <div className="lg:sticky lg:top-[15svh] lg:self-start">
-          <Reveal>
-            <h2 className="font-serif-luxury text-[clamp(38px,4.63vw,70px)] font-normal leading-normal tracking-[0.05em] text-[#741a14]">
-              {ABOUT_PAGE.valuesHeading}
-            </h2>
-          </Reveal>
+          {/* trionn heading reveal: per-CHAR blur cascade in random order */}
+          <BlurTextReveal
+            as="h2"
+            mode="chars"
+            text={ABOUT_PAGE.valuesHeading}
+            className="font-serif-luxury text-[clamp(38px,4.63vw,70px)] font-normal leading-normal tracking-[0.05em] text-[#741a14]"
+          />
         </div>
 
         <div>
@@ -244,10 +248,12 @@ export default function AboutBody() {
           <span className="font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-[#741a14]">
             {ABOUT_PAGE.atMaple}
           </span>
-          <p className="mt-[clamp(6px,0.66vw,10px)] max-w-[643px] font-sans-luxury text-[clamp(19px,2vw,30.2px)] font-medium leading-[1.5] text-black">
-            {ABOUT_PAGE.atMapleBody}
-          </p>
         </Reveal>
+        {/* trionn paragraph reveal: per-WORD blur cascade */}
+        <BlurTextReveal
+          text={ABOUT_PAGE.atMapleBody}
+          className="mt-[clamp(6px,0.66vw,10px)] max-w-[643px] font-sans-luxury text-[clamp(19px,2vw,30.2px)] font-medium leading-[1.5] text-black"
+        />
       </section>
 
       <Rule className="mt-[clamp(32px,5.03vw,76px)]" />
@@ -290,6 +296,10 @@ export default function AboutBody() {
 
       {/* Our values — trionn paperfold (video reference) */}
       <ValuesSection />
+
+      {/* Founder + team (Figma 2124:211 / 2124:105 lower region) */}
+      <FounderSection />
+      <TeamSection />
     </div>
   );
 }

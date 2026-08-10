@@ -141,7 +141,7 @@ export function UnderlineLink({
           className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
         />
       </span>
-      <span className="mt-[9px] h-px w-full" style={{ background: color }} />
+      <span className="mt-[3px] h-px w-full" style={{ background: color }} />
     </a>
   );
 }

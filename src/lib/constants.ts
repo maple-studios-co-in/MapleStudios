@@ -111,10 +111,13 @@ export const WORK_DATA = {
 };
 
 // Video-backed services cards (Figma node 2001:19 "new-era" + 12:79xx cards).
-// new-era-sphere.mp4 = scrub-encoded (keyframe every 5 frames) ORIGINAL maroon
-// particle film: sphere → ring → vase → DNA helix (~2.7-3.6s) → terrain.
+// new-era-sphere-hd.mp4 = scrub-encoded (keyframe every 5 frames, 1080p) HD
+// re-render of the SAME maroon particle film — identical 7.17s timeline:
+// sphere → ring → vase → DNA helix (~2.7-3.6s) → terrain, so the existing
+// vidTime scrub mapping carries over unchanged. New footage = new filename
+// (immutable-cache rule).
 export const SERVICES_DATA = {
-  video: "/video/new-era-sphere.mp4",
+  video: "/video/new-era-sphere-hd.mp4",
   cards: [
     {
       id: "ai-enablement",
@@ -389,6 +392,19 @@ export const ABOUT_PAGE = {
   ],
   valueBody: "Our work is shaped by high standards, continuous learning, and deep respect for craft, pushing every project beyond the expected.",
   valuesCaption: "WHAT WE BELIEVE SHAPES BETTER WORK",
+  // Founder + team sections (Figma 2124:211 / 2124:105 lower region)
+  founder: {
+    name: "Aditya Agrawal",
+    role: "FOUNDER & CEO",
+    statement: "Focused disciplines where strategy, design, and technology work as one",
+    body: "We're proud to be one of India's most creative and recognized web design studios, driven by purpose, aesthetics and bold ideas.",
+  },
+  team: {
+    headline1: "Different skills,",
+    headline2: "one standard",
+    dragHint: "DRAG A MEMBER TO REVEAL",
+    cta: "JOIN OUR TEAM",
+  },
 };
 
 // Final CTA / footer (Figma Home 13:80xx + 14:80xx region)

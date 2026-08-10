@@ -72,3 +72,14 @@ flat = Image.new("RGB", src2.size, (255, 243, 211))
 flat.paste(src2, mask=src2.split()[3])
 d2 = estimate(flat)
 finish(d2, a, w2, ABOUT + r"\eagle-depth.jpg")
+
+# ——— eagle-live.webp: the front-facing bald eagle (EagleLive.tsx). RGBA,
+# alpha mask. NOTE: EagleLive's shader bakes this asset's eye geometry as
+# GLSL consts — if the image changes, remeasure the iris centers/radii. ———
+src3 = Image.open(ABOUT + r"\eagle-live.webp").convert("RGBA")
+w3, h3 = src3.size
+a3 = np.asarray(src3, dtype=np.float32)[:, :, 3] / 255.0
+flat3 = Image.new("RGB", src3.size, (255, 243, 211))
+flat3.paste(src3, mask=src3.split()[3])
+d3 = estimate(flat3)
+finish(d3, a3, w3, ABOUT + r"\eagle-live-depth.jpg")

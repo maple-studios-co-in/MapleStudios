@@ -34,3 +34,10 @@ yarn-error.log*
 
 .vercel
 .env*
+
+# raw design exports dropped at the repo root — the shipped assets are the
+# optimized conversions under public/figma (see ROADMAP: 8.4 MB PNG -> 124 KB WebP)
+/founder.png
+/member-a.png
+/member-b.png
+/quotes.svg

@@ -7,22 +7,25 @@ import { motion, type Variants } from "motion/react";
  * trionn.com's BlurTextReveal, ported from their shipped bundle (GSAP
  * SplitText + timeline there; motion/react variants here — same numbers).
  *
- * Their recipe, kept verbatim: the container AND every word start at
- * opacity 0 / blur(12px); the container sharpens over 0.5s while each word
+ * Their recipe, kept verbatim: the container AND every unit start at
+ * opacity 0 / blur(12px); the container sharpens over 0.5s while each unit
  * sharpens over 0.8s, staggered 0.05s apart in RANDOM order (their stagger
- * is {each:.05, from:"random"} — the scattered un-blur is the signature of
- * the effect), everything on power2.out (cubic), triggered when the block
- * reaches the bottom ~10% of the viewport, playing once.
+ * is {each:.05, from:"random"} — the scattered un-blur is the signature),
+ * everything on power2.out (cubic), triggered when the block reaches the
+ * bottom ~10% of the viewport, playing once. Their paragraphs split by
+ * WORDS; their headings split by CHARS (animationType:"chars") — `mode`
+ * picks the unit. Chars stay wrapped in whitespace-nowrap word boxes so
+ * line wrapping still happens at word boundaries.
  *
  * The random order must be identical on server and client (repo rule:
  * deterministic randomness only — hydration), so it comes from a seeded
  * LCG shuffle, not Math.random.
  *
  * After the cascade the animated spans are swapped for PLAIN text nodes —
- * trionn does the same (they set willChange:"auto", filter:"none" on
- * complete). Leaving ~20 spans with live blur filters + will-change keeps
- * that many composited layers alive for the page's lifetime, which
- * shimmers/flickers on weaker GPUs.
+ * trionn does the same (willChange:"auto", filter:"none" on complete).
+ * Leaving dozens of spans with live blur filters + will-change keeps that
+ * many composited layers alive for the page's lifetime, which shimmers on
+ * weaker GPUs.
  */
 
 const EASE_OUT_CUBIC: [number, number, number, number] = [0.215, 0.61, 0.355, 1];
@@ -49,24 +52,33 @@ const TAGS = {
 export default function BlurTextReveal({
   text,
   as = "p",
+  mode = "words",
   className = "",
+  style,
   stagger = 0.05,
   duration = 0.8,
   delay = 0,
 }: {
   text: string;
   as?: keyof typeof TAGS;
+  /** split unit — trionn: "words" for paragraphs, "chars" for headings */
+  mode?: "words" | "chars";
   className?: string;
-  /** seconds between one word sharpening and the next (trionn: 0.05) */
+  style?: React.CSSProperties;
+  /** seconds between one unit sharpening and the next (trionn: 0.05) */
   stagger?: number;
-  /** seconds each word takes to sharpen (trionn: 0.8) */
+  /** seconds each unit takes to sharpen (trionn: 0.8) */
   duration?: number;
   delay?: number;
 }) {
   const words = useMemo(() => text.split(/\s+/).filter(Boolean), [text]);
-  const order = useMemo(() => seededShuffle(words.length), [words.length]);
-  // the span whose stagger slot is LAST — its completion ends the cascade
-  const lastIdx = useMemo(() => order.indexOf(words.length - 1), [order, words.length]);
+  const unitCount = useMemo(
+    () => (mode === "chars" ? words.reduce((n, w) => n + w.length, 0) : words.length),
+    [mode, words]
+  );
+  const order = useMemo(() => seededShuffle(unitCount), [unitCount]);
+  // the unit whose stagger slot is LAST — its completion ends the cascade
+  const lastIdx = useMemo(() => order.indexOf(unitCount - 1), [order, unitCount]);
   const [done, setDone] = useState(false);
 
   const container: Variants = {
@@ -77,7 +89,7 @@ export default function BlurTextReveal({
       transition: { duration: 0.5, delay, ease: EASE_OUT_CUBIC },
     },
   };
-  const word: Variants = {
+  const unit: Variants = {
     hidden: { opacity: 0, filter: "blur(12px)" },
     visible: (k: number) => ({
       opacity: 1,
@@ -91,34 +103,47 @@ export default function BlurTextReveal({
   // cascade finished: plain markup, zero filters, zero composited layers
   if (done) {
     const Plain = as;
-    return <Plain className={className}>{text}</Plain>;
+    return <Plain className={className} style={style}>{text}</Plain>;
   }
 
-  // the inter-word space lives BETWEEN the animated spans (a plain text
-  // node), never inside: trailing whitespace inside an inline-block
-  // collapses and the words would run together
+  const animatedSpan = (content: string, unitIdx: number, key: React.Key) => (
+    <motion.span
+      key={key}
+      aria-hidden
+      custom={order[unitIdx]}
+      variants={unit}
+      className="inline-block will-change-[filter,opacity]"
+      onAnimationComplete={
+        unitIdx === lastIdx ? (def) => def === "visible" && setDone(true) : undefined
+      }
+    >
+      {content}
+    </motion.span>
+  );
+
+  // inter-word spaces live BETWEEN the animated spans (plain text nodes),
+  // never inside: trailing whitespace inside an inline-block collapses
+  // and the words would run together
   const children: React.ReactNode[] = [];
-  words.forEach((w, i) => {
-    children.push(
-      <motion.span
-        key={i}
-        aria-hidden
-        custom={order[i]}
-        variants={word}
-        className="inline-block will-change-[filter,opacity]"
-        onAnimationComplete={
-          i === lastIdx ? (def) => def === "visible" && setDone(true) : undefined
-        }
-      >
-        {w}
-      </motion.span>
-    );
-    if (i < words.length - 1) children.push(" ");
+  let unitIdx = 0;
+  words.forEach((w, wi) => {
+    if (mode === "chars") {
+      children.push(
+        // nowrap word box so the line still breaks at word boundaries
+        <span key={wi} className="whitespace-nowrap">
+          {[...w].map((ch, ci) => animatedSpan(ch, unitIdx++, ci))}
+        </span>
+      );
+    } else {
+      children.push(animatedSpan(w, unitIdx++, wi));
+    }
+    if (wi < words.length - 1) children.push(" ");
   });
 
   return (
     <Tag
       className={className}
+      style={style}
       variants={container}
       initial="hidden"
       whileInView="visible"
