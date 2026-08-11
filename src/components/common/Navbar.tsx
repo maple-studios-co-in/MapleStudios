@@ -107,7 +107,7 @@ export default function Navbar() {
             <button
               onClick={toggleSound}
               aria-label="Toggle Sound"
-              className={`px-3 py-2 rounded-full flex items-center gap-2 text-xs font-sans-luxury tracking-wider transition-all cursor-pointer border backdrop-blur-md ${
+              className={`px-3 py-2 rounded-full flex items-center gap-2 text-xs font-sans-luxury tracking-wider transition-all cursor-pointer border backdrop-blur-md transform-gpu ${
                 onLight
                   ? "border-[#741a14]/25 bg-[#741a14]/10 text-[#741a14] hover:bg-[#741a14]/20"
                   : "border-white/15 bg-black/30 text-white/90 hover:bg-black/45"
@@ -140,7 +140,7 @@ export default function Navbar() {
             {/* Menu Button — outlined pill, inked per background */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`border px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider transition-all duration-300 uppercase flex items-center gap-2 cursor-pointer backdrop-blur-md ${
+              className={`border px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider transition-all duration-300 uppercase flex items-center gap-2 cursor-pointer backdrop-blur-md transform-gpu ${
                 onLight
                   ? "border-[#741a14] text-[#741a14] hover:bg-[#741a14]/10"
                   : "border-white/80 bg-black/30 text-white hover:bg-black/45"

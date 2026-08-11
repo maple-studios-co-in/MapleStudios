@@ -176,6 +176,26 @@
   }
 }
 
+/* ————— WebKit (Safari / iOS) scroll-flicker guards ————— */
+/* Infinite-animating surfaces flash on WebKit when their promoted layers
+   re-rasterize mid-scroll; a hidden backface keeps the layer stable. The
+   marquee track additionally exceeds iOS max layer texture width
+   (~8-10k px at max-content), so stability there matters double. */
+.animate-marquee,
+.gradient-cycle,
+.hero-glow {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* GradientCycler pauses its 7-layer stack while its host is scrolled out
+   of view (see GradientCycler.tsx) — off-screen instances kept animating
+   full-viewport layers, and that compositor churn is what flickered
+   scrolls on Safari/iOS. */
+[data-offscreen] .gradient-cycle {
+  animation-play-state: paused;
+}
+
 /* Hero breathing gradient — compositor-only (opacity/transform) */
 @keyframes heroGlow {
   0%, 100% {

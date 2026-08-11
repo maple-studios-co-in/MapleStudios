@@ -193,7 +193,7 @@ function ValuesSection() {
       <div className="grid grid-cols-1 items-start gap-10 pl-[9.59%] pr-[10.45%] lg:grid-cols-[34.7%_1fr] lg:gap-0">
         {/* Our values — Catilde 70, tracking 3.5 (22:775); pinned (sticky)
             while the stack unfolds, exactly trionn's pin behaviour */}
-        <div className="lg:sticky lg:top-[15svh] lg:self-start">
+        <div className="transform-gpu lg:sticky lg:top-[15svh] lg:self-start">
           {/* trionn heading reveal: per-CHAR blur cascade in random order */}
           <BlurTextReveal
             as="h2"

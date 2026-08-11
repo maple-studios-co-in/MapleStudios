@@ -232,7 +232,7 @@ function ServicePanel({
 }) {
   return (
     <div
-      className="relative bg-[#fff3d3] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden"
+      className="relative bg-[#fff3d3] transform-gpu lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden"
       style={{ zIndex: index + 1 }}
     >
       {/* Top rule + crossing star riding the panel's leading edge (Line 7 +
