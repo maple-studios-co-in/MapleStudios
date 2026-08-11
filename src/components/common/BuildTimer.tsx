@@ -64,7 +64,7 @@ export default function BuildTimer({ className = "" }: { className?: string }) {
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor(elapsed / 60) % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
-  const text = `${h}h ${pad(m)}m`;
+  const text = `${h}h:${pad(m)}m`;
 
   return (
     <span ref={rootRef} className={`flex items-center tabular-nums ${className}`}>
