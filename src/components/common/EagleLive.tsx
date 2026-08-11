@@ -52,8 +52,9 @@ uniform float uBreath; // -1..1 chest sine
 const vec2 EYE_L = vec2(0.3564, 0.6481);
 const vec2 EYE_R = vec2(0.6494, 0.6453);
 const vec2 EYE_RAD = vec2(0.0537, 0.0384);
-// throat (gular) region below the beak tip, flipped-v UV
-const vec2 THROAT_C = vec2(0.5, 0.36);
+// throat (gular) region below the beak tip, flipped-v UV (v=0 bottom, so
+// a smaller v sits LOWER on screen; nudged down from 0.36 per review)
+const vec2 THROAT_C = vec2(0.5, 0.33);
 const vec2 THROAT_R = vec2(0.17, 0.12);
 
 vec2 containUv(vec2 uv, vec2 viewport, vec2 image) {
@@ -78,12 +79,28 @@ void main() {
   // swell READ.
   float breath01 = uBreath * 0.5 + 0.5;
   float tm = 1.0 - smoothstep(0.30, 1.0, length((contained - THROAT_C) / THROAT_R));
+  // beak shield: the swell mask reaches v=0.45 but the beak tip hangs to
+  // v=0.366 (bbox measured off the asset: x 0.33-0.68, centre 0.508), so
+  // unshielded the warp drags beak pixels down and the beak visibly
+  // LENGTHENS each inhale. Zero the warp inside the beak column above the
+  // tip; the pouch below keeps the full swell.
+  float beakCol = 1.0 - smoothstep(0.15, 0.21, abs(contained.x - 0.508));
+  float beakUp = smoothstep(0.34, 0.38, contained.y);
+  tm *= 1.0 - beakCol * beakUp;
   // pouch filling = TRANSLATION, not magnification: pure local zoom moves
   // pixels ~2px at any sane amplitude (displacement = r*amp*mask) and
   // reads as static. The chin content drops (~2% UV = 15px) and widens as
   // the pouch fills — that silhouette shift is the visible breath.
   contained = THROAT_C + (contained - THROAT_C) / (1.0 + 0.20 * breath01 * tm);
-  contained.y += 0.040 * breath01 * tm;
+  // pouch drop with a sampling ceiling: destination pixels below the beak
+  // sample upward to pull the fill down, but the reach collapses to zero
+  // as the SOURCE nears the beak underside (v=0.355, tip measured at
+  // 0.366) -- so only feather content below the beak ever stretches;
+  // beak pixels are never replicated downward and the beak length holds.
+  // The 0.55 fraction keeps the remap monotonic (no fold-over/tearing).
+  float reach = 0.040 * breath01 * tm;
+  float headroom = max(0.355 - contained.y, 0.0);
+  contained.y += min(reach, headroom * 0.55);
   bool outside = contained.x < 0.0 || contained.x > 1.0 || contained.y < 0.0 || contained.y > 1.0;
   if (outside) { gl_FragColor = vec4(uBg, 1.0); return; }
 

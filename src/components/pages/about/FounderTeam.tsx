@@ -106,9 +106,9 @@ const CARDS: CardSpec[] = [
   { left: 17.4, top: 47.32, width: 15.74, img: "b", float: 1.1 },
   { left: 76.52, top: 2.25, width: 17.99, img: "a", mirror: true },
   { left: 61.77, top: 7.14, width: 15.74, img: "a", mirror: true },
-  { left: 73.34, top: 22.23, width: 17.09, img: "a", mirror: true },
-  { left: 59.26, top: 29.78, width: 15.74, img: "a", mirror: true },
-  { left: 67.26, top: 47.32, width: 15.74, img: "b", mirror: true },
+  { left: 73.34, top: 22.23, width: 17.09, img: "a", mirror: true, float: 0.3 },
+  { left: 59.26, top: 29.78, width: 15.74, img: "a", mirror: true, float: 0.85 },
+  { left: 67.26, top: 47.32, width: 15.74, img: "b", mirror: true, float: 1.4 },
 ];
 
 // reveal-frame geometry (% of cluster) — single source for the JSX and
@@ -142,13 +142,14 @@ const SETTLE: [number, number, number, number] = [0.34, 1.4, 0.64, 1];
 
 // idle float variants hoisted so re-renders (lift/reveal state) never
 // hand motion a fresh animate object mid-drag. Delays sit past the last
-// landing (delay 0.05 + 0.06*8 + duration 1.54 ≈ 2.07s) — ambient motion
-// holds until every card has settled
+// landing (delay 0.05 + 0.085*9 + duration 2.26 ≈ 3.08s) — ambient motion
+// holds until every card has settled. Both wings float: left phases
+// 0/0.55/1.1, right 0.3/0.85/1.4 so the pack breathes, never seesaws.
 const FLOAT_ANIM: Record<number, object> = {};
-for (const phase of [0, 0.55, 1.1]) {
+for (const phase of [0, 0.3, 0.55, 0.85, 1.1, 1.4]) {
   FLOAT_ANIM[phase] = {
     animate: { y: [0, -10, 0], x: [0, -2, 2, 0] },
-    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const, delay: 2.1 + phase },
+    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const, delay: 3.1 + phase },
   };
 }
 
@@ -226,8 +227,10 @@ function MemberCard({
     const dx = ox - (r.left + r.width / 2);
     const dy = oy - (r.top + r.height / 2);
     const tilt = o.edge === "left" ? -9 : o.edge === "right" ? 9 : index % 2 ? 6 : -6;
-    const delay = 0.05 + 0.06 * index;
-    const duration = 1.3 + (index % 3) * 0.12; // organic per-card variety
+    // unhurried drift — stretched ~45% from the first cut for a calmer,
+    // more aesthetic glide into formation
+    const delay = 0.05 + 0.085 * index;
+    const duration = 1.9 + (index % 3) * 0.18; // organic per-card variety
     animateOuter(
       el,
       { x: [dx, 0], y: [dy, 0], rotate: [tilt, 0], opacity: [0, 1] },
@@ -235,7 +238,7 @@ function MemberCard({
         x: { delay, duration, ease: o.edge === "top" ? LAG : GLIDE },
         y: { delay, duration, ease: o.edge === "top" ? GLIDE : LAG },
         rotate: { delay, duration, ease: SETTLE },
-        opacity: { delay, duration: 0.45, ease: "easeOut" },
+        opacity: { delay, duration: 0.7, ease: "easeOut" },
       }
     );
   }, [entered, index, animateOuter, outerScope]);
@@ -446,17 +449,23 @@ export function TeamSection() {
         ref={clusterRef}
         className="relative mt-[clamp(140px,37.7vw,570px)] aspect-[1512/1334] w-full"
       >
+        {/* each hairline pairs with CARDS[i]; when that card floats, its
+            line carries the SAME hoisted keyframes/phase, so the pair moves
+            rigidly and the line never detaches from its card. Positioning
+            lives on the outer motion wrapper, the centring translate +
+            Figma rotation on the inner strip — two transforms, no fight */}
         {LINES.map(([cx, cy, w, deg], i) => (
-          <div
+          <motion.div
             key={i}
-            style={{
-              left: `${cx}%`,
-              top: `${cy}%`,
-              width: `${w}%`,
-              transform: `translate(-50%, -50%) rotate(${deg}deg)`,
-            }}
-            className="absolute h-px bg-black/[0.33]"
-          />
+            style={{ left: `${cx}%`, top: `${cy}%`, width: `${w}%` }}
+            className="absolute"
+            {...(CARDS[i].float !== undefined && entered ? FLOAT_ANIM[CARDS[i].float] : {})}
+          >
+            <div
+              style={{ transform: `translate(-50%, -50%) rotate(${deg}deg)` }}
+              className="h-px w-full bg-black/[0.33]"
+            />
+          </motion.div>
         ))}
 
         {CARDS.map((spec, i) => (
