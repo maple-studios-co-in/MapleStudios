@@ -86,7 +86,7 @@ export default function HeroSection() {
     {/* Transparent on purpose: the maroon scene (radial + cycling shades +
         breathing glow) is painted ONCE by <SceneBackdrop /> behind the hero,
         the About screen and the marquee — one continuous field, no seams. */}
-    <section className="sticky top-0 isolate h-svh overflow-hidden text-white">
+    <section className="sticky top-0 isolate h-svh transform-gpu overflow-hidden text-white">
       {/* Everything below dissolves while the hero is pinned */}
       <motion.div style={{ opacity: contentOpacity, y: contentY }} className="absolute inset-0">
 

@@ -71,7 +71,7 @@ export default function ProjectDetail({
         }`}
       >
         {/* ——— Sticky left column ——— */}
-        <div className="lg:sticky lg:top-[110px] lg:h-fit lg:self-start">
+        <div className="transform-gpu lg:sticky lg:top-[110px] lg:h-fit lg:self-start">
           <Link href="/work" className="group flex w-[191px] flex-col">
             <span className="flex items-center justify-between">
               <span className="font-sans-luxury text-[14px] font-bold uppercase text-[#fff3d3]">
