@@ -10,8 +10,7 @@ import {
   type MotionValue,
 } from "motion/react";
 import { SERVICES_PAGE } from "@/lib/constants";
-import { Eyebrow, Reveal, UnderlineLink, HERO_GRADIENT } from "../PageKit";
-import GradientCycler from "@/components/common/GradientCycler";
+import { Eyebrow, Reveal, UnderlineLink } from "../PageKit";
 
 /* Linear 0→1 ramp between two progress marks (function-form transforms stay
    on motion's JS path — see HeroSection's WAAPI note). */
@@ -52,20 +51,28 @@ export function WordMarquee({
   caption,
   color = "#741a14",
   star = "/figma/about/star-maroon-sm.svg",
+  tight = false,
 }: {
   words: string[];
   caption: string;
   color?: string;
   star?: string;
+  /** hug the fold: trims the band's breathing room so the word row sits
+      almost on the bottom edge (about hero under the magnified eagle) */
+  tight?: boolean;
 }) {
   const row = [...words, ...words, ...words];
   return (
-    <div className="overflow-hidden py-[clamp(24px,3vw,48px)]">
+    <div className={`overflow-hidden ${tight ? "py-[clamp(6px,0.8vw,14px)]" : "py-[clamp(24px,3vw,48px)]"}`}>
       <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
         {row.map((w, i) => (
           <span key={`${w}-${i}`} className="flex items-center gap-[3vw]">
             <span
-              className="font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] uppercase leading-normal tracking-[0.05em]"
+              className={`font-serif-luxury uppercase leading-normal tracking-[0.05em] ${
+                tight
+                  ? "text-[clamp(28px,4.69vw,70.8px)]" // 0.5x — band shrinks, and being bottom-anchored the row drops toward the fold
+                  : "text-[clamp(56px,9.37vw,141.6px)]"
+              }`}
               style={{ color }}
             >
               {w}
@@ -80,7 +87,7 @@ export function WordMarquee({
           </span>
         ))}
       </div>
-      <p className="mt-6 flex items-center justify-center gap-[5px] text-center">
+      <p className={`${tight ? "mt-2" : "mt-6"} flex items-center justify-center gap-[5px] text-center`}>
         <Star4 className="w-[12px]" fill={color} />
         <Eyebrow color={color}>{caption}</Eyebrow>
       </p>
@@ -88,16 +95,13 @@ export function WordMarquee({
   );
 }
 
-/* ————— Hero + intro + marquee: one continuous maroon gradient scene
-   (Figma 14:8640 + 14:8680 + Group 21 + 14:8697xx, bg rect 0→1700) ————— */
+/* ————— Hero + intro + marquee: one continuous CREAM scene — the site's
+   lighter shade for the canvas, the maroon for every word (the inverse of
+   the old gradient treatment, flowing straight into the cream panels
+   below). Figma 14:8640 + 14:8680 + Group 21 + 14:8697xx. ————— */
 function ServicesHero() {
   return (
-    <section
-      className="relative isolate overflow-hidden text-center"
-      style={{ background: HERO_GRADIENT }}
-    >
-      <GradientCycler />
-
+    <section className="relative isolate overflow-hidden bg-[#fff3d3] text-center">
       {/* Eyebrow — ✦ WHAT WE DO BEST (14:8895) */}
       <motion.div
         initial={{ opacity: 0, y: 18 }}
@@ -105,8 +109,8 @@ function ServicesHero() {
         transition={{ duration: 0.8 }}
         className="flex items-center justify-center gap-[5px] pt-[clamp(140px,17.5vw,265px)]"
       >
-        <Star4 className="w-[12px]" />
-        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#fff3d3]">
+        <Star4 className="w-[12px]" fill="#741a14" />
+        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#741a14]">
           {SERVICES_PAGE.hero.eyebrow}
         </span>
       </motion.div>
@@ -116,7 +120,7 @@ function ServicesHero() {
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.1 }}
-        className="mt-[clamp(14px,2vw,30px)] font-serif-luxury text-[clamp(44px,5.29vw,80px)] font-normal leading-normal tracking-[0.05em] text-[#fff3d3]"
+        className="mt-[clamp(14px,2vw,30px)] font-serif-luxury text-[clamp(44px,5.29vw,80px)] font-normal leading-normal tracking-[0.05em] text-[#741a14]"
       >
         {SERVICES_PAGE.hero.title}
       </motion.h1>
@@ -126,7 +130,7 @@ function ServicesHero() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.3 }}
-        className="mx-auto mt-[clamp(64px,10.8vw,164px)] max-w-[90%] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-[#fff3d3]"
+        className="mx-auto mt-[clamp(64px,10.8vw,164px)] max-w-[90%] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-[#741a14]"
       >
         {SERVICES_PAGE.hero.listLines[0]}
         <br className="hidden sm:block" /> {SERVICES_PAGE.hero.listLines[1]}
@@ -141,20 +145,20 @@ function ServicesHero() {
         aria-hidden="true"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
+        <img src="/figma/scroll-circle-maroon.svg" alt="" className="absolute inset-0 size-full" />
         <motion.span
           animate={{ y: [0, 3.5, 0] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
           className="absolute inset-0 flex items-center justify-center"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[7.8px] rotate-90" />
+          <img src="/figma/arrow-down-sm-maroon.svg" alt="" className="w-[7.8px] rotate-90" />
         </motion.span>
       </motion.div>
 
-      {/* Intro statement — Catilde Light 80, cream (14:8680) */}
+      {/* Intro statement — Catilde Light 80, maroon on cream (14:8680) */}
       <Reveal>
-        <h2 className="mx-auto mt-[clamp(96px,14.95vw,226px)] max-w-[80%] font-serif-luxury text-[clamp(38px,5.29vw,80px)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
+        <h2 className="mx-auto mt-[clamp(96px,14.95vw,226px)] max-w-[80%] font-serif-luxury text-[clamp(38px,5.29vw,80px)] font-light leading-none text-[#741a14] lg:max-w-[76%]">
           {SERVICES_PAGE.intro}
         </h2>
       </Reveal>
@@ -162,30 +166,24 @@ function ServicesHero() {
       {/* Twin links — VIEW ALL PROJECTS / LET'S CONNECT (Group 21) */}
       <Reveal className="mt-[clamp(40px,5.29vw,80px)] flex flex-wrap items-center justify-center gap-[clamp(24px,5.29vw,80px)] px-6">
         {SERVICES_PAGE.introLinks.map((l) => (
-          <UnderlineLink
-            key={l.label}
-            label={l.label}
-            href={l.href}
-            color="#fff3d3"
-            arrow="/figma/arrow-cream.svg"
-            width="191px"
-          />
+          <UnderlineLink key={l.label} label={l.label} href={l.href} width="191px" />
         ))}
       </Reveal>
 
-      {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on the gradient (14:8697xx) */}
+      {/* BRANDING ✦ DESIGN ✦ AI marquee — maroon on cream (14:8697xx) */}
       <div className="mt-[clamp(56px,11vw,166px)] w-full select-none overflow-hidden">
         <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
           {[...Array(6)].map((_, i) => (
             <span
               key={i}
-              className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
+              className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] font-normal uppercase leading-normal tracking-[0.05em] text-[#741a14]"
             >
               {SERVICES_PAGE.words.map((word, wi) => (
                 <span key={word} className="flex items-center gap-[3vw]">
                   {word}
                   <Star4
                     className="aspect-square w-[clamp(14px,1.59vw,24px)]"
+                    fill="#741a14"
                     delay={((i * SERVICES_PAGE.words.length + wi) % 5) * 0.55}
                   />
                 </span>
@@ -197,8 +195,8 @@ function ServicesHero() {
 
       {/* ✦ CAPABILITIES SHAPED TO SCALE WITH AMBITION. (Group 22) */}
       <div className="mt-[clamp(24px,3.9vw,60px)] flex items-center justify-center gap-[5px] pb-[clamp(48px,6.35vw,96px)]">
-        <Star4 className="w-[12px]" />
-        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#fff3d3]">
+        <Star4 className="w-[12px]" fill="#741a14" />
+        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#741a14]">
           {SERVICES_PAGE.wordsCaption}
         </span>
       </div>

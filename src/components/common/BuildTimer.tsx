@@ -1,18 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useInView } from "motion/react";
 
 /**
- * The hero badge's live stopwatch: starts at 0h 00m 00s when the page loads
- * and counts real time from there, so a refresh always resets it to zero.
- * Each changed digit rolls up behind its own mask (odometer, not a tick).
+ * The hero badge's count-up: the readout sprints from 0h 00m to the real
+ * average — 22h 40m — the first time the badge scrolls into view,
+ * decelerating on a cubic ease-out so the final digits click into place
+ * (a stat reveal, not a live stopwatch; seconds intentionally not shown).
+ * Plays once per page load. Each changed digit rolls up behind its own
+ * mask (odometer, not a tick).
  *
- * Elapsed time is derived from a start timestamp rather than accumulated per
- * tick, so it stays exact even when the tab throttles timers in background.
- * Renders 0h 00m on the server AND on the first client render, so the markup
- * hydrates identically.
+ * Renders 0h 00m on the server AND on the first client render, so the
+ * markup hydrates identically.
  */
+
+// 22h 40m — avg. time to first live build
+const TARGET_SECONDS = 22 * 3600 + 40 * 60;
+const COUNT_MS = 2800;
 function RollDigit({ char }: { char: string }) {
   // non-digits (the h/m/s letters and spaces) never animate — they'd jitter
   if (!/\d/.test(char)) {
@@ -38,26 +43,31 @@ function RollDigit({ char }: { char: string }) {
 
 export default function BuildTimer({ className = "" }: { className?: string }) {
   const [elapsed, setElapsed] = useState(0);
+  const rootRef = useRef<HTMLSpanElement>(null);
+  const inView = useInView(rootRef, { once: true, amount: 0.6 });
 
   useEffect(() => {
+    if (!inView) return;
     const started = performance.now();
-    // sub-second poll so the displayed second flips promptly after each
-    // real second boundary, without a 1s interval slowly drifting off it
-    const id = setInterval(
-      () => setElapsed(Math.floor((performance.now() - started) / 1000)),
-      200
-    );
+    // 25fps poll is plenty — the eased value crosses whole seconds far
+    // faster than the digits can roll anyway, and the final frame snaps
+    // to the exact target
+    const id = setInterval(() => {
+      const t = Math.min((performance.now() - started) / COUNT_MS, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // cubic ease-out
+      setElapsed(Math.round(TARGET_SECONDS * eased));
+      if (t >= 1) clearInterval(id);
+    }, 40);
     return () => clearInterval(id);
-  }, []);
+  }, [inView]);
 
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor(elapsed / 60) % 60;
-  const s = elapsed % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
-  const text = `${h}h ${pad(m)}m ${pad(s)}s`;
+  const text = `${h}h ${pad(m)}m`;
 
   return (
-    <span className={`flex items-center tabular-nums ${className}`}>
+    <span ref={rootRef} className={`flex items-center tabular-nums ${className}`}>
       <span aria-hidden="true" className="flex items-center">
         {text.split("").map((c, i) => (
           <RollDigit key={i} char={c} />

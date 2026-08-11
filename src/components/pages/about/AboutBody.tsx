@@ -34,34 +34,27 @@ export function AboutHero() {
       <BlurTextReveal
         as="h1"
         text={ABOUT_PAGE.hero.title}
-        className="mx-auto max-w-[79.2%] shrink-0 pt-[clamp(56px,10.5svh,100px)] font-serif-luxury text-[clamp(22px,min(3.97vw,7.5svh),60px)] font-normal leading-[1.12] tracking-[0.05em] text-[#741a14]"
+        className="mx-auto max-w-[79.2%] shrink-0 pt-[clamp(48px,8svh,80px)] font-serif-luxury text-[clamp(19px,min(3.4vw,6.4svh),52px)] font-normal leading-[1.12] tracking-[0.05em] text-[#741a14]"
       />
 
-      {/* Subtitle (22:627) — sits partly behind the eagle, per the design */}
-      <motion.p
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.5, delay: 0.3 }}
-        className="mx-auto mt-[1svh] max-w-[469px] shrink-0 font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-normal text-black"
-      >
-        {ABOUT_PAGE.hero.subtitle}
-      </motion.p>
-
-      {/* Eagle (156:767) — sits BELOW the copy in normal flow and takes
-          whatever height the screen has left, so it never covers a word of
-          the statement or subtitle. z-10 keeps it above the marquee band
-          that crosses its lower third. */}
+      {/* Eagle (156:767) — sized purely by layout: in normal flow below
+          the statement, taking every pixel the screen has left down to the
+          fold. No transform scale — the shader composites onto an OPAQUE
+          cream ground, so any box overlap would hide the copy above it
+          (the compact statement type is what buys the bird its height).
+          The (smaller, lower) marquee band crosses the lower feathers;
+          z-10 keeps the bird above the band. */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 2.2, delay: 0.4, ease: "easeOut" }}
-        className="relative z-10 mt-[1.5svh] flex min-h-0 w-full flex-1 items-start justify-center"
+        className="relative z-10 mt-[0.5svh] flex min-h-0 w-full flex-1 items-start justify-center"
       >
         <EagleLive
           src="/figma/about/eagle-live.webp"
           depthSrc="/figma/about/eagle-live-depth.jpg"
           ariaLabel="Bald eagle"
-          className="aspect-[1024/1094] h-full max-h-full w-auto max-w-[92vw] origin-top scale-[1.08]"
+          className="aspect-[1024/1094] h-full max-h-full w-auto max-w-[92vw]"
         />
       </motion.div>
 
@@ -69,8 +62,8 @@ export function AboutHero() {
           on the fold (22:739-745). Pointer-transparent (the depth parallax
           tracks the cursor window-wide, but keeping the band inert also
           keeps text selection off the marquee). */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 pb-[1.5svh]">
-        <WordMarquee words={ABOUT_PAGE.words} caption={ABOUT_PAGE.wordsCaption} />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 pb-[0.5svh]">
+        <WordMarquee words={ABOUT_PAGE.words} caption={ABOUT_PAGE.wordsCaption} tight />
       </div>
     </section>
   );

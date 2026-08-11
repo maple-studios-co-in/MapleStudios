@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -13,7 +13,17 @@ type Project = (typeof WORK_PAGE.projects)[number];
  * Project detail — Figma frame 14:8429.
  * The left column (title, description, services, tabbed copy) is STICKY and
  * stays put; the right column of project imagery scrolls past it.
+ *
+ * Deck mode (WORK_DETAIL.deck): for the listed project the rail shows the
+ * case-study PDF as ONE continuous strip (tiled from seamless WebPs purely
+ * for progressive lazy-loading — visually the uncut canvas), and clicking
+ * a tab ALSO smooth-scrolls the page to that section's exact spot on the
+ * canvas (tab.deckY, the heading's y in PDF points — see
+ * scripts/gen-workdeck.py). The left column is sticky, so it holds still
+ * while the rail glides to the section.
  */
+const NAV_CLEARANCE = 110; // fixed navbar + breathing room above a jump target
+
 export default function ProjectDetail({
   project,
   prev,
@@ -24,10 +34,27 @@ export default function ProjectDetail({
   next: Project;
 }) {
   const [tab, setTab] = useState(0);
+  const deckWrapRef = useRef<HTMLDivElement>(null);
 
-  // The right rail repeats the project imagery — swap per-project when real
-  // shots exist (WORK_PAGE.projects[].image drives it today).
+  const deck = WORK_DETAIL.deck.projectId === project.id ? WORK_DETAIL.deck : null;
+  const deckTiles = deck
+    ? Array.from({ length: deck.count }, (_, i) => `${deck.dir}/slice-${String(i + 1).padStart(2, "0")}.webp`)
+    : [];
+  // Plain rail: the repeated project imagery — swap per-project when real
+  // shots exist.
   const shots = [project.image, project.image, project.image, project.image];
+
+  const openTab = (i: number) => {
+    setTab(i);
+    const yPt = deck ? WORK_DETAIL.tabs[i].deckY : undefined;
+    const el = deckWrapRef.current;
+    if (yPt === undefined || !deck || !el) return;
+    // map the heading's PDF-point y onto the rendered strip, then scroll
+    // the PAGE so that spot lands just under the navbar
+    const r = el.getBoundingClientRect();
+    const target = window.scrollY + r.top + (yPt / deck.canvasH) * r.height - NAV_CLEARANCE;
+    window.scrollTo({ top: Math.max(target, 0), behavior: "smooth" });
+  };
 
   return (
     <div
@@ -38,7 +65,11 @@ export default function ProjectDetail({
       }}
     >
       <GradientCycler />
-      <div className="grid grid-cols-1 gap-10 px-[4%] pb-[clamp(64px,8vw,120px)] pt-[clamp(120px,13vw,190px)] lg:grid-cols-[34%_1fr] lg:gap-[4%]">
+      <div
+        className={`grid grid-cols-1 gap-10 pb-[clamp(64px,8vw,120px)] pt-[clamp(120px,13vw,190px)] lg:grid-cols-[34%_1fr] lg:gap-[4%] ${
+          deck ? "pl-[4%] pr-0" : "px-[4%]"
+        }`}
+      >
         {/* ——— Sticky left column ——— */}
         <div className="lg:sticky lg:top-[110px] lg:h-fit lg:self-start">
           <Link href="/work" className="group flex w-[191px] flex-col">
@@ -87,7 +118,7 @@ export default function ProjectDetail({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setTab(i)}
+                onClick={() => openTab(i)}
                 aria-pressed={i === tab}
                 className={`cursor-pointer pb-1 font-sans-luxury text-[13px] font-bold uppercase transition-colors ${
                   i === tab
@@ -112,29 +143,58 @@ export default function ProjectDetail({
         </div>
 
         {/* ——— Scrolling right rail ——— */}
-        <div className="flex flex-col gap-[clamp(20px,2.6vw,40px)]">
-          {shots.map((src, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
-              // aspect matches the artwork (1480/1016) so the full frame —
-              // including the "Hi, I'm Alex." baseline — is never cropped
-              className="relative aspect-[810/556] w-full overflow-hidden rounded-[8px]"
-            >
+        {deck ? (
+          // the ENTIRE case-study canvas as one continuous strip: tiles
+          // butt flush inside a single rounded wrapper (no gaps, no
+          // per-tile corners), so nothing reads as "cut". One entrance
+          // fade for the whole strip; tiles below the fold lazy-load as
+          // the visitor scrolls.
+          <motion.div
+            ref={deckWrapRef}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full self-start overflow-hidden rounded-l-[8px]"
+          >
+            {deckTiles.map((src, i) => (
               <Image
+                key={i}
                 src={src}
-                alt={`${project.title} — view ${i + 1}`}
-                fill
+                alt={`${project.title} — case study part ${i + 1}`}
+                width={1440}
+                height={992}
                 sizes="(min-width: 1024px) 60vw, 92vw"
-                className="object-cover"
+                className="block h-auto w-full"
                 priority={i === 0}
               />
-            </motion.div>
-          ))}
-        </div>
+            ))}
+          </motion.div>
+        ) : (
+          <div className="flex flex-col gap-[clamp(20px,2.6vw,40px)]">
+            {shots.map((src, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
+                // aspect matches the artwork (1480/1016) so the full frame —
+                // including the "Hi, I'm Alex." baseline — is never cropped
+                className="relative aspect-[810/556] w-full overflow-hidden rounded-[8px]"
+              >
+                <Image
+                  src={src}
+                  alt={`${project.title} — view ${i + 1}`}
+                  fill
+                  sizes="(min-width: 1024px) 60vw, 92vw"
+                  className="object-cover"
+                  priority={i === 0}
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Prev / next */}

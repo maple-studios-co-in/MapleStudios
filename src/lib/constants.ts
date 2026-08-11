@@ -8,7 +8,7 @@ export const HERO_DATA = {
   badge: {
     // The figure itself is a live stopwatch (BuildTimer) counting from zero
     // on every page load — there is no static value to configure here.
-    label: "HRS : MINS : SECS",
+    label: "HRS : MINS",
     sublabel: "Avg. time to first live build",
   },
   cta: "START A PROJECT",
@@ -224,25 +224,44 @@ export const WORK_PAGE = {
 export const WORK_DETAIL = {
   back: "BACK TO WORK",
   services: ["AI Product Design", "UI/Ux Design", "Web Development", "Interaction Design"],
+  // Case-study deck for the right rail: a single tall PDF canvas
+  // (1920 x 15858 pt) shown as ONE continuous strip. The strip is tiled
+  // from 12 seamless WebPs (scripts/gen-workdeck.py) purely so the browser
+  // can lazy-load progressively — visually it is the uncut PDF. Only the
+  // listed project gets the deck; the rest keep their repeated hero shot.
+  // deckY on a tab (below) = the section heading's y in PDF points,
+  // straight from the script's printed anchors — a tab click scrolls the
+  // page so that exact spot tops out. New PDF => bump the folder to
+  // deck-v2, re-run the script, refresh canvasH + the deckY values.
+  deck: {
+    projectId: "my-worker-ai",
+    dir: "/work/my-worker-ai/deck-v1",
+    count: 12,
+    canvasH: 15858, // PDF canvas height in points
+  },
   tabs: [
     {
       id: "challenge",
       label: "THE CHALLENGE",
+      deckY: 2199, // "We don't just build software…"
       body: "Lorem ipsum began as scrambled, nonsensical Latin derived from Cicero's 1st-century BC text De Finibus Bonorum et Malorum. Lorem ipsum began as scrambled, nonsensical Latin derived from Cicero's 1st-century BC text De Finibus Bonorum et Malorum.",
     },
     {
       id: "approach",
       label: "APPROACH",
+      deckY: 5049, // "Five tools became one loop."
       body: "We mapped the product surface before touching a pixel — audience, constraints, and the one metric that mattered. Strategy, design, and engineering then ran as a single track so decisions never waited on a handoff.",
     },
     {
       id: "outcome",
       label: "OUTCOME",
+      deckY: 9324, // "Closing the Loop on the Guest Experience"
       body: "A platform that ships weekly instead of quarterly, with a design system its own team extends. Adoption climbed without a single line of onboarding copy being rewritten.",
     },
     {
       id: "what-we-did",
       label: "WHAT WE DID",
+      deckY: 11294, // "AI Enablement & Integration — Maple's core practice"
       body: "AI product design, interface architecture, a component library, and the front-end build — delivered as one continuous engagement from seed to shipped.",
     },
   ],
