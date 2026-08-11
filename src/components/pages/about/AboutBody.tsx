@@ -15,9 +15,9 @@ import BlurTextReveal from "@/components/common/BlurTextReveal";
 import { FounderSection, TeamSection } from "./FounderTeam";
 
 /**
- * About hero — Figma 22:625 compressed into ONE viewport: CREAM canvas,
- * Catilde 60 maroon statement (60px exact at full size, height-capped so
- * the whole scene always fits a single screen), 18px subtitle tucked behind
+ * About hero — Figma 22:625 on a 122svh stage (taller than one viewport
+ * so the eagle reads large): CREAM canvas, Catilde 60 maroon statement
+ * (height-capped), 18px subtitle tucked behind
  * the eagle, the LIVE eagle (depth-parallax head + eyes that track the
  * cursor and scroll direction, natural blink and breathing — EagleLive),
  * and the BRANDING ✦ DESIGN ✦ AI row crossing its lower third with the
@@ -25,7 +25,13 @@ import { FounderSection, TeamSection } from "./FounderTeam";
  */
 export function AboutHero() {
   return (
-    <section className="relative isolate flex h-[100svh] flex-col overflow-hidden bg-[#fff3d3] text-center text-black">
+    // The hero runs TALLER than one viewport (122svh) purely to magnify the
+    // bird: the statement stays pinned at the top, the eagle's flex-1 zone
+    // absorbs every extra pixel (so the bird grows AND sits lower), and the
+    // bottom-anchored marquee rides down with the new fold. One number tunes
+    // the whole composition; the copy can never be covered because the bird
+    // remains in normal flow BELOW it.
+    <section className="relative isolate flex h-[128svh] flex-col overflow-hidden bg-[#fff3d3] text-center text-black">
       {/* Statement (22:645) — Catilde 60px / 400 / normal / 3px tracking /
           #741A14 / centred. The words materialise from blur in random
           order on load — trionn's BlurTextReveal, same numbers. */}
@@ -34,7 +40,7 @@ export function AboutHero() {
       <BlurTextReveal
         as="h1"
         text={ABOUT_PAGE.hero.title}
-        className="mx-auto max-w-[79.2%] shrink-0 pt-[clamp(48px,8svh,80px)] font-serif-luxury text-[clamp(19px,min(3.4vw,6.4svh),52px)] font-normal leading-[1.12] tracking-[0.05em] text-[#741a14]"
+        className="mx-auto max-w-[79.2%] shrink-0 pt-[clamp(88px,14svh,142px)] font-serif-luxury text-[clamp(19px,min(3.4vw,6.4svh),52px)] font-normal leading-[1.12] tracking-[0.05em] text-[#741a14]"
       />
 
       {/* Eagle (156:767) — sized purely by layout: in normal flow below
