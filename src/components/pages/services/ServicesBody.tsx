@@ -156,49 +156,63 @@ function ServicesHero() {
         </motion.span>
       </motion.div>
 
-      {/* Intro statement — Catilde Light 80, maroon on cream (14:8680) */}
-      <Reveal>
-        <h2 className="mx-auto mt-[clamp(96px,14.95vw,226px)] max-w-[80%] font-serif-luxury text-[clamp(38px,5.29vw,80px)] font-light leading-none text-[#741a14] lg:max-w-[76%]">
-          {SERVICES_PAGE.intro}
-        </h2>
-      </Reveal>
+      {/* Lower band — INVERTED per review: the site maroon becomes the
+          canvas, the cream becomes the type. Holds the intro statement,
+          twin links, marquee and caption; the original inter-block gap is
+          split half cream (mt) / half maroon (pt) so the rhythm reads
+          unchanged. */}
+      <div className="mt-[clamp(48px,7.5vw,113px)] bg-[#741a14] pt-[clamp(48px,7.5vw,113px)]">
+        {/* Intro statement — Catilde Light 80, cream on maroon (14:8680) */}
+        <Reveal>
+          <h2 className="mx-auto max-w-[80%] font-serif-luxury text-[clamp(38px,5.29vw,80px)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
+            {SERVICES_PAGE.intro}
+          </h2>
+        </Reveal>
 
-      {/* Twin links — VIEW ALL PROJECTS / LET'S CONNECT (Group 21) */}
-      <Reveal className="mt-[clamp(40px,5.29vw,80px)] flex flex-wrap items-center justify-center gap-[clamp(24px,5.29vw,80px)] px-6">
-        {SERVICES_PAGE.introLinks.map((l) => (
-          <UnderlineLink key={l.label} label={l.label} href={l.href} width="191px" />
-        ))}
-      </Reveal>
-
-      {/* BRANDING ✦ DESIGN ✦ AI marquee — maroon on cream (14:8697xx) */}
-      <div className="mt-[clamp(56px,11vw,166px)] w-full select-none overflow-hidden">
-        <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
-          {[...Array(6)].map((_, i) => (
-            <span
-              key={i}
-              className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] font-normal uppercase leading-normal tracking-[0.05em] text-[#741a14]"
-            >
-              {SERVICES_PAGE.words.map((word, wi) => (
-                <span key={word} className="flex items-center gap-[3vw]">
-                  {word}
-                  <Star4
-                    className="aspect-square w-[clamp(14px,1.59vw,24px)]"
-                    fill="#741a14"
-                    delay={((i * SERVICES_PAGE.words.length + wi) % 5) * 0.55}
-                  />
-                </span>
-              ))}
-            </span>
+        {/* Twin links — VIEW ALL PROJECTS / LET'S CONNECT (Group 21) */}
+        <Reveal className="mt-[clamp(40px,5.29vw,80px)] flex flex-wrap items-center justify-center gap-[clamp(24px,5.29vw,80px)] px-6">
+          {SERVICES_PAGE.introLinks.map((l) => (
+            <UnderlineLink
+              key={l.label}
+              label={l.label}
+              href={l.href}
+              color="#fff3d3"
+              arrow="/figma/arrow-cream.svg"
+              width="191px"
+            />
           ))}
-        </div>
-      </div>
+        </Reveal>
 
-      {/* ✦ CAPABILITIES SHAPED TO SCALE WITH AMBITION. (Group 22) */}
-      <div className="mt-[clamp(24px,3.9vw,60px)] flex items-center justify-center gap-[5px] pb-[clamp(48px,6.35vw,96px)]">
-        <Star4 className="w-[12px]" fill="#741a14" />
-        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#741a14]">
-          {SERVICES_PAGE.wordsCaption}
-        </span>
+        {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on maroon (14:8697xx) */}
+        <div className="mt-[clamp(56px,11vw,166px)] w-full select-none overflow-hidden">
+          <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
+            {[...Array(6)].map((_, i) => (
+              <span
+                key={i}
+                className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
+              >
+                {SERVICES_PAGE.words.map((word, wi) => (
+                  <span key={word} className="flex items-center gap-[3vw]">
+                    {word}
+                    <Star4
+                      className="aspect-square w-[clamp(14px,1.59vw,24px)]"
+                      fill="#FFF3D3"
+                      delay={((i * SERVICES_PAGE.words.length + wi) % 5) * 0.55}
+                    />
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* ✦ CAPABILITIES SHAPED TO SCALE WITH AMBITION. (Group 22) */}
+        <div className="mt-[clamp(24px,3.9vw,60px)] flex items-center justify-center gap-[5px] pb-[clamp(48px,6.35vw,96px)]">
+          <Star4 className="w-[12px]" fill="#FFF3D3" />
+          <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#fff3d3]">
+            {SERVICES_PAGE.wordsCaption}
+          </span>
+        </div>
       </div>
     </section>
   );
