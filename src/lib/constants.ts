@@ -221,53 +221,117 @@ export const WORK_PAGE = {
 };
 
 // /work/[slug] — Figma frame 14:8429 ("Work Details", 1512x1597)
+
+export type WorkTabId = "challenge" | "approach" | "outcome" | "what-we-did";
+
+/**
+ * A case-study deck for the work-detail right rail: one tall PDF canvas
+ * (1920 pt wide) rendered to `count` seamless WebP slices that the rail
+ * stacks flush, so the visitor reads the uncut design while the browser
+ * lazy-loads it in pieces.
+ *
+ * `anchors` maps each tab to the y — in PDF points — of that section's lead
+ * line on the canvas. It drives both directions of the tab/rail sync:
+ * clicking a tab scrolls that spot under the navbar, and scrolling the rail
+ * past a spot lights up its tab. Values MUST ascend in tab order, or the
+ * tabs appear to jump around as the visitor scrolls.
+ *
+ * `tileW`/`tileH` are the rendered slice dimensions in pixels, so the rail
+ * reserves its true height before a single image byte arrives — the anchor
+ * maths measures the strip, and an unloaded strip would measure short.
+ *
+ * Every field here is printed ready-to-paste by
+ * `python scripts/gen-workdeck.py <slug> <pdf>`. A replacement PDF goes in a
+ * NEW folder (deck-v2): deployed assets are immutable-cached.
+ */
+export type WorkDeck = {
+  dir: string;
+  count: number;
+  canvasH: number;
+  tileW: number;
+  tileH: number;
+  anchors: Record<WorkTabId, number>;
+};
+
 export const WORK_DETAIL = {
   back: "BACK TO WORK",
   services: ["AI Product Design", "UI/Ux Design", "Web Development", "Interaction Design"],
-  // Case-study deck for the right rail: a single tall PDF canvas
-  // (1920 x 15858 pt) shown as ONE continuous strip. The strip is tiled
-  // from 12 seamless WebPs (scripts/gen-workdeck.py) purely so the browser
-  // can lazy-load progressively — visually it is the uncut PDF. Only the
-  // listed project gets the deck; the rest keep their repeated hero shot.
-  // deckY on a tab (below) = the section heading's y in PDF points,
-  // straight from the script's printed anchors — a tab click scrolls the
-  // page so that exact spot tops out. New PDF => bump the folder to
-  // deck-v2, re-run the script, refresh canvasH + the deckY values.
-  deck: {
-    projectId: "my-worker-ai",
-    dir: "/work/my-worker-ai/deck-v1",
-    count: 12,
-    canvasH: 15858, // PDF canvas height in points
-  },
+  // Projects whose rail shows a real case-study deck, keyed by project id.
+  // Anything not listed falls back to the repeated hero shot.
+  decks: {
+    "my-worker-ai": {
+      dir: "/work/my-worker-ai/deck-v1",
+      count: 12,
+      canvasH: 15858,
+      tileW: 1440,
+      tileH: 992,
+      anchors: {
+        challenge: 2199, // "We don't just build software…"
+        approach: 5049, // "Five tools became one loop."
+        outcome: 9324, // "Closing the Loop on the Guest Experience"
+        "what-we-did": 11294, // "AI Enablement & Integration — Maple's core practice"
+      },
+    },
+    // Maple Lens (Template-Maple.pdf) — photography-to-catalog AI product
+    "pulse-studio": {
+      dir: "/work/pulse-studio/deck-v1",
+      count: 12,
+      canvasH: 15614,
+      tileW: 1440,
+      tileH: 977,
+      anchors: {
+        challenge: 1432, // "See Beyond The Workshop."
+        approach: 3211, // "HOW IT WORKS"
+        outcome: 6876, // "The 3 Ultimate Modes To Choose From"
+        "what-we-did": 11294, // "AI Enablement & Integration — Maple Studio's core practice"
+      },
+    },
+    // Maple Furnishers (Maple Furnishers Template.pdf) — brand-to-commerce
+    // experience for a furniture house
+    loftgoom: {
+      dir: "/work/loftgoom/deck-v1",
+      count: 12,
+      canvasH: 15107,
+      tileW: 1440,
+      tileH: 946,
+      anchors: {
+        challenge: 1731, // "A furniture brand named after a tree. So we asked…"
+        approach: 3574, // "Product Strategy & Discovery" ring
+        outcome: 6316, // "The Maple Experience"
+        "what-we-did": 8452, // "THE MAPLE STUDIO EDGE" — Discover → Evolve
+      },
+    },
+  } satisfies Record<string, WorkDeck>,
   tabs: [
     {
       id: "challenge",
       label: "THE CHALLENGE",
-      deckY: 2199, // "We don't just build software…"
       body: "Lorem ipsum began as scrambled, nonsensical Latin derived from Cicero's 1st-century BC text De Finibus Bonorum et Malorum. Lorem ipsum began as scrambled, nonsensical Latin derived from Cicero's 1st-century BC text De Finibus Bonorum et Malorum.",
     },
     {
       id: "approach",
       label: "APPROACH",
-      deckY: 5049, // "Five tools became one loop."
       body: "We mapped the product surface before touching a pixel — audience, constraints, and the one metric that mattered. Strategy, design, and engineering then ran as a single track so decisions never waited on a handoff.",
     },
     {
       id: "outcome",
       label: "OUTCOME",
-      deckY: 9324, // "Closing the Loop on the Guest Experience"
       body: "A platform that ships weekly instead of quarterly, with a design system its own team extends. Adoption climbed without a single line of onboarding copy being rewritten.",
     },
     {
       id: "what-we-did",
       label: "WHAT WE DID",
-      deckY: 11294, // "AI Enablement & Integration — Maple's core practice"
       body: "AI product design, interface architecture, a component library, and the front-end build — delivered as one continuous engagement from seed to shipped.",
     },
-  ],
+  ] satisfies { id: WorkTabId; label: string; body: string }[],
   prev: "PRE PROJECT",
   next: "NEXT PROJECT",
 };
+
+/** The case-study deck for a project, or null when it has no PDF yet. */
+export function deckFor(projectId: string): WorkDeck | null {
+  return (WORK_DETAIL.decks as Record<string, WorkDeck>)[projectId] ?? null;
+}
 
 // /services — Figma frame 14:8638 ("Services", 1512x6719)
 export const SERVICES_PAGE = {

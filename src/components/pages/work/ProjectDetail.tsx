@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { WORK_DETAIL, WORK_PAGE } from "@/lib/constants";
+import { deckFor, WORK_DETAIL, WORK_PAGE } from "@/lib/constants";
 import GradientCycler from "@/components/common/GradientCycler";
 
 type Project = (typeof WORK_PAGE.projects)[number];
@@ -14,15 +14,23 @@ type Project = (typeof WORK_PAGE.projects)[number];
  * The left column (title, description, services, tabbed copy) is STICKY and
  * stays put; the right column of project imagery scrolls past it.
  *
- * Deck mode (WORK_DETAIL.deck): for the listed project the rail shows the
- * case-study PDF as ONE continuous strip (tiled from seamless WebPs purely
- * for progressive lazy-loading — visually the uncut canvas), and clicking
- * a tab ALSO smooth-scrolls the page to that section's exact spot on the
- * canvas (tab.deckY, the heading's y in PDF points — see
- * scripts/gen-workdeck.py). The left column is sticky, so it holds still
- * while the rail glides to the section.
+ * Deck mode (WORK_DETAIL.decks, keyed by project id): the rail shows that
+ * project's case-study PDF as ONE continuous strip (tiled from seamless
+ * WebPs purely for progressive lazy-loading — visually the uncut canvas),
+ * and the tabs stay in sync with it BOTH ways:
+ *   tab click -> the page scrolls that section's spot on the canvas to just
+ *     under the navbar;
+ *   rail scroll -> the tab of the last section scrolled past lights up.
+ * Both directions read the same anchor line, so a click leaves the tab it
+ * selected active. Projects with no deck keep the repeated hero shot and
+ * plain (non-scrolling) tabs.
  */
 const NAV_CLEARANCE = 110; // fixed navbar + breathing room above a jump target
+const SETTLE_SLACK = 2; // px; a smooth scroll lands a hair off its target
+const JUMP_TIMEOUT = 1600; // ms a tab jump may mute the scroll-spy for
+
+const wantsReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export default function ProjectDetail({
   project,
@@ -35,8 +43,13 @@ export default function ProjectDetail({
 }) {
   const [tab, setTab] = useState(0);
   const deckWrapRef = useRef<HTMLDivElement>(null);
+  // A tab jump animates across whole sections. Left alone, the scroll-spy
+  // would light up each one it flies past and restart the copy animation, so
+  // the jump mutes the spy until the scroll settles on its target.
+  const jumpRef = useRef<{ top: number; until: number } | null>(null);
 
-  const deck = WORK_DETAIL.deck.projectId === project.id ? WORK_DETAIL.deck : null;
+  // decks are static objects, so this reference is stable across renders
+  const deck = deckFor(project.id);
   const deckTiles = deck
     ? Array.from({ length: deck.count }, (_, i) => `${deck.dir}/slice-${String(i + 1).padStart(2, "0")}.webp`)
     : [];
@@ -44,17 +57,77 @@ export default function ProjectDetail({
   // shots exist.
   const shots = [project.image, project.image, project.image, project.image];
 
+  /**
+   * Where each tab's section sits in the document, in px — its anchor's PDF-y
+   * mapped onto the RENDERED strip (which scales with the column, so it has
+   * to be measured, not assumed). Null until there is a strip to measure.
+   */
+  const sectionTops = useCallback(() => {
+    const el = deckWrapRef.current;
+    if (!deck || !el) return null;
+    const r = el.getBoundingClientRect();
+    if (!r.height) return null;
+    const stripTop = window.scrollY + r.top;
+    return WORK_DETAIL.tabs.map(
+      (t) => stripTop + (deck.anchors[t.id] / deck.canvasH) * r.height,
+    );
+  }, [deck]);
+
   const openTab = (i: number) => {
     setTab(i);
-    const yPt = deck ? WORK_DETAIL.tabs[i].deckY : undefined;
-    const el = deckWrapRef.current;
-    if (yPt === undefined || !deck || !el) return;
-    // map the heading's PDF-point y onto the rendered strip, then scroll
-    // the PAGE so that spot lands just under the navbar
-    const r = el.getBoundingClientRect();
-    const target = window.scrollY + r.top + (yPt / deck.canvasH) * r.height - NAV_CLEARANCE;
-    window.scrollTo({ top: Math.max(target, 0), behavior: "smooth" });
+    const tops = sectionTops();
+    if (!tops) return;
+    const top = Math.max(tops[i] - NAV_CLEARANCE, 0);
+    if (Math.abs(window.scrollY - top) <= SETTLE_SLACK) return; // already there
+    jumpRef.current = { top, until: performance.now() + JUMP_TIMEOUT };
+    // "instant", not "auto" — globals.css sets html { scroll-behavior: smooth },
+    // which "auto" would inherit
+    window.scrollTo({ top, behavior: wantsReducedMotion() ? "instant" : "smooth" });
   };
+
+  // Rail -> tabs: the active tab is the last section whose anchor has passed
+  // the line a click scrolls to, which is what keeps the two in agreement.
+  useEffect(() => {
+    if (!deck) return;
+    let raf = 0;
+    const sync = () => {
+      const jump = jumpRef.current;
+      if (jump) {
+        const landed = Math.abs(window.scrollY - jump.top) <= SETTLE_SLACK;
+        if (!landed && performance.now() < jump.until) return;
+        jumpRef.current = null;
+      }
+      const tops = sectionTops();
+      if (!tops) return;
+      const line = window.scrollY + NAV_CLEARANCE + SETTLE_SLACK;
+      let active = 0;
+      tops.forEach((top, i) => {
+        if (top <= line) active = i;
+      });
+      setTab(active);
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(sync);
+    };
+    // a real scroll gesture cancels the browser's smooth scroll, so it has to
+    // release the spy too — otherwise the tabs freeze until the timeout
+    const onGesture = () => {
+      jumpRef.current = null;
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    window.addEventListener("wheel", onGesture, { passive: true });
+    window.addEventListener("touchmove", onGesture, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("wheel", onGesture);
+      window.removeEventListener("touchmove", onGesture);
+      cancelAnimationFrame(raf);
+    };
+  }, [deck, sectionTops]);
 
   return (
     <div
@@ -162,8 +235,8 @@ export default function ProjectDetail({
                 key={i}
                 src={src}
                 alt={`${project.title} — case study part ${i + 1}`}
-                width={1440}
-                height={992}
+                width={deck.tileW}
+                height={deck.tileH}
                 sizes="(min-width: 1024px) 60vw, 92vw"
                 className="block h-auto w-full"
                 priority={i === 0}
