@@ -41,3 +41,6 @@ yarn-error.log*
 /member-a.png
 /member-b.png
 /quotes.svg
+# case-study source PDFs (28 MB) — shipped as the WebP decks under
+# public/work/<slug>/deck-v1, 0.8 MB each (scripts/gen-workdeck.py)
+/*.pdf
