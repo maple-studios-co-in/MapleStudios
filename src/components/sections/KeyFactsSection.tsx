@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import Image from "next/image";
 import { KEY_FACTS_DATA } from "@/lib/constants";
+import BuildTimer from "@/components/common/BuildTimer";
 
 export default function KeyFactsSection() {
   return (
@@ -50,13 +51,26 @@ export default function KeyFactsSection() {
             transition={{ duration: 2.6, delay: 0, ease: [0.22, 1, 0.36, 1] }}
             className="relative group rounded-2xl overflow-hidden shadow-xl aspect-[3/4] flex flex-col justify-between p-6 sm:p-8 text-white border border-black/10"
           >
-            {/* Background Image */}
-            <Image
-              src={KEY_FACTS_DATA.cards[0].image || "/images/featured_chair.png"}
-              alt="Featured & Awards"
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-[0.88]"
-            />
+            {/* Background media — video when set, otherwise the still */}
+            {KEY_FACTS_DATA.cards[0].video ? (
+              <video
+                src={KEY_FACTS_DATA.cards[0].video}
+                poster={KEY_FACTS_DATA.cards[0].image}
+                autoPlay
+                muted
+                loop
+                playsInline
+                aria-hidden="true"
+                className="absolute inset-0 size-full object-cover brightness-[0.88] transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <Image
+                src={KEY_FACTS_DATA.cards[0].image || "/images/featured_chair.png"}
+                alt="Featured & Awards"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-[0.88]"
+              />
+            )}
             {/* Top Label */}
             <div className="relative z-10">
               <span className="text-[11px] font-sans-luxury font-bold tracking-widest uppercase text-white/90 drop-shadow-md">
@@ -74,7 +88,7 @@ export default function KeyFactsSection() {
             </div>
           </motion.div>
 
-          {/* Card 2: Projects Completed (Solid Maroon Card) */}
+          {/* Card 2: Avg. Time to First Live Build (Solid Maroon Card with Live BuildTimer) */}
           <motion.div
             initial={{ opacity: 0, y: 120, rotate: 6, rotateX: 52, scale: 0.9 }}
             whileInView={{ opacity: 1, y: 0, rotate: 0, rotateX: 0, scale: 1 }}
@@ -84,27 +98,31 @@ export default function KeyFactsSection() {
           >
             {/* Top Label */}
             <div className="text-center">
-              <span className="text-[11px] font-sans-luxury font-bold tracking-widest uppercase text-[#fff3d3]/80">
+              <span className="text-[11px] font-sans-luxury font-bold tracking-[0.18em] uppercase text-[#fff3d3]">
                 {KEY_FACTS_DATA.cards[1].tag}
               </span>
             </div>
 
-            {/* Center Circle Container with Huge Stat */}
+            {/* Center Circle Container with Live BuildTimer */}
             <div className="my-auto flex justify-center">
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 300 }}
-                className="w-44 h-44 sm:w-48 sm:h-48 rounded-full bg-[#fff3d3] text-[#5d1411] flex items-center justify-center shadow-2xl"
+                className="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-[#fff3d3] text-[#741a14] flex flex-col items-center justify-center shadow-2xl p-4"
               >
-                <span className="font-serif-luxury text-5xl sm:text-6xl font-bold tracking-tight">
-                  {KEY_FACTS_DATA.cards[1].stat}
+                <BuildTimer
+                  format="colon"
+                  className="font-sans-luxury text-4xl sm:text-[42px] font-extrabold tracking-tight text-[#741a14]"
+                />
+                <span className="mt-1 text-[11px] font-sans-luxury font-bold tracking-[0.25em] text-[#741a14] uppercase">
+                  {KEY_FACTS_DATA.cards[1].sublabel ?? "HRS : MINS"}
                 </span>
               </motion.div>
             </div>
 
             {/* Bottom Subtext */}
             <div className="text-center px-2">
-              <p className="text-xs sm:text-sm font-sans-luxury text-[#fff3d3]/90 leading-snug font-medium">
+              <p className="text-sm sm:text-base font-sans-luxury text-[#fff3d3] leading-snug font-medium">
                 {KEY_FACTS_DATA.cards[1].title}
               </p>
             </div>

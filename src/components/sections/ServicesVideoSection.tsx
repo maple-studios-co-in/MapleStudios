@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { RotateCcw } from "lucide-react";
 import { SERVICES_DATA, WORK_DATA } from "@/lib/constants";
 
@@ -67,15 +68,22 @@ export default function ServicesVideoSection() {
         {SERVICES_DATA.cards.map((card) => (
           <article
             key={card.id}
-            className="flex flex-col gap-4 rounded-[8px] border border-white/10 bg-black/35 p-6 backdrop-blur-[4px]"
+            className="rounded-[12px] border border-white/20 bg-[#2a0c0a]/55 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-[14px]"
           >
-            <h3 className="font-sans-luxury text-[22px] font-bold leading-[1.13] text-[#fff3d3]">
-              {card.titleLines.join(" ")}
-            </h3>
-            <p className="font-sans-luxury text-[13px] leading-normal text-white/90">
-              <span className="font-bold text-white">{card.lead}</span>
-              <br />
-              {card.body}
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-sans-luxury text-[14px] font-bold leading-normal text-white">
+                {card.title}
+              </h3>
+              <Image
+                src={card.icon}
+                alt=""
+                width={28}
+                height={28}
+                className="mt-0.5 size-7 shrink-0 object-contain"
+              />
+            </div>
+            <p className="mt-2 font-sans-luxury text-[14px] font-normal leading-normal text-white">
+              <span className="font-bold">{card.lead}</span> {card.body}
             </p>
           </article>
         ))}

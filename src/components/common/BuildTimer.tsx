@@ -41,7 +41,13 @@ function RollDigit({ char }: { char: string }) {
   );
 }
 
-export default function BuildTimer({ className = "" }: { className?: string }) {
+export default function BuildTimer({
+  className = "",
+  format = "hm",
+}: {
+  className?: string;
+  format?: "hm" | "colon";
+}) {
   const [elapsed, setElapsed] = useState(0);
   const rootRef = useRef<HTMLSpanElement>(null);
   const inView = useInView(rootRef, { once: true, amount: 0.6 });
@@ -64,11 +70,11 @@ export default function BuildTimer({ className = "" }: { className?: string }) {
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor(elapsed / 60) % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
-  const text = `${h}h:${pad(m)}m`;
+  const text = format === "colon" ? `${pad(h)} : ${pad(m)}` : `${h}h:${pad(m)}m`;
 
   return (
     <span ref={rootRef} className={`flex items-center tabular-nums ${className}`}>
-      <span aria-hidden="true" className="flex items-center">
+      <span aria-hidden="true" className="flex items-center justify-center">
         {text.split("").map((c, i) => (
           <RollDigit key={i} char={c} />
         ))}

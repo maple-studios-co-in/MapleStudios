@@ -12,27 +12,112 @@ import { WORK_PAGE } from "@/lib/constants";
  * through its own loop of waypoints (position + rotation, long out-of-phase
  * durations, so the field never looks synchronized) — and on scroll each one
  * is flung OUTWARD, away from the title, scattering off screen while fading.
+ *
+ * Images mix Selected-work card art with visually rich slices from the
+ * case-study PDF decks (Get Shoku / Maple Furnishers / Maple Lens).
  */
 const THUMBS = [
-  { left: "8%", top: "12%", size: 9.5, rotate: -8, dur: 13, wx: [0, 6, -4, 0], wy: [0, 7, -5, 0] },
-  { left: "30%", top: "8%", size: 6.5, rotate: 5, dur: 17, wx: [0, -7, 5, 0], wy: [0, 9, 3, 0] },
-  { left: "62%", top: "7%", size: 8, rotate: -4, dur: 15, wx: [0, 5, -6, 0], wy: [0, 6, 10, 0] },
-  { left: "84%", top: "14%", size: 10.5, rotate: 7, dur: 19, wx: [0, -6, -3, 0], wy: [0, 8, -4, 0] },
-  { left: "5%", top: "44%", size: 7, rotate: 6, dur: 14, wx: [0, 8, 3, 0], wy: [0, -6, 8, 0] },
-  { left: "88%", top: "46%", size: 6.5, rotate: -6, dur: 16, wx: [0, -8, -4, 0], wy: [0, -7, 6, 0] },
-  { left: "12%", top: "72%", size: 10, rotate: 8, dur: 18, wx: [0, 7, -5, 0], wy: [0, -9, -3, 0] },
-  { left: "42%", top: "78%", size: 7.5, rotate: -5, dur: 12, wx: [0, -5, 7, 0], wy: [0, -8, -12, 0] },
-  { left: "74%", top: "70%", size: 9, rotate: 5, dur: 20, wx: [0, 6, -7, 0], wy: [0, -10, 5, 0] },
+  // 9 cards on wide edge lanes. Full prior drift speeds, but each wanders
+  // mostly away from neighbours so float paths stay collision-free.
+  // Centre (~28–68% x, ~28–62% y) stays clear for the title.
+  {
+    left: "3%",
+    top: "8%",
+    size: 10,
+    rotate: -7,
+    dur: 14,
+    wx: [0, 6, -3, 0],
+    wy: [0, 7, -4, 0],
+    image: WORK_PAGE.projects[0].image, // Get Shoku
+  },
+  {
+    left: "42%",
+    top: "4%",
+    size: 8,
+    rotate: -4,
+    dur: 16,
+    wx: [0, 5, -6, 0],
+    wy: [0, 5, 2, 0],
+    image: "/work/my-worker-ai/deck-v1/slice-08.webp",
+  },
+  {
+    left: "82%",
+    top: "8%",
+    size: 10,
+    rotate: 6,
+    dur: 17,
+    wx: [0, -7, 4, 0],
+    wy: [0, 8, -3, 0],
+    image: "/work/loftgoom/deck-v1/slice-02.webp",
+  },
+  {
+    left: "2%",
+    top: "40%",
+    size: 9,
+    rotate: -6,
+    dur: 18,
+    wx: [0, 6, -3, 0],
+    wy: [0, -6, 5, 0],
+    image: "/work/pulse-studio/deck-v1/slice-04.webp",
+  },
+  {
+    left: "88%",
+    top: "38%",
+    size: 9,
+    rotate: 5,
+    dur: 15.5,
+    wx: [0, -6, 3, 0],
+    wy: [0, 6, -5, 0],
+    image: WORK_PAGE.projects[3].image, // Maple Lens
+  },
+  {
+    left: "4%",
+    top: "72%",
+    size: 10,
+    rotate: 7,
+    dur: 15,
+    wx: [0, 7, -4, 0],
+    wy: [0, -7, -2, 0],
+    image: WORK_PAGE.projects[2].image, // Maple Furnishers
+  },
+  {
+    left: "44%",
+    top: "80%",
+    size: 8.5,
+    rotate: -5,
+    dur: 16.5,
+    wx: [0, -5, 6, 0],
+    wy: [0, -5, 3, 0],
+    image: "/work/loftgoom/deck-v1/slice-05.webp",
+  },
+  {
+    left: "78%",
+    top: "70%",
+    size: 9.5,
+    rotate: -5,
+    dur: 18,
+    wx: [0, -6, 5, 0],
+    wy: [0, -8, 4, 0],
+    image: WORK_PAGE.projects[1].image, // Ecommerce
+  },
+  {
+    left: "90%",
+    top: "78%",
+    size: 7.5,
+    rotate: 6,
+    dur: 17.5,
+    wx: [0, -4, 2, 0],
+    wy: [0, -6, 3, 0],
+    image: WORK_PAGE.projects[4].image, // Kalaa Kaari
+  },
 ];
 
 function FloatingThumb({
   progress,
   spec,
-  image,
 }: {
   progress: MotionValue<number>;
   spec: (typeof THUMBS)[number];
-  image: string;
 }) {
   // Fling each thumb AWAY from the hero centre as it scrolls out.
   const dx = (parseFloat(spec.left) - 50) * 1.7;
@@ -44,7 +129,7 @@ function FloatingThumb({
 
   return (
     <motion.div
-      style={{ left: spec.left, top: spec.top, x, y, opacity, rotate, width: `clamp(64px,${spec.size}vw,170px)` }}
+      style={{ left: spec.left, top: spec.top, x, y, opacity, rotate, width: `clamp(56px,${spec.size}vw,160px)` }}
       className="absolute z-0 will-change-transform"
     >
       {/* free-flow wandering lives on an inner node so it composes with the
@@ -58,7 +143,7 @@ function FloatingThumb({
         transition={{ duration: spec.dur, ease: "easeInOut", repeat: Infinity }}
         className="relative aspect-[810/556] w-full overflow-hidden rounded-[5px] shadow-2xl"
       >
-        <Image src={image} alt="" fill sizes="170px" className="object-cover" />
+        <Image src={spec.image} alt="" fill sizes="160px" className="object-cover" />
       </motion.div>
     </motion.div>
   );
@@ -78,12 +163,7 @@ export default function WorkHero() {
       className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 text-center"
     >
       {THUMBS.map((t, i) => (
-        <FloatingThumb
-          key={i}
-          progress={scrollYProgress}
-          spec={t}
-          image={WORK_PAGE.projects[i % WORK_PAGE.projects.length].image}
-        />
+        <FloatingThumb key={`${t.image}-${i}`} progress={scrollYProgress} spec={t} />
       ))}
 
       {/* Outline M + star above the title (user-supplied 280x182 mark) */}

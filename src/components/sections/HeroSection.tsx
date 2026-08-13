@@ -87,6 +87,15 @@ export default function HeroSection() {
         breathing glow) is painted ONCE by <SceneBackdrop /> behind the hero,
         the About screen and the marquee — one continuous field, no seams. */}
     <section className="sticky top-0 isolate h-svh transform-gpu overflow-hidden text-white">
+      {/* The hero is a Figma CANVAS: every position below is a % of this box
+          and every size a % of its width, so the composition only holds if the
+          BOX scales. Sizes are therefore cqw — a share of this element — and
+          never cap out; capping them (as vw clamps did) froze the artwork at
+          the 1512 design width while the % positions kept spreading, which is
+          what stranded the M in the middle of wide screens. The box itself
+          stops at 1920 and centres, so ultra-wide monitors get the composition
+          rather than an endlessly inflating one. */}
+      <div className="relative mx-auto h-full w-full max-w-[1920px] [container-type:inline-size]">
       {/* Everything below dissolves while the hero is pinned */}
       <motion.div style={{ opacity: contentOpacity, y: contentY }} className="absolute inset-0">
 
@@ -125,12 +134,12 @@ export default function HeroSection() {
         initial={{ rotate: -360 }}
         animate={{ rotate: 0 }}
         transition={{ type: "spring", bounce: 0, duration: 2, repeat: Infinity, repeatDelay: 1.6 }}
-        className="absolute left-[28.09%] top-[52.06%] w-[clamp(13px,1.37vw,21px)] pointer-events-none select-none"
+        className="absolute left-[28.09%] top-[52.06%] w-[max(13px,1.37cqw)] pointer-events-none select-none"
       />
 
       {/* Tiny glass orb over the headline (as in Figma render) */}
       <div
-        className="absolute left-[35.9%] top-[28.6%] size-[clamp(26px,3vw,46px)] rounded-full pointer-events-none"
+        className="absolute left-[35.9%] top-[28.6%] size-[max(26px,3cqw)] rounded-full pointer-events-none"
         style={{
           background:
             "radial-gradient(circle at 30% 30%, rgba(255,243,211,0.22), rgba(255,243,211,0.04) 55%, transparent 75%)",
@@ -149,7 +158,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.15 }}
-          className="font-serif-luxury text-[#fff3d3] text-[clamp(42px,5.29vw,80px)] font-normal leading-[1.11] tracking-[0.05em] whitespace-nowrap"
+          className="font-serif-luxury text-[#fff3d3] text-[max(42px,5.29cqw)] font-normal leading-[1.11] tracking-[0.05em] whitespace-nowrap"
         >
           <span className="block">{HERO_DATA.headlineMain}</span>
           <span className="block">{HERO_DATA.headlineSub}</span>
@@ -160,17 +169,17 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.45 }}
-          className="group ml-[0.5%] mt-[clamp(20px,2.2vw,34px)] flex w-[clamp(150px,12.63vw,191px)] flex-col"
+          className="group ml-[0.5%] mt-[max(20px,2.2cqw)] flex w-[max(150px,12.63cqw)] flex-col"
         >
           <span className="flex items-center justify-between">
-            <span className="font-sans-luxury text-[clamp(12px,0.93vw,14px)] font-bold uppercase tracking-[-0.024em] text-[#fff3d3]">
+            <span className="font-sans-luxury text-[max(12px,0.93cqw)] font-bold uppercase tracking-[-0.024em] text-[#fff3d3]">
               {HERO_DATA.cta}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/figma/arrow-cream.svg"
               alt=""
-              className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
+              className="w-[max(15px,0.99cqw)] transition-transform duration-300 group-hover:translate-x-1"
             />
           </span>
           <span className="mt-[9px] h-px w-full bg-[#fff3d3]/90" />
@@ -182,19 +191,19 @@ export default function HeroSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.55 }}
-        className="absolute left-[81.02%] top-[48.56%] z-10 w-[clamp(190px,14.42vw,218px)] max-md:left-auto max-md:right-[4%] max-md:top-[34%]"
+        className="absolute left-[81.02%] top-[48.56%] z-10 w-[max(190px,14.42cqw)] max-md:left-auto max-md:right-[4%] max-md:top-[34%]"
       >
         <div className="flex aspect-[218/79] w-full overflow-hidden rounded-[4px] border border-white">
           {/* wider than the Figma 46.79%: the live stopwatch carries a third
               unit (seconds), which the original two-unit box cannot hold */}
           <div className="flex w-[57%] flex-col items-center justify-center rounded-[4px] bg-[#fff3d3] px-[2%] text-[#741a14]">
-            <BuildTimer className="font-sans-luxury text-[clamp(13px,1.15vw,17.5px)] font-bold leading-[1.4]" />
-            <span className="font-sans-luxury text-[clamp(7px,0.68vw,10.2px)] font-normal leading-[1.3] tracking-[0.08em]">
+            <BuildTimer className="font-sans-luxury text-[max(13px,1.15cqw)] font-bold leading-[1.4]" />
+            <span className="font-sans-luxury text-[max(7px,0.68cqw)] font-normal leading-[1.3] tracking-[0.08em]">
               {HERO_DATA.badge.label}
             </span>
           </div>
           <div className="flex flex-1 items-center pl-[5%]">
-            <span className="font-sans-luxury text-[clamp(8px,0.73vw,11px)] font-medium uppercase leading-[1.5] text-white">
+            <span className="font-sans-luxury text-[max(8px,0.73cqw)] font-medium uppercase leading-[1.5] text-white">
               Avg. time to
               <br />
               first live build
@@ -208,7 +217,7 @@ export default function HeroSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.65 }}
-        className="absolute left-[81.02%] top-[72.4%] z-10 w-[16.47%] min-w-[200px] -translate-y-1/2 font-sans-luxury text-[clamp(13px,1.19vw,18px)] leading-[1.35] text-white max-md:left-auto max-md:right-[6%] max-md:top-[85%] max-md:w-[min(280px,60vw)]"
+        className="absolute left-[81.02%] top-[72.4%] z-10 w-[16.47%] min-w-[200px] -translate-y-1/2 font-sans-luxury text-[max(13px,1.19cqw)] leading-[1.35] text-white max-md:left-auto max-md:right-[6%] max-md:top-[85%] max-md:w-[min(280px,60vw)]"
       >
         {HERO_DATA.subtitle}
       </motion.p>
@@ -218,7 +227,7 @@ export default function HeroSection() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 1 }}
-        className="absolute left-[2.18%] top-[73.4%] z-10 size-[20px]"
+        className="absolute left-[2.18%] top-[73.4%] z-10 size-[max(20px,1.32cqw)]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
@@ -242,7 +251,7 @@ export default function HeroSection() {
           Lives OUTSIDE the Scene A dissolve: full strength over the hero
           (z-20 glass, so the "se." of "purpose." reads through it), then it
           settles to a faint floating ghost behind the About statement. */}
-      <div className="absolute left-1/2 top-[40.9%] z-20 w-[clamp(300px,37.83vw,572px)] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+      <div className="absolute left-1/2 top-[40.9%] z-20 w-[max(300px,37.83cqw)] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
         {/* scroll-driven: fade to ghost, drift down, grow slightly */}
         <motion.div style={{ opacity: markOpacity, y: markY, scale: markScale }}>
           {/* entrance */}
@@ -283,10 +292,9 @@ export default function HeroSection() {
           className="absolute inset-0 flex [align-items:safe_center] px-6 pt-[clamp(96px,15vh,150px)] pb-[clamp(12px,2.5vh,28px)] sm:px-12"
         >
           <div className="mx-auto w-full max-w-6xl lg:mx-0 lg:ml-[12.29%] lg:mr-[6.57%] lg:w-auto lg:max-w-none">
-            {/* 77px = another 0.8x step down. 5.1vw slightly OVERSHOOTS 77 at
-                the 1512 canvas so the clamp max pins it to exactly 77 there
-                (an exact 5.0926vw lands at 76.96 after subpixel rounding) */}
-            <p className="font-serif-luxury text-[clamp(30px,min(5.1vw,10vh),77px)] font-light leading-none text-[#fff3d3]">
+            {/* 5.1% of the canvas is the design's 77px at 1512; the 10vh arm
+                holds the statement inside short windows */}
+            <p className="font-serif-luxury text-[max(30px,min(5.1cqw,10vh))] font-light leading-none text-[#fff3d3]">
               {aboutWords.map((word, i) => (
                 <span key={`${word}-${i}`}>
                   <PinnedWord progress={scrollYProgress} word={word} index={i} total={aboutWords.length} />{" "}
@@ -375,6 +383,7 @@ export default function HeroSection() {
         </div>
         </motion.div>
       </motion.div>
+      </div>
     </section>
     </div>
   );

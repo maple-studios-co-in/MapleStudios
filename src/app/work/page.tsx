@@ -31,7 +31,7 @@ export default function WorkPage() {
       {/* Floating thumbnails scatter away from "Our work" on scroll (trionn-style) */}
       <WorkHero />
       <WorkGrid />
-      <Footer />
+      <Footer seamless />
     </main>
   );
 }
