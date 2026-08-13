@@ -8,8 +8,11 @@ import GradientCycler from "@/components/common/GradientCycler";
  * Final CTA / footer — Figma Home 13:8015 region (maroon #741A14, 1513x841).
  * "Ready to build something bold?" + collaboration CTA, contact columns,
  * and the giant clipped "Maple Studios" wordmark at the bottom.
+ *
+ * `seamless` drops the solid fill / top radius / local cycler so a parent
+ * page's fixed gradient (e.g. /work) reads as one continuous background.
  */
-export default function Footer() {
+export default function Footer({ seamless = false }: { seamless?: boolean }) {
   return (
     <footer
       id="contact"
@@ -17,10 +20,12 @@ export default function Footer() {
       // viewport top, so the kicker always rests at its own pt (≥120px) —
       // clear of the fixed navbar on EVERY viewport height (a fixed-height
       // footer parks the kicker in the navbar band on tall screens).
-      className="relative isolate flex min-h-[100svh] flex-col overflow-hidden rounded-t-[8px] bg-[#741a14] px-[max(20px,2.12%)] pb-[clamp(140px,15.5vw,235px)] pt-[clamp(120px,12.9vw,195px)] text-[#fff3d3]"
+      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[clamp(140px,15.5vw,235px)] pt-[clamp(120px,12.9vw,195px)] text-[#fff3d3] ${
+        seamless ? "bg-transparent" : "rounded-t-[8px] bg-[#741a14]"
+      }`}
     >
-      {/* same Default→Variant7 shade cycle as every other reddish surface */}
-      <GradientCycler />
+      {/* Own cycler only when the footer paints its own maroon ground */}
+      {!seamless ? <GradientCycler /> : null}
       {/* Kicker */}
       <motion.p
         initial={{ opacity: 0, y: 16 }}

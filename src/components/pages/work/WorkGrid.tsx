@@ -61,7 +61,7 @@ function ProjectEntry({
         <h3 className="font-sans-luxury text-[clamp(22px,2.1vw,32px)] font-bold leading-[1.08] text-[#fff3d3]">
           {project.title}
         </h3>
-        <p className="mt-3 max-w-[300px] font-sans-luxury text-[14px] leading-snug text-white">
+        <p className="mt-3 max-w-[300px] whitespace-pre-line font-sans-luxury text-[14px] leading-snug text-white">
           {project.description}
         </p>
         <UnderlineLink

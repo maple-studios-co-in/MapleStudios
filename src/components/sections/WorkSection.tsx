@@ -77,10 +77,11 @@ function ProjectCard({
   project: (typeof WORK_DATA.projects)[number];
   className?: string;
 }) {
+  const href = project.href ?? "/work";
   return (
     <div className={className}>
       <Link
-        href="/work"
+        href={href}
         className="group block overflow-hidden rounded-[6px]"
         aria-label={project.title}
       >
@@ -99,10 +100,10 @@ function ProjectCard({
           {project.title}
         </h3>
         <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-          <p className="whitespace-pre-line font-sans-luxury text-[14px] leading-snug text-black">
+          <p className="max-w-[340px] whitespace-pre-line font-sans-luxury text-[14px] leading-snug text-black">
             {project.description}
           </p>
-          <a href="/contact" className="group flex w-[148px] shrink-0 flex-col">
+          <Link href={href} className="group flex w-[148px] shrink-0 flex-col">
             <span className="flex items-center justify-between">
               <span className="font-sans-luxury text-[12px] font-bold uppercase text-[#741a14]">
                 {project.cta}
@@ -115,7 +116,7 @@ function ProjectCard({
               />
             </span>
             <span className="mt-[9px] h-px w-full bg-[#741a14]" />
-          </a>
+          </Link>
         </div>
       </div>
     </div>
@@ -270,7 +271,9 @@ export default function WorkSection() {
               <UnderlineLink label={WORK_DATA.viewAll} href="/work" width="191px" />
             </div>
           </div>
-          <ProjectCard project={WORK_DATA.projects[0]} />
+          {WORK_DATA.projects.map((p) => (
+            <ProjectCard key={p.id} project={p} />
+          ))}
         </div>
       </div>
     </section>

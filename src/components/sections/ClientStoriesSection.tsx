@@ -12,7 +12,7 @@ import { StarDivider } from "./WorkSection";
  * testimonial + author on the right, round prev/next controls.
  */
 export default function ClientStoriesSection() {
-  const [active, setActive] = useState(1); // CREDIBLE active in the design
+  const [active, setActive] = useState(1); // GET SHOKU active in the design
   const count = CLIENT_STORIES_DATA.stories.length;
   const story = CLIENT_STORIES_DATA.stories[active];
 

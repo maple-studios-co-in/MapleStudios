@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import ProjectDetail from "@/components/pages/work/ProjectDetail";
-import { WORK_PAGE } from "@/lib/constants";
+import { isLightProject, WORK_PAGE } from "@/lib/constants";
 
 type Params = { slug: string };
 
@@ -39,8 +39,16 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   const prev = list[(index - 1 + list.length) % list.length];
   const next = list[(index + 1) % list.length];
 
+  const light = isLightProject(project.id);
+
   return (
-    <main className="relative min-h-screen bg-[#5d1411] text-white selection:bg-[#761c17] selection:text-white">
+    <main
+      className={`relative min-h-screen ${
+        light
+          ? "bg-[#FFF3D3] text-[#2f0500] selection:bg-[#741a14] selection:text-[#FFF3D3]"
+          : "bg-[#5d1411] text-white selection:bg-[#761c17] selection:text-white"
+      }`}
+    >
       <Navbar />
       <ProjectDetail project={project} prev={prev} next={next} />
       <Footer />

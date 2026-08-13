@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import {
   motion,
   useMotionValueEvent,
@@ -17,8 +18,8 @@ import { SERVICES_DATA, WORK_DATA } from "@/lib/constants";
  *   0.18–0.34  the screen goes black and the particle film fades in — the
  *              type crossfades maroon → cream at the same time
  *   0.30–0.46  letters burst as the DNA helix forms
- *   0.46–0.98  cards are GENERATED from the helix — spawn small at the centre,
- *              grow while revolving outward, dissolve — on a slow loop.
+ *   0.46–0.98  glass service cards are GENERATED from the helix — spawn small
+ *              at the centre, grow while revolving outward, dissolve — loop.
  */
 
 const rnd = (i: number, salt: number) => {
@@ -62,61 +63,74 @@ const W1 = 0.98;
 const CYCLES = 1;
 
 /** Per-card cycle position in [0,1), or null outside the emission window. */
-const cyc = (p: number, index: number) => {
+const cyc = (p: number, index: number, total: number) => {
   const w = (p - W0) / (W1 - W0);
   if (w <= 0) return null;
-  return (Math.min(w, 0.999) * CYCLES + index / 4) % 1;
+  const n = Math.max(total, 1);
+  return (Math.min(w, 0.999) * CYCLES + index / n) % 1;
 };
 
 function SpawnCard({
   progress,
   card,
   index,
+  total,
 }: {
   progress: MotionValue<number>;
   card: (typeof SERVICES_DATA.cards)[number];
   index: number;
+  total: number;
 }) {
-  const base = -90 + index * 90;
+  const base = -90 + index * (360 / Math.max(total, 1));
 
   const x = useTransform(progress, (p) => {
-    const c = cyc(p, index);
+    const c = cyc(p, index, total);
     if (c === null) return "0vw";
-    const a = ((base + c * 130) * Math.PI) / 180;
-    const r = 6 + c * 26;
+    // Slower angular travel (~75°) + wider orbit so cards sit farther from DNA
+    const a = ((base + c * 75) * Math.PI) / 180;
+    const r = 12 + c * 30;
     return `${r2(Math.cos(a) * r)}vw`;
   });
   const y = useTransform(progress, (p) => {
-    const c = cyc(p, index);
+    const c = cyc(p, index, total);
     if (c === null) return "0vh";
-    const a = ((base + c * 130) * Math.PI) / 180;
-    const r = 5 + c * 21;
+    const a = ((base + c * 75) * Math.PI) / 180;
+    const r = 10 + c * 24;
     return `${r2(Math.sin(a) * r)}vh`;
   });
   const scale = useTransform(progress, (p) => {
-    const c = cyc(p, index);
-    return c === null ? 0.35 : r2(0.55 + c * 1.05); // grows to ~1.6x
+    const c = cyc(p, index, total);
+    return c === null ? 0.35 : r2(0.55 + c * 0.7); // grows toward ~1.25x
   });
   const opacity = useTransform(progress, (p) => {
-    const c = cyc(p, index);
+    const c = cyc(p, index, total);
     if (c === null) return 0;
-    if (c < 0.2) return r2(c / 0.2); // slower materialise
-    if (c < 0.68) return 1;
-    return r2(Math.max(0, 1 - (c - 0.68) / 0.32)); // gentler dissolve
+    if (c < 0.18) return r2(c / 0.18); // materialise from the helix
+    if (c < 0.78) return 1; // hold near the DNA a touch longer
+    return r2(Math.max(0, 1 - (c - 0.78) / 0.22)); // gentle dissolve
   });
 
   return (
-    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+    <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none">
       <motion.article
         style={{ x, y, opacity, scale }}
-        className="min-h-[clamp(102px,9vw,141px)] w-[clamp(260px,23vw,360px)] rounded-[8px] border border-white/10 bg-black/35 p-5 backdrop-blur-[5px] will-change-transform"
+        className="w-[290px] rounded-[12px] border border-white/20 bg-[#2a0c0a]/55 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-[14px] will-change-transform"
         suppressHydrationWarning
       >
-        <h3 className="font-sans-luxury text-[clamp(15px,1.15vw,18px)] font-bold leading-[1.15] text-[#fff3d3]">
-          {card.titleLines.join(" ")}
-        </h3>
-        <p className="mt-2 font-sans-luxury text-[12px] leading-snug text-white/85">
-          <span className="font-bold text-white">{card.lead}</span>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-sans-luxury text-[14px] font-bold leading-normal text-white">
+            {card.title}
+          </h3>
+          <Image
+            src={card.icon}
+            alt=""
+            width={28}
+            height={28}
+            className="mt-0.5 size-7 shrink-0 object-contain"
+          />
+        </div>
+        <p className="mt-2 font-sans-luxury text-[14px] font-normal leading-normal text-white">
+          <span className="font-bold">{card.lead}</span> {card.body}
         </p>
       </motion.article>
     </div>
@@ -178,9 +192,15 @@ export default function ServicesStage({ progress }: { progress: MotionValue<numb
         </div>
       </motion.div>
 
-      {/* Cards generated from the DNA */}
+      {/* Glass service cards generated from / revolving around the DNA */}
       {SERVICES_DATA.cards.map((c, i) => (
-        <SpawnCard key={c.id} progress={progress} card={c} index={i} />
+        <SpawnCard
+          key={c.id}
+          progress={progress}
+          card={c}
+          index={i}
+          total={SERVICES_DATA.cards.length}
+        />
       ))}
     </div>
   );
