@@ -45,29 +45,29 @@ function ProjectEntry({
   return (
     <article
       ref={ref}
-      className="relative grid grid-cols-1 items-center gap-8 py-[clamp(56px,7vw,110px)] lg:grid-cols-2 lg:gap-[6%]"
+      className="relative grid grid-cols-1 items-center gap-8 py-[max(56px,7vw)] lg:grid-cols-2 lg:gap-[6%]"
     >
       {/* Ghost wordmark */}
       <motion.span
         aria-hidden="true"
         style={{ y: ghostY, opacity: ghostOpacity }}
-        className="pointer-events-none absolute inset-x-0 top-0 select-none text-center font-serif-luxury text-[clamp(64px,11vw,168px)] uppercase leading-none tracking-[-0.02em] text-[#fff3d3]"
+        className="pointer-events-none absolute inset-x-0 top-0 select-none text-center font-serif-luxury text-[max(64px,11vw)] uppercase leading-none tracking-[-0.02em] text-[#fff3d3]"
       >
         {project.title}
       </motion.span>
 
       {/* Info column */}
       <Reveal className={`relative z-10 ${flipped ? "lg:order-2 lg:pl-[8%]" : "lg:order-1"}`}>
-        <h3 className="font-sans-luxury text-[clamp(22px,2.1vw,32px)] font-bold leading-[1.08] text-[#fff3d3]">
+        <h3 className="font-sans-luxury text-[max(22px,2.1vw)] font-bold leading-[1.08] text-[#fff3d3]">
           {project.title}
         </h3>
-        <p className="mt-3 max-w-[300px] whitespace-pre-line font-sans-luxury text-[14px] leading-snug text-white">
+        <p className="mt-3 max-w-[300px] whitespace-pre-line font-sans-luxury text-[max(14px,0.926vw)] leading-snug text-white">
           {project.description}
         </p>
         <UnderlineLink
           label={WORK_PAGE.exploreCta}
           href={`/work/${project.id}`}
-          width="191px"
+          width="max(191px,12.632vw)"
           className="mt-7"
           color="#fff3d3"
           arrow="/figma/arrow-cream.svg"
@@ -137,7 +137,7 @@ function Connector({ flip, uid }: { flip: boolean; uid: string }) {
     <div
       ref={ref}
       aria-hidden="true"
-      className="pointer-events-none relative z-0 -my-[clamp(48px,6vw,96px)] hidden h-[clamp(160px,20vw,300px)] lg:block"
+      className="pointer-events-none relative z-0 -my-[max(48px,6vw)] hidden h-[max(160px,20vw)] lg:block"
     >
       <svg
         viewBox="0 0 1000 400"
@@ -210,7 +210,7 @@ function Connector({ flip, uid }: { flip: boolean; uid: string }) {
 export default function WorkGrid() {
   return (
     // transparent — the page-level reddish gradient runs uninterrupted
-    <section className="px-[6%] pb-[clamp(80px,10vw,150px)] pt-[clamp(48px,6vw,90px)]">
+    <section className="px-[6%] pb-[max(80px,10vw)] pt-[max(48px,6vw)]">
       {WORK_PAGE.projects.map((p, i) => (
         <div key={p.id}>
           <ProjectEntry project={p} index={i} />
@@ -218,8 +218,8 @@ export default function WorkGrid() {
         </div>
       ))}
 
-      <Reveal className="mt-[clamp(48px,6vw,90px)] flex justify-center">
-        <UnderlineLink label={WORK_PAGE.cta} href="/about" width="191px" color="#fff3d3" arrow="/figma/arrow-cream.svg" />
+      <Reveal className="mt-[max(48px,6vw)] flex justify-center">
+        <UnderlineLink label={WORK_PAGE.cta} href="/about" width="max(191px,12.632vw)" color="#fff3d3" arrow="/figma/arrow-cream.svg" />
       </Reveal>
     </section>
   );

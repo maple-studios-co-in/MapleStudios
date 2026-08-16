@@ -23,7 +23,7 @@ export default function AboutSection() {
           {[...Array(6)].map((_, i) => (
             <span
               key={i}
-              className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(64px,9.37vw,141.6px)] tracking-[0.05em] text-[#fff3d3] font-normal uppercase"
+              className="flex items-center gap-[3vw] font-serif-luxury text-[max(64px,9.37vw)] tracking-[0.05em] text-[#fff3d3] font-normal uppercase"
             >
               {ABOUT_DATA.marqueeText
                 .split("✦")
@@ -36,7 +36,7 @@ export default function AboutSection() {
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
-                      className="star-twinkle aspect-square w-[clamp(14px,1.59vw,24px)] shrink-0"
+                      className="star-twinkle aspect-square w-[max(14px,1.59vw)] shrink-0"
                       style={{ animationDelay: `${((i * 3 + wi) % 5) * 0.55}s` }}
                       aria-hidden="true"
                     >

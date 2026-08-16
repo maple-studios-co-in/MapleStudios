@@ -20,7 +20,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       // viewport top, so the kicker always rests at its own pt (≥120px) —
       // clear of the fixed navbar on EVERY viewport height (a fixed-height
       // footer parks the kicker in the navbar band on tall screens).
-      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[clamp(140px,15.5vw,235px)] pt-[clamp(120px,12.9vw,195px)] text-[#fff3d3] ${
+      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[max(140px,15.5vw)] pt-[max(120px,12.9vw)] text-[#fff3d3] ${
         seamless ? "bg-transparent" : "rounded-t-[8px] bg-[#741a14]"
       }`}
     >
@@ -38,13 +38,13 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       </motion.p>
 
       {/* Heading + CTA */}
-      <div className="mt-[clamp(20px,2.6vw,40px)] flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-[max(20px,2.6vw)] flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 2.2 }}
-          className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] leading-[1.11] text-[#fff3d3]"
+          className="font-serif-luxury text-[max(44px,5.29vw)] leading-[1.11] text-[#fff3d3]"
         >
           {FOOTER_DATA.headingLines[0]}
           <br />
@@ -60,14 +60,14 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
           className="group flex w-[241px] shrink-0 flex-col"
         >
           <span className="flex items-center justify-between">
-            <span className="font-sans-luxury text-[14px] font-bold uppercase text-[#fff3d3]">
+            <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
               {FOOTER_DATA.cta}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/figma/arrow-cream-footer.svg"
               alt=""
-              className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
+              className="w-[max(15px,0.992vw)] transition-transform duration-300 group-hover:translate-x-1"
             />
           </span>
           <span className="mt-[10px] h-px w-full bg-[#fff3d3]" />
@@ -76,27 +76,27 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
 
       {/* Contact columns — mt-auto pins them to the footer's bottom band so
           extra viewport height opens up between heading and columns */}
-      <div className="mt-auto grid grid-cols-1 gap-10 pt-[clamp(40px,3.8vw,58px)] sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:gap-x-[clamp(48px,8vw,180px)]">
-        <p className="font-sans-luxury text-[14px] font-bold uppercase text-[#fff3d3]">
+      <div className="mt-auto grid grid-cols-1 gap-10 pt-[max(40px,3.8vw)] sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:gap-x-[max(48px,8vw)]">
+        <p className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
           {FOOTER_DATA.copyright}
         </p>
 
         <div>
-          <p className="font-sans-luxury text-[14px] font-bold uppercase text-[#fff3d3]">
+          <p className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
             {FOOTER_DATA.enquiryLabel}
           </p>
           <div className="mt-[26px] grid grid-cols-[auto_1fr] gap-x-[8px] gap-y-[10px]">
             <span className="font-sans-luxury text-[16px] text-white">E.</span>
             <a
               href={`mailto:${FOOTER_DATA.email}`}
-              className="font-sans-luxury text-[14px] leading-[21px] text-white transition-colors hover:text-[#fff3d3]"
+              className="font-sans-luxury text-[max(14px,0.926vw)] leading-[21px] text-white transition-colors hover:text-[#fff3d3]"
             >
               {FOOTER_DATA.email}
             </a>
             <span className="font-sans-luxury text-[16px] text-white">P.</span>
             <a
               href={`tel:${FOOTER_DATA.phone.replace(/\s/g, "")}`}
-              className="font-sans-luxury text-[14px] leading-[21px] text-white transition-colors hover:text-[#fff3d3]"
+              className="font-sans-luxury text-[max(14px,0.926vw)] leading-[21px] text-white transition-colors hover:text-[#fff3d3]"
             >
               {FOOTER_DATA.phone}
             </a>
@@ -104,7 +104,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
         </div>
 
         <div>
-          <p className="font-sans-luxury text-[14px] font-bold uppercase text-[#fff3d3]">
+          <p className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
             {FOOTER_DATA.socialLabel}
           </p>
           <div className="mt-[26px] grid grid-cols-2 gap-x-[56px] gap-y-[10px]">
@@ -130,7 +130,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
         viewport={{ once: true, margin: "0px 0px -10% 0px" }}
         transition={{ duration: 2.8, ease: "easeOut" }}
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[26%] select-none whitespace-nowrap font-serif-luxury text-[clamp(76px,15.54vw,235px)] font-semibold leading-[0.95] text-[#93352f]/50"
+        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[26%] select-none whitespace-nowrap font-serif-luxury text-[max(76px,15.54vw)] font-semibold leading-[0.95] text-[#93352f]/50"
       >
         {FOOTER_DATA.giant}
       </motion.p>

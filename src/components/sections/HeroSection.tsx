@@ -92,10 +92,11 @@ export default function HeroSection() {
           BOX scales. Sizes are therefore cqw — a share of this element — and
           never cap out; capping them (as vw clamps did) froze the artwork at
           the 1512 design width while the % positions kept spreading, which is
-          what stranded the M in the middle of wide screens. The box itself
-          stops at 1920 and centres, so ultra-wide monitors get the composition
-          rather than an endlessly inflating one. */}
-      <div className="relative mx-auto h-full w-full max-w-[1920px] [container-type:inline-size]">
+          what stranded the M in the middle of wide screens. No max-width on
+          the box either: the canvas rides the full viewport at every size, so
+          the composition scales 1:1 on big monitors instead of shrinking
+          inside a centred 1920 cap. */}
+      <div className="relative mx-auto h-full w-full [container-type:inline-size]">
       {/* Everything below dissolves while the hero is pinned */}
       <motion.div style={{ opacity: contentOpacity, y: contentY }} className="absolute inset-0">
 
@@ -150,8 +151,7 @@ export default function HeroSection() {
       />
 
       {/* ——— Headline + START A PROJECT (one anchored block, top-left) ———
-          Heading enlarged to the design's span so the "se." of "purpose."
-          tucks under the glass M; the CTA is anchored below it so they can
+          Two-line Catilde lockup; the CTA is anchored below it so they can
           never collide at short viewports. */}
       <div className="absolute left-[1.85%] top-[17.2%] z-10">
         <motion.h1
@@ -239,7 +239,7 @@ export default function HeroSection() {
           className="absolute inset-0 flex items-center justify-center"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[7.8px] rotate-90" />
+          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[max(7.8px,0.516vw)] rotate-90" />
         </motion.span>
       </motion.div>
 
@@ -278,7 +278,7 @@ export default function HeroSection() {
         style={{ opacity: aboutOpacity, y: aboutY }}
         className="absolute inset-0 z-10 overflow-hidden"
       >
-        <span className="absolute left-5 top-[92px] z-20 text-xs font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
+        <span className="absolute left-5 top-[92px] z-20 text-[max(12px,0.794cqw)] font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
           {ABOUT_DATA.tag}
         </span>
 
@@ -309,7 +309,7 @@ export default function HeroSection() {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="star-twinkle absolute left-[65.5%] top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
+                className="star-twinkle absolute left-[65.5%] top-1/2 w-[max(21px,1.389vw)] -translate-x-1/2 -translate-y-1/2"
                 aria-hidden="true"
               >
                 <path
@@ -342,26 +342,26 @@ export default function HeroSection() {
             style={{ opacity: colsOpacity, y: colsY }}
             className="grid w-full grid-cols-1 items-start gap-8 md:grid-cols-[65.5%_1fr]"
           >
-            <div className="flex flex-col gap-1 text-xs font-sans-luxury tracking-widest text-white/70 uppercase leading-relaxed font-medium">
+            <div className="flex flex-col gap-1 text-[max(12px,0.794cqw)] font-sans-luxury tracking-widest text-white/70 uppercase leading-relaxed font-medium">
               {ABOUT_DATA.leftColumn.map((line, idx) => (
                 <p key={idx}>{line}</p>
               ))}
             </div>
             <div className="flex flex-col items-start gap-[clamp(24px,5vh,64px)] md:pl-[1.5%]">
-              <p className="max-w-[400px] text-base sm:text-lg font-sans-luxury text-white/90 leading-relaxed font-light">
+              <p className="max-w-[max(400px,26.46cqw)] text-[max(16px,1.19cqw)] font-sans-luxury text-white/90 leading-relaxed font-light">
                 {ABOUT_DATA.rightText}
               </p>
               {/* underlined CTA with arrow (site link pattern) */}
-              <a href="/about" className="group flex w-[clamp(150px,12.63vw,191px)] flex-col">
+              <a href="/about" className="group flex w-[max(150px,12.63vw)] flex-col">
                 <span className="flex items-center justify-between">
-                  <span className="font-sans-luxury text-[clamp(11px,0.93vw,14px)] font-bold uppercase tracking-[-0.024em] text-[#fff3d3]">
+                  <span className="font-sans-luxury text-[max(11px,0.93vw)] font-bold uppercase tracking-[-0.024em] text-[#fff3d3]">
                     {ABOUT_DATA.cta}
                   </span>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/figma/arrow-cream.svg"
                     alt=""
-                    className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
+                    className="w-[max(15px,0.992vw)] transition-transform duration-300 group-hover:translate-x-1"
                   />
                 </span>
                 <span className="mt-[3px] h-px w-full bg-[#fff3d3]/90" />
@@ -374,7 +374,7 @@ export default function HeroSection() {
             style={{ opacity: visionOpacity }}
             className="w-full pt-[clamp(12px,7vh,110px)]"
           >
-            <p className="text-[11px] font-sans-luxury tracking-widest uppercase text-white/60 font-medium">
+            <p className="text-[max(11px,0.727cqw)] font-sans-luxury tracking-widest uppercase text-white/60 font-medium">
               {ABOUT_DATA.focusedVision}
               <br />
               {ABOUT_DATA.measuredExecution}

@@ -28,7 +28,7 @@ export default function ClientStoriesSection() {
     // the work/services strip exit is still closing. Rescale with RUNWAY_VH.
     // It must also stay well under (this section + footer) height, or the
     // container outlasts the footer and its runway shows below it.
-    <section id="stories" className="relative z-20 -mt-[90vh] bg-[#fff3d3] pt-[clamp(16px,2vw,32px)] text-black">
+    <section id="stories" className="relative z-20 -mt-[90vh] bg-[#fff3d3] pt-[max(16px,2vw)] text-black">
       {/* Heading row */}
       <div className="mx-auto grid w-full grid-cols-1 items-center gap-6 px-[10.4%] lg:grid-cols-2">
         <motion.h2
@@ -36,7 +36,7 @@ export default function ClientStoriesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 2 }}
-          className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] leading-none text-black"
+          className="font-serif-luxury text-[max(44px,5.29vw)] leading-none text-black"
         >
           {CLIENT_STORIES_DATA.heading}
         </motion.h2>
@@ -45,18 +45,18 @@ export default function ClientStoriesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 2, delay: 0.3 }}
-          className="max-w-[240px] font-sans-luxury text-[clamp(15px,1.32vw,20px)] leading-[1.2] text-black"
+          className="max-w-[240px] font-sans-luxury text-[max(15px,1.32vw)] leading-[1.2] text-black"
         >
           {CLIENT_STORIES_DATA.subtitle}
         </motion.p>
       </div>
 
-      <div className="mt-[clamp(40px,4.5vw,68px)]">
+      <div className="mt-[max(40px,4.5vw)]">
         <StarDivider />
       </div>
 
       {/* Content row */}
-      <div className="mx-auto mt-[clamp(40px,5.5vw,84px)] grid w-full grid-cols-1 gap-12 px-[10.4%] lg:grid-cols-[41%_1fr]">
+      <div className="mx-auto mt-[max(40px,5.5vw)] grid w-full grid-cols-1 gap-12 px-[10.4%] lg:grid-cols-[41%_1fr]">
         {/* Left: client list + carousel arrows */}
         <div className="flex flex-col">
           <ul className="flex flex-col gap-[14px]">
@@ -75,7 +75,7 @@ export default function ClientStoriesSection() {
             ))}
           </ul>
 
-          <div className="mt-[clamp(48px,6.5vw,100px)] flex items-center gap-8">
+          <div className="mt-[max(48px,6.5vw)] flex items-center gap-8">
             <button
               type="button"
               onClick={prev}
@@ -99,7 +99,7 @@ export default function ClientStoriesSection() {
 
         {/* Right: testimonial + author */}
         <div className="flex max-w-[573px] flex-col">
-          <div className="min-h-[clamp(120px,10vw,160px)]">
+          <div className="min-h-[max(120px,10vw)]">
             <AnimatePresence mode="wait">
               <motion.blockquote
                 key={active}
@@ -107,14 +107,14 @@ export default function ClientStoriesSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.35 }}
-                className="font-sans-luxury text-[clamp(20px,1.98vw,30px)] font-medium leading-[1.2] text-black"
+                className="font-sans-luxury text-[max(20px,1.98vw)] font-medium leading-[1.2] text-black"
               >
                 {story.quote}
               </motion.blockquote>
             </AnimatePresence>
           </div>
 
-          <div className="mt-[clamp(32px,3.5vw,52px)] flex items-center">
+          <div className="mt-[max(32px,3.5vw)] flex items-center">
             <div className="relative h-[75px] w-[76px] overflow-hidden rounded-[6px]">
               <Image
                 src={story.avatar}
@@ -126,23 +126,23 @@ export default function ClientStoriesSection() {
             </div>
             <div className="ml-[25px] flex flex-col">
               <span className="font-sans-luxury text-[16px] font-bold text-black">{story.name}</span>
-              <span className="mt-1 font-sans-luxury text-[14px] text-black">{story.role}</span>
+              <span className="mt-1 font-sans-luxury text-[max(14px,0.926vw)] text-black">{story.role}</span>
             </div>
           </div>
 
           <a
             href="#contact"
-            className="group mt-[clamp(28px,3vw,50px)] flex w-[191px] flex-col"
+            className="group mt-[max(28px,3vw)] flex w-[191px] flex-col"
           >
             <span className="flex items-center justify-between">
-              <span className="font-sans-luxury text-[14px] font-bold uppercase text-[#741a14]">
+              <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#741a14]">
                 {CLIENT_STORIES_DATA.cta}
               </span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/figma/arrow-maroon.svg"
                 alt=""
-                className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
+                className="w-[max(15px,0.992vw)] transition-transform duration-300 group-hover:translate-x-1"
               />
             </span>
             <span className="mt-[9px] h-px w-full bg-[#741a14]" />
@@ -151,7 +151,7 @@ export default function ClientStoriesSection() {
       </div>
 
       {/* Bottom divider — star ornament sits left of center in the design (42.9%) */}
-      <div className="mt-[clamp(64px,8vw,120px)] pb-[64px]">
+      <div className="mt-[max(64px,8vw)] pb-[64px]">
         <StarDivider starLeft="42.92%" />
       </div>
     </section>

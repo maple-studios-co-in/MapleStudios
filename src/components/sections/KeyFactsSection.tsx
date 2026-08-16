@@ -29,10 +29,10 @@ export default function KeyFactsSection() {
           transition={{ duration: 1.3 }}
           className="text-center flex flex-col items-center gap-2"
         >
-          <h2 className="font-serif-luxury text-[clamp(56px,6.61vw,100px)] font-normal leading-normal text-[#741a14]">
+          <h2 className="font-serif-luxury text-[max(56px,6.61vw)] font-normal leading-normal text-[#741a14]">
             {KEY_FACTS_DATA.heading}
           </h2>
-          <p className="font-sans-luxury text-[clamp(15px,1.32vw,20px)] text-black max-w-md font-medium">
+          <p className="font-sans-luxury text-[max(15px,1.32vw)] text-black max-w-md font-medium">
             {KEY_FACTS_DATA.subtitle}
           </p>
         </motion.div>

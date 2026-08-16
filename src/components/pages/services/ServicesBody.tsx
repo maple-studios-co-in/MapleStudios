@@ -11,6 +11,7 @@ import {
 } from "motion/react";
 import { SERVICES_PAGE } from "@/lib/constants";
 import { Eyebrow, Reveal, UnderlineLink } from "../PageKit";
+import ServicesOrbit from "./ServicesOrbit";
 
 /* Linear 0→1 ramp between two progress marks (function-form transforms stay
    on motion's JS path — see HeroSection's WAAPI note). */
@@ -63,15 +64,15 @@ export function WordMarquee({
 }) {
   const row = [...words, ...words, ...words];
   return (
-    <div className={`overflow-hidden ${tight ? "py-[clamp(6px,0.8vw,14px)]" : "py-[clamp(24px,3vw,48px)]"}`}>
+    <div className={`overflow-hidden ${tight ? "py-[max(6px,0.8vw)]" : "py-[max(24px,3vw)]"}`}>
       <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
         {row.map((w, i) => (
           <span key={`${w}-${i}`} className="flex items-center gap-[3vw]">
             <span
               className={`font-serif-luxury uppercase leading-normal tracking-[0.05em] ${
                 tight
-                  ? "text-[clamp(28px,4.69vw,70.8px)]" // 0.5x — band shrinks, and being bottom-anchored the row drops toward the fold
-                  : "text-[clamp(56px,9.37vw,141.6px)]"
+                  ? "text-[max(28px,4.69vw)]" // 0.5x — band shrinks, and being bottom-anchored the row drops toward the fold
+                  : "text-[max(56px,9.37vw)]"
               }`}
               style={{ color }}
             >
@@ -81,36 +82,49 @@ export function WordMarquee({
             <img
               src={star}
               alt=""
-              className="star-twinkle w-[21px] shrink-0"
+              className="star-twinkle w-[max(21px,1.389vw)] shrink-0"
               style={{ animationDelay: `${(i % 5) * 0.55}s` }}
             />
           </span>
         ))}
       </div>
       <p className={`${tight ? "mt-2" : "mt-6"} flex items-center justify-center gap-[5px] text-center`}>
-        <Star4 className="w-[12px]" fill={color} />
+        <Star4 className="w-[max(12px,0.794vw)]" fill={color} />
         <Eyebrow color={color}>{caption}</Eyebrow>
       </p>
     </div>
   );
 }
 
-/* ————— Hero + intro + marquee: one continuous CREAM scene — the site's
-   lighter shade for the canvas, the maroon for every word (the inverse of
-   the old gradient treatment, flowing straight into the cream panels
-   below). Figma 14:8640 + 14:8680 + Group 21 + 14:8697xx. ————— */
+/* ————— Hero + intro + marquee: one continuous dark maroon scene with cream text & 3D orbit ————— */
 function ServicesHero() {
+  const [hoveredDiscipline, setHoveredDiscipline] = useState<number | null>(null);
+
+  const DISCIPLINES_ROW1 = [
+    { title: "AI & INTELLIGENT AUTOMATION", index: 0 },
+    { title: "WEB & APP DEVELOPMENT", index: 1 },
+    { title: "PRODUCT DESIGN", index: 2 },
+  ];
+
+  const DISCIPLINES_ROW2 = [
+    { title: "WEBSITE & MOBILE DESIGN", index: 3 },
+    { title: "IMMERSIVE & 3D EXPERIENCES", index: 4 },
+    { title: "BRANDING", index: 5 },
+  ];
+
   return (
-    <section className="relative isolate overflow-hidden bg-[#fff3d3] text-center">
+    <section className="relative isolate overflow-hidden bg-[#5d1411] text-center text-[#fff3d3]">
+      <ServicesOrbit activeNodeIndex={hoveredDiscipline} />
+
       {/* Eyebrow — ✦ WHAT WE DO BEST (14:8895) */}
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="flex items-center justify-center gap-[5px] pt-[clamp(140px,17.5vw,265px)]"
+        className="relative z-10 flex items-center justify-center gap-[5px] pt-[max(140px,17.5vw)]"
       >
-        <Star4 className="w-[12px]" fill="#741a14" />
-        <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#741a14]">
+        <Star4 className="w-[max(12px,0.794vw)]" fill="#fff3d3" />
+        <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] tracking-[-0.337px] text-[#fff3d3]">
           {SERVICES_PAGE.hero.eyebrow}
         </span>
       </motion.div>
@@ -120,39 +134,65 @@ function ServicesHero() {
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.1 }}
-        className="mt-[clamp(14px,2vw,30px)] font-serif-luxury text-[clamp(44px,5.29vw,80px)] font-normal leading-normal tracking-[0.05em] text-[#741a14]"
+        className="relative z-10 mt-[max(14px,2vw)] font-serif-luxury text-[max(44px,5.29vw)] font-normal leading-normal tracking-[0.05em] text-[#fff3d3]"
       >
         {SERVICES_PAGE.hero.title}
       </motion.h1>
 
-      {/* Discipline list — Red Hat Bold 16, two centred lines (14:8896) */}
-      <motion.p
+      {/* Discipline list — Red Hat Bold 16, interactive 3D Orbit linkage */}
+      <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.3 }}
-        className="mx-auto mt-[clamp(64px,10.8vw,164px)] max-w-[90%] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-[#741a14]"
+        className="relative z-10 mx-auto mt-[max(64px,10.8vw)] max-w-[90%] font-sans-luxury text-[max(12px,1.06vw)] font-bold uppercase leading-[1.5] text-[#fff3d3]"
       >
-        {SERVICES_PAGE.hero.listLines[0]}
-        <br className="hidden sm:block" /> {SERVICES_PAGE.hero.listLines[1]}
-      </motion.p>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          {DISCIPLINES_ROW1.map((item, i) => (
+            <Fragment key={item.title}>
+              <span
+                onMouseEnter={() => setHoveredDiscipline(item.index)}
+                onMouseLeave={() => setHoveredDiscipline(null)}
+                className="cursor-pointer transition-all duration-300 hover:text-white hover:drop-shadow-[0_0_12px_rgba(255,243,211,0.9)]"
+              >
+                {item.title}
+              </span>
+              {i < DISCIPLINES_ROW1.length - 1 ? <span className="opacity-40">•</span> : null}
+            </Fragment>
+          ))}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          {DISCIPLINES_ROW2.map((item, i) => (
+            <Fragment key={item.title}>
+              <span
+                onMouseEnter={() => setHoveredDiscipline(item.index)}
+                onMouseLeave={() => setHoveredDiscipline(null)}
+                className="cursor-pointer transition-all duration-300 hover:text-white hover:drop-shadow-[0_0_12px_rgba(255,243,211,0.9)]"
+              >
+                {item.title}
+              </span>
+              {i < DISCIPLINES_ROW2.length - 1 ? <span className="opacity-40">•</span> : null}
+            </Fragment>
+          ))}
+        </div>
+      </motion.div>
 
       {/* Scroll cue — left rail (14:8670/8671) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8, duration: 0.8 }}
-        className="absolute left-[2.18%] top-[38.7vw] hidden size-[20px] lg:block"
+        className="absolute left-[2.18%] top-[38.7vw] z-10 hidden size-[max(20px,1.323vw)] lg:block"
         aria-hidden="true"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/figma/scroll-circle-maroon.svg" alt="" className="absolute inset-0 size-full" />
+        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
         <motion.span
           animate={{ y: [0, 3.5, 0] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
           className="absolute inset-0 flex items-center justify-center"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/figma/arrow-down-sm-maroon.svg" alt="" className="w-[7.8px] rotate-90" />
+          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[max(7.8px,0.516vw)] rotate-90" />
         </motion.span>
       </motion.div>
 
@@ -161,16 +201,16 @@ function ServicesHero() {
           twin links, marquee and caption; the original inter-block gap is
           split half cream (mt) / half maroon (pt) so the rhythm reads
           unchanged. */}
-      <div className="mt-[clamp(48px,7.5vw,113px)] bg-[#741a14] pt-[clamp(48px,7.5vw,113px)]">
+      <div className="relative z-10 mt-[max(48px,7.5vw)] bg-[#741a14] pt-[max(48px,7.5vw)]">
         {/* Intro statement — Catilde Light 80, cream on maroon (14:8680) */}
         <Reveal>
-          <h2 className="mx-auto max-w-[80%] font-serif-luxury text-[clamp(38px,5.29vw,80px)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
+          <h2 className="mx-auto max-w-[80%] font-serif-luxury text-[max(38px,5.29vw)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
             {SERVICES_PAGE.intro}
           </h2>
         </Reveal>
 
         {/* Twin links — VIEW ALL PROJECTS / LET'S CONNECT (Group 21) */}
-        <Reveal className="mt-[clamp(40px,5.29vw,80px)] flex flex-wrap items-center justify-center gap-[clamp(24px,5.29vw,80px)] px-6">
+        <Reveal className="mt-[max(40px,5.29vw)] flex flex-wrap items-center justify-center gap-[max(24px,5.29vw)] px-6">
           {SERVICES_PAGE.introLinks.map((l) => (
             <UnderlineLink
               key={l.label}
@@ -178,24 +218,24 @@ function ServicesHero() {
               href={l.href}
               color="#fff3d3"
               arrow="/figma/arrow-cream.svg"
-              width="191px"
+              width="max(191px,12.632vw)"
             />
           ))}
         </Reveal>
 
         {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on maroon (14:8697xx) */}
-        <div className="mt-[clamp(56px,11vw,166px)] w-full select-none overflow-hidden">
+        <div className="mt-[max(56px,11vw)] w-full select-none overflow-hidden">
           <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
             {[...Array(6)].map((_, i) => (
               <span
                 key={i}
-                className="flex items-center gap-[3vw] font-serif-luxury text-[clamp(56px,9.37vw,141.6px)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
+                className="flex items-center gap-[3vw] font-serif-luxury text-[max(56px,9.37vw)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
               >
                 {SERVICES_PAGE.words.map((word, wi) => (
                   <span key={word} className="flex items-center gap-[3vw]">
                     {word}
                     <Star4
-                      className="aspect-square w-[clamp(14px,1.59vw,24px)]"
+                      className="aspect-square w-[max(14px,1.59vw)]"
                       fill="#FFF3D3"
                       delay={((i * SERVICES_PAGE.words.length + wi) % 5) * 0.55}
                     />
@@ -207,9 +247,9 @@ function ServicesHero() {
         </div>
 
         {/* ✦ CAPABILITIES SHAPED TO SCALE WITH AMBITION. (Group 22) */}
-        <div className="mt-[clamp(24px,3.9vw,60px)] flex items-center justify-center gap-[5px] pb-[clamp(48px,6.35vw,96px)]">
-          <Star4 className="w-[12px]" fill="#FFF3D3" />
-          <span className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-[#fff3d3]">
+        <div className="mt-[max(24px,3.9vw)] flex items-center justify-center gap-[5px] pb-[max(48px,6.35vw)]">
+          <Star4 className="w-[max(12px,0.794vw)]" fill="#FFF3D3" />
+          <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] tracking-[-0.337px] text-[#fff3d3]">
             {SERVICES_PAGE.wordsCaption}
           </span>
         </div>
@@ -246,7 +286,7 @@ function ServicePanel({
       <img
         src="/figma/about/star-maroon.svg"
         alt=""
-        className="star-twinkle absolute left-[50.86%] top-[11px] hidden w-[21px] -translate-x-1/2 -translate-y-1/2 lg:block"
+        className="star-twinkle absolute left-[50.86%] top-[11px] hidden w-[max(21px,1.389vw)] -translate-x-1/2 -translate-y-1/2 lg:block"
       />
       {/* Continuous centre divider (Line 8) — starts at the rule */}
       <div
@@ -271,20 +311,20 @@ function ServicePanel({
 
           {/* Right column — heading, description, capabilities (14:8930-8959) */}
           <div className="px-[8%] lg:pl-[17.06%] lg:pr-[15.87%]">
-            <h3 className="font-sans-luxury text-[clamp(22px,2.12vw,32px)] font-bold leading-[0.85] text-black">
+            <h3 className="font-sans-luxury text-[max(22px,2.12vw)] font-bold leading-[0.85] text-black">
               {panel.title}
             </h3>
-            <p className="mt-[clamp(12px,1.79vw,27px)] whitespace-pre-line font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black">
+            <p className="mt-[max(12px,1.79vw)] whitespace-pre-line font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black">
               {panel.description}
             </p>
-            <p className="mt-[clamp(40px,7.34vw,111px)] font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[16.88px] text-black">
+            <p className="mt-[max(40px,7.34vw)] font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] text-black">
               {panel.capsLabel}
             </p>
-            <ul className="mt-[clamp(14px,2.31vw,35px)] flex flex-col gap-[0.79vw]">
+            <ul className="mt-[max(14px,2.31vw)] flex flex-col gap-[0.79vw]">
               {panel.caps.map((c) => (
                 <li
                   key={c}
-                  className="border-b border-black/60 pb-[clamp(8px,1.06vw,16px)] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black lg:max-w-[84.8%]"
+                  className="border-b border-black/60 pb-[max(8px,1.06vw)] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black lg:max-w-[84.8%]"
                 >
                   {c}
                 </li>
@@ -299,7 +339,7 @@ function ServicePanel({
 
 function ServicePanels() {
   return (
-    <section className="relative bg-[#fff3d3] pt-[clamp(48px,8.93vw,135px)]">
+    <section className="relative bg-[#fff3d3] pt-[max(48px,8.93vw)]">
       {SERVICES_PAGE.panels.map((p, i) => (
         <Fragment key={p.id}>
           {/* Dwell runway: the previous panel stays pinned while this scrolls by */}
@@ -374,27 +414,27 @@ function TechStack() {
   const noteY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.72, 0.95)) * 20);
 
   return (
-    <section className="pt-[clamp(110px,15.28vw,231px)]">
+    <section className="pt-[max(110px,15.28vw)]">
       <h2 className="sr-only">{`${l1} ${l2}`}</h2>
       {/* Scroll target is the heading block itself (not the padded section),
           so the char reveal spans its ENTIRE climb up the viewport */}
       <div
         ref={ref}
         aria-hidden="true"
-        className="font-serif-luxury text-[clamp(40px,9.37vw,141.6px)] leading-[0.7] text-[#741a14]"
+        className="font-serif-luxury text-[max(40px,9.37vw)] leading-[0.7] text-[#741a14]"
       >
         {/* TECHNOLOGY — left edge 18.52% (x=280) */}
         <p className="pl-[8%] whitespace-nowrap lg:pl-[18.52%]">
           <LightChars progress={scrollYProgress} text={l1} from={0} total={total} />
         </p>
         {/* STACK at 58.6% (x=886) with the note beside it (15:9023) */}
-        <div className="relative mt-[clamp(8px,0.86vw,13px)]">
+        <div className="relative mt-[max(8px,0.86vw)]">
           <p className="pl-[24%] whitespace-nowrap lg:pl-[58.6%]">
             <LightChars progress={scrollYProgress} text={l2} from={l1.length} total={total} />
           </p>
           <motion.p
             style={{ opacity: noteOpacity, y: noteY }}
-            className="mt-6 pl-[8%] font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-black lg:absolute lg:bottom-0 lg:mt-0 lg:w-[20.63%] lg:pl-0 lg:left-[34.52%]"
+            className="mt-6 pl-[8%] font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[1.5] text-black lg:absolute lg:bottom-0 lg:mt-0 lg:w-[20.63%] lg:pl-0 lg:left-[34.52%]"
           >
             {SERVICES_PAGE.stackNote}
           </motion.p>
@@ -410,7 +450,7 @@ function CapabilityAccordion() {
   const [open, setOpen] = useState(0);
 
   return (
-    <section className="mx-[0.4%] pt-[clamp(64px,7.8vw,118px)]">
+    <section className="mx-[0.4%] pt-[max(64px,7.8vw)]">
       {SERVICES_PAGE.capabilities.map((c, i) => {
         const isOpen = open === i;
         return (
@@ -419,12 +459,12 @@ function CapabilityAccordion() {
               type="button"
               onClick={() => setOpen(isOpen ? -1 : i)}
               aria-expanded={isOpen}
-              className="grid w-full cursor-pointer grid-cols-[40px_1fr_32px] items-center gap-2 py-[clamp(24px,2.8vw,43px)] pl-[1.85%] pr-[2.38%] text-left lg:grid-cols-[32.28%_1fr_48px]"
+              className="grid w-full cursor-pointer grid-cols-[40px_1fr_32px] items-center gap-2 py-[max(24px,2.8vw)] pl-[1.85%] pr-[2.38%] text-left lg:grid-cols-[32.28%_1fr_48px]"
             >
-              <span className="font-sans-luxury text-[clamp(20px,2.12vw,32px)] font-bold leading-[0.85] text-black">
+              <span className="font-sans-luxury text-[max(20px,2.12vw)] font-bold leading-[0.85] text-black">
                 {c.n}
               </span>
-              <span className="font-sans-luxury text-[clamp(20px,2.12vw,32px)] font-bold leading-[0.85] text-black">
+              <span className="font-sans-luxury text-[max(20px,2.12vw)] font-bold leading-[0.85] text-black">
                 {c.title}
               </span>
               <motion.span
@@ -443,17 +483,17 @@ function CapabilityAccordion() {
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="overflow-hidden"
             >
-              <div className="pb-[clamp(28px,3.1vw,47px)] pl-[1.85%] pr-[2.38%] lg:pl-[34.13%]">
+              <div className="pb-[max(28px,3.1vw)] pl-[1.85%] pr-[2.38%] lg:pl-[34.13%]">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-[47%_1fr]">
                   <div>
-                    <span className="font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[16.88px] text-black">
+                    <span className="font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] text-black">
                       {c.platformsLabel}
                     </span>
-                    <ul className="mt-[clamp(10px,1.2vw,18px)] flex flex-col">
+                    <ul className="mt-[max(10px,1.2vw)] flex flex-col">
                       {c.platforms.map((p) => (
                         <li
                           key={p}
-                          className="font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black"
+                          className="font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black"
                         >
                           {p}
                         </li>
@@ -461,14 +501,14 @@ function CapabilityAccordion() {
                     </ul>
                   </div>
                   <div>
-                    <span className="font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[16.88px] text-black">
+                    <span className="font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] text-black">
                       {c.coreLabel}
                     </span>
-                    <ul className="mt-[clamp(10px,1.2vw,18px)] flex flex-col gap-[4px]">
+                    <ul className="mt-[max(10px,1.2vw)] flex flex-col gap-[4px]">
                       {c.core.map((p) => (
                         <li
                           key={p}
-                          className="font-sans-luxury text-[clamp(12px,0.99vw,15px)] leading-normal text-black"
+                          className="font-sans-luxury text-[max(12px,0.99vw)] leading-normal text-black"
                         >
                           {p}
                         </li>
@@ -521,19 +561,19 @@ function ProcessStep({
     <div>
       <motion.p
         style={{ opacity: labelOpacity, y: labelY }}
-        className="font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] tracking-[-0.337px] text-black"
+        className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] tracking-[-0.337px] text-black"
       >
         {step.step}
       </motion.p>
       <motion.h3
         style={{ opacity: titleOpacity, y: titleY }}
-        className="mt-[clamp(20px,2.9vw,44px)] font-serif-luxury text-[clamp(24px,2.12vw,32px)] font-normal leading-normal text-black"
+        className="mt-[max(20px,2.9vw)] font-serif-luxury text-[max(24px,2.12vw)] font-normal leading-normal text-black"
       >
         {step.title}
       </motion.h3>
       <motion.p
         style={{ opacity: bodyOpacity, y: bodyY, filter: bodyBlur }}
-        className="mt-[clamp(12px,1.92vw,29px)] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black"
+        className="mt-[max(12px,1.92vw)] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black"
       >
         {step.body}
       </motion.p>
@@ -557,7 +597,7 @@ function ProcessStar({
       alt=""
       aria-hidden="true"
       style={{ opacity, scale, left: `${stop * 100}%` }}
-      className="absolute top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
+      className="absolute top-1/2 w-[max(21px,1.389vw)] -translate-x-1/2 -translate-y-1/2"
     />
   );
 }
@@ -589,7 +629,7 @@ function ProcessSection() {
   );
 
   return (
-    <section className="relative pt-[clamp(64px,8vw,120px)] pb-[clamp(96px,10vw,150px)]">
+    <section className="relative pt-[max(64px,8vw)] pb-[max(96px,10vw)]">
       <div ref={wrapRef} className="relative lg:h-[800vh]">
         <div className="lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center lg:overflow-hidden">
           <div className="grid grid-cols-1 gap-8 pl-[8%] pr-[8%] lg:grid-cols-[16.4%_1fr] lg:gap-0 lg:pl-[2.05%] lg:pr-[6.08%]">
@@ -600,15 +640,15 @@ function ProcessSection() {
             </div>
             <div>
               <Reveal>
-                <h2 className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] font-normal leading-normal text-[#741a14]">
+                <h2 className="font-serif-luxury text-[max(44px,5.29vw)] font-normal leading-normal text-[#741a14]">
                   {SERVICES_PAGE.processHeading}
                 </h2>
-                <p className="mt-[clamp(6px,0.6vw,9px)] max-w-[249px] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-black">
+                <p className="mt-[max(6px,0.6vw)] max-w-[249px] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black">
                   {SERVICES_PAGE.processIntro}
                 </p>
               </Reveal>
 
-              <div className="mt-[clamp(40px,5.09vw,77px)] grid grid-cols-1 gap-y-12 md:grid-cols-3 md:gap-x-[2.7%]">
+              <div className="mt-[max(40px,5.09vw)] grid grid-cols-1 gap-y-12 md:grid-cols-3 md:gap-x-[2.7%]">
                 {SERVICES_PAGE.steps.map((s, i) => (
                   <ProcessStep key={s.step} progress={progress} index={i} step={s} />
                 ))}
@@ -617,7 +657,7 @@ function ProcessSection() {
           </div>
 
           {/* Self-drawing rule with ✦ stops + spinning tip (Line 18 + Vectors) */}
-          <div className="relative ml-[7.87%] mt-[clamp(48px,6.15vw,93px)] h-[21px] w-[86.05%]">
+          <div className="relative ml-[7.87%] mt-[max(48px,6.15vw)] h-[21px] w-[86.05%]">
             <motion.div
               style={{ scaleX: progress }}
               className="absolute top-1/2 h-px w-full origin-left bg-black/40"
@@ -627,7 +667,7 @@ function ProcessSection() {
               alt=""
               aria-hidden="true"
               style={{ left: tipLeft, opacity: tipOpacity, rotate: tipRotate }}
-              className="absolute top-1/2 w-[17px] -translate-x-1/2 -translate-y-1/2"
+              className="absolute top-1/2 w-[max(17px,1.124vw)] -translate-x-1/2 -translate-y-1/2"
             />
             {STAR_STOPS.map((stop) => (
               <ProcessStar key={stop} progress={progress} stop={stop} />
