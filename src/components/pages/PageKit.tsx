@@ -6,10 +6,10 @@ import GradientCycler from "@/components/common/GradientCycler";
 /**
  * Shared building blocks for the inner pages (Work / Services / Contact / About).
  * Typography follows the supplied spec:
- *   Catilde 80px  -> text-[clamp(44px,5.29vw,80px)]
- *   Catilde 100px -> text-[clamp(56px,6.61vw,100px)]
- *   Catilde 141.6px, line-height 70% -> text-[clamp(56px,9.37vw,141.6px)] leading-[0.7]
- *   Red Hat 18px  -> text-[clamp(15px,1.19vw,18px)]
+ *   Catilde 80px  -> text-[max(44px,5.29vw)]
+ *   Catilde 100px -> text-[max(56px,6.61vw)]
+ *   Catilde 141.6px, line-height 70% -> text-[max(56px,9.37vw)] leading-[0.7]
+ *   Red Hat 18px  -> text-[max(15px,1.19vw)]
  */
 
 export const HERO_GRADIENT =
@@ -28,7 +28,7 @@ export function PageHero({
   const cream = tone === "cream";
   return (
     <section
-      className="relative isolate flex min-h-[62vh] flex-col items-center justify-center overflow-hidden px-6 pb-16 pt-[clamp(140px,16vw,240px)] text-center"
+      className="relative isolate flex min-h-[62vh] flex-col items-center justify-center overflow-hidden px-6 pb-16 pt-[max(140px,16vw)] text-center"
       style={cream ? { background: "#fff3d3" } : { background: HERO_GRADIENT }}
     >
       {!cream ? <GradientCycler /> : null}
@@ -36,7 +36,7 @@ export function PageHero({
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9 }}
-        className={`font-serif-luxury text-[clamp(44px,5.29vw,80px)] font-normal leading-normal ${
+        className={`font-serif-luxury text-[max(44px,5.29vw)] font-normal leading-normal ${
           cream ? "text-[#741a14]" : "text-[#fff3d3]"
         }`}
       >
@@ -47,7 +47,7 @@ export function PageHero({
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15 }}
-          className={`mt-5 max-w-[430px] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal ${
+          className={`mt-5 max-w-[max(430px,28.44vw)] font-sans-luxury text-[max(14px,1.19vw)] leading-normal ${
             cream ? "text-black" : "text-white"
           }`}
         >
@@ -60,7 +60,7 @@ export function PageHero({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8, duration: 0.8 }}
-        className="relative mt-12 size-[20px]"
+        className="relative mt-12 size-[max(20px,1.323vw)]"
         aria-hidden="true"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -78,7 +78,7 @@ export function PageHero({
           <img
             src="/figma/arrow-down-sm.svg"
             alt=""
-            className={`w-[7.8px] rotate-90 ${
+            className={`w-[max(7.8px,0.516vw)] rotate-90 ${
               cream ? "[filter:invert(13%)_sepia(72%)_saturate(3200%)_hue-rotate(350deg)]" : ""
             }`}
           />
@@ -105,7 +105,7 @@ export function Rule({
       <img
         src={tone === "cream" ? "/figma/contact/star-divider-cream.svg" : "/figma/about/star-maroon.svg"}
         alt=""
-        className="star-twinkle absolute top-1/2 w-[21px] -translate-x-1/2 -translate-y-1/2"
+        className="star-twinkle absolute top-1/2 w-[max(21px,1.389vw)] -translate-x-1/2 -translate-y-1/2"
         style={{ left: starLeft }}
       />
     </div>
@@ -118,7 +118,7 @@ export function UnderlineLink({
   href = "/contact",
   color = "#741a14",
   arrow = "/figma/arrow-maroon.svg",
-  width = "191px",
+  width = "max(191px,12.632vw)",
   className = "",
 }: {
   label: string;
@@ -131,14 +131,14 @@ export function UnderlineLink({
   return (
     <a href={href} className={`group flex shrink-0 flex-col ${className}`} style={{ width }}>
       <span className="flex items-center justify-between">
-        <span className="font-sans-luxury text-[14px] font-bold uppercase" style={{ color }}>
+        <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase" style={{ color }}>
           {label}
         </span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={arrow}
           alt=""
-          className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
+          className="w-[max(15px,0.992vw)] transition-transform duration-300 group-hover:translate-x-1"
         />
       </span>
       <span className="mt-[3px] h-px w-full" style={{ background: color }} />
@@ -158,7 +158,7 @@ export function Eyebrow({
 }) {
   return (
     <span
-      className={`font-sans-luxury text-[14px] font-bold uppercase leading-[16.88px] ${className}`}
+      className={`font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] ${className}`}
       style={{ color }}
     >
       {children}

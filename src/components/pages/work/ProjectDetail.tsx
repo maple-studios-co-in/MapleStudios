@@ -186,7 +186,7 @@ export default function ProjectDetail({
     >
       {palette.cycler ? <GradientCycler /> : null}
       <div
-        className={`grid grid-cols-1 gap-10 pb-[clamp(64px,8vw,120px)] pt-[clamp(120px,13vw,190px)] lg:grid-cols-[34%_1fr] lg:gap-[4%] ${
+        className={`grid grid-cols-1 gap-10 pb-[max(64px,8vw)] pt-[max(120px,13vw)] lg:grid-cols-[34%_1fr] lg:gap-[4%] ${
           deck ? "pl-[4%] pr-0" : "px-[4%]"
         }`}
       >
@@ -194,14 +194,14 @@ export default function ProjectDetail({
         <div className="transform-gpu lg:sticky lg:top-[110px] lg:h-fit lg:self-start">
           <Link href="/work" className="group flex w-[191px] flex-col">
             <span className="flex items-center justify-between">
-              <span className={`font-sans-luxury text-[14px] font-bold uppercase ${palette.ink}`}>
+              <span className={`font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase ${palette.ink}`}>
                 {WORK_DETAIL.back}
               </span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={palette.arrow}
                 alt=""
-                className="w-[15px] rotate-180 transition-transform duration-300 group-hover:-translate-x-1"
+                className="w-[max(15px,0.992vw)] rotate-180 transition-transform duration-300 group-hover:-translate-x-1"
               />
             </span>
             <span className={`mt-[9px] h-px w-full ${palette.rule}`} />
@@ -211,22 +211,22 @@ export default function ProjectDetail({
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className={`mt-[clamp(28px,3.4vw,52px)] font-sans-luxury text-[clamp(28px,2.65vw,40px)] font-bold leading-[1.06] ${palette.ink}`}
+            className={`mt-[max(28px,3.4vw)] font-sans-luxury text-[max(28px,2.65vw)] font-bold leading-[1.06] ${palette.ink}`}
           >
             {project.title}
           </motion.h1>
 
           <p
-            className={`mt-4 max-w-[345px] whitespace-pre-line font-sans-luxury text-[clamp(13px,1.06vw,16px)] leading-normal ${palette.body}`}
+            className={`mt-4 max-w-[345px] whitespace-pre-line font-sans-luxury text-[max(13px,1.06vw)] leading-normal ${palette.body}`}
           >
             {project.description}
           </p>
 
-          <ul className="mt-[clamp(24px,3vw,44px)] flex flex-col gap-2">
+          <ul className="mt-[max(24px,3vw)] flex flex-col gap-2">
             {WORK_DETAIL.services.map((s) => (
               <li
                 key={s}
-                className={`flex items-center gap-3 font-sans-luxury text-[14px] ${palette.body}`}
+                className={`flex items-center gap-3 font-sans-luxury text-[max(14px,0.926vw)] ${palette.body}`}
               >
                 <span className={`size-[3px] rounded-full ${palette.rule}`} />
                 {s}
@@ -235,7 +235,7 @@ export default function ProjectDetail({
           </ul>
 
           {/* Tabs */}
-          <div className="mt-[clamp(28px,3.4vw,52px)] flex flex-wrap gap-x-5 gap-y-2">
+          <div className="mt-[max(28px,3.4vw)] flex flex-wrap gap-x-5 gap-y-2">
             {tabs.map((t, i) => (
               <button
                 key={t.id}
@@ -258,7 +258,7 @@ export default function ProjectDetail({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className={`mt-5 max-w-[430px] font-sans-luxury text-[14px] leading-relaxed ${palette.body}`}
+            className={`mt-5 max-w-[430px] font-sans-luxury text-[max(14px,0.926vw)] leading-relaxed ${palette.body}`}
           >
             {tabs[tab].body}
           </motion.p>
@@ -279,7 +279,7 @@ export default function ProjectDetail({
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
             // Pull the strip up so its top lands with the left title band
             // instead of sitting a step below BACK TO WORK
-            className="relative w-full self-start overflow-hidden rounded-l-[8px] lg:-mt-[clamp(48px,5.5vw,88px)]"
+            className="relative w-full self-start overflow-hidden rounded-l-[8px] lg:-mt-[max(48px,5.5vw)]"
           >
             {deckTiles.map((src, i) => (
               <Image
@@ -295,7 +295,7 @@ export default function ProjectDetail({
             ))}
           </motion.div>
         ) : (
-          <div className="flex flex-col gap-[clamp(20px,2.6vw,40px)]">
+          <div className="flex flex-col gap-[max(20px,2.6vw)]">
             {shots.map((src, i) => (
               <motion.div
                 key={i}
@@ -322,10 +322,10 @@ export default function ProjectDetail({
       </div>
 
       {/* Prev / next */}
-      <div className="flex items-center justify-between px-[4%] pb-[clamp(64px,8vw,110px)]">
+      <div className="flex items-center justify-between px-[4%] pb-[max(64px,8vw)]">
         <Link href={`/work/${prev.id}`} className="group flex flex-col">
           <span
-            className={`font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase ${palette.ink}`}
+            className={`font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase ${palette.ink}`}
           >
             {WORK_DETAIL.prev}
           </span>
@@ -337,7 +337,7 @@ export default function ProjectDetail({
         </Link>
         <Link href={`/work/${next.id}`} className="group flex flex-col text-right">
           <span
-            className={`font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase ${palette.ink}`}
+            className={`font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase ${palette.ink}`}
           >
             {WORK_DETAIL.next}
           </span>

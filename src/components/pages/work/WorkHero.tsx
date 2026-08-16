@@ -173,14 +173,14 @@ export default function WorkHero() {
         transition={{ duration: 1 }}
         className="relative z-10"
       >
-        <MapleOutlineMark className="mx-auto w-[clamp(120px,14.8vw,224px)]" />
+        <MapleOutlineMark className="mx-auto w-[max(120px,14.8vw)]" />
       </motion.div>
 
       <motion.h1
         initial={{ opacity: 0, y: 26 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.1 }}
-        className="relative z-10 mt-[clamp(20px,2.6vw,40px)] font-serif-luxury text-[clamp(56px,6.61vw,100px)] font-normal leading-normal text-[#fff3d3]"
+        className="relative z-10 mt-[max(20px,2.6vw)] font-serif-luxury text-[max(56px,6.61vw)] font-normal leading-normal text-[#fff3d3]"
       >
         {WORK_PAGE.hero.title}
       </motion.h1>
@@ -189,7 +189,7 @@ export default function WorkHero() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.25 }}
-        className="relative z-10 mt-4 max-w-[430px] font-sans-luxury text-[clamp(14px,1.19vw,18px)] leading-normal text-white"
+        className="relative z-10 mt-4 max-w-[430px] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-white"
       >
         {WORK_PAGE.hero.subtitle}
       </motion.p>
@@ -199,7 +199,7 @@ export default function WorkHero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9, duration: 0.8 }}
-        className="relative z-10 mt-12 size-[20px]"
+        className="relative z-10 mt-12 size-[max(20px,1.323vw)]"
         aria-hidden="true"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -210,7 +210,7 @@ export default function WorkHero() {
           className="absolute inset-0 flex items-center justify-center"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[7.8px] rotate-90" />
+          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[max(7.8px,0.516vw)] rotate-90" />
         </motion.span>
       </motion.div>
     </section>

@@ -71,7 +71,7 @@ export default function ServicesVideoSection() {
             className="rounded-[12px] border border-white/20 bg-[#2a0c0a]/55 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-[14px]"
           >
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-sans-luxury text-[14px] font-bold leading-normal text-white">
+              <h3 className="font-sans-luxury text-[max(14px,0.926vw)] font-bold leading-normal text-white">
                 {card.title}
               </h3>
               <Image
@@ -82,7 +82,7 @@ export default function ServicesVideoSection() {
                 className="mt-0.5 size-7 shrink-0 object-contain"
               />
             </div>
-            <p className="mt-2 font-sans-luxury text-[14px] font-normal leading-normal text-white">
+            <p className="mt-2 font-sans-luxury text-[max(14px,0.926vw)] font-normal leading-normal text-white">
               <span className="font-bold">{card.lead}</span> {card.body}
             </p>
           </article>

@@ -137,12 +137,12 @@ function FoldCard({
           the folding plane is just a faint dark sheet until it opens */}
       <motion.div
         style={{ opacity: face }}
-        className="grid h-[clamp(88px,8.14vw,123px)] grid-cols-1 items-center gap-2 bg-white pl-[4.06%] pr-[1.27%] sm:grid-cols-[51.5%_1fr]"
+        className="grid h-[max(88px,8.14vw)] grid-cols-1 items-center gap-2 bg-white pl-[4.06%] pr-[1.27%] sm:grid-cols-[51.5%_1fr]"
       >
-        <h3 className="font-sans-luxury text-[clamp(18px,1.98vw,30px)] font-medium leading-[1.5] text-black">
+        <h3 className="font-sans-luxury text-[max(18px,1.98vw)] font-medium leading-[1.5] text-black">
           {title}
         </h3>
-        <p className="hidden max-w-[373px] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-medium leading-[1.5] text-black sm:block">
+        <p className="hidden max-w-[373px] font-sans-luxury text-[max(12px,1.06vw)] font-medium leading-[1.5] text-black sm:block">
           {body}
         </p>
       </motion.div>
@@ -196,7 +196,7 @@ function ValuesSection() {
   const T = useTransform(scrollY, (y) => clamp01((y - geom.startY) / geom.span) * total);
 
   return (
-    <section className="pt-[clamp(64px,10.98vw,166px)]">
+    <section className="pt-[max(64px,10.98vw)]">
       <div className="grid grid-cols-1 items-start gap-10 pl-[9.59%] pr-[10.45%] lg:grid-cols-[34.7%_1fr] lg:gap-0">
         {/* Our values — Catilde 70, tracking 3.5 (22:775); pinned (sticky)
             while the stack unfolds, exactly trionn's pin behaviour */}
@@ -206,13 +206,13 @@ function ValuesSection() {
             as="h2"
             mode="chars"
             text={ABOUT_PAGE.valuesHeading}
-            className="font-serif-luxury text-[clamp(38px,4.63vw,70px)] font-normal leading-normal tracking-[0.05em] text-[#741a14]"
+            className="font-serif-luxury text-[max(38px,4.63vw)] font-normal leading-normal tracking-[0.05em] text-[#741a14]"
           />
         </div>
 
         <div>
           <Reveal>
-            <p className="max-w-[373px] font-sans-luxury text-[clamp(12px,1.06vw,16px)] font-medium leading-[1.5] text-black">
+            <p className="max-w-[373px] font-sans-luxury text-[max(12px,1.06vw)] font-medium leading-[1.5] text-black">
               {ABOUT_PAGE.valuesIntro}
             </p>
           </Reveal>
@@ -221,7 +221,7 @@ function ValuesSection() {
           <div
             ref={stackRef}
             style={{ perspective: "2500px" }}
-            className="mt-[clamp(24px,4.83vw,73px)] flex flex-col gap-[4px]"
+            className="mt-[max(24px,4.83vw)] flex flex-col gap-[4px]"
           >
             {ABOUT_PAGE.values.map((v, i) => (
               <FoldCard key={v} T={T} index={i} title={v} body={ABOUT_PAGE.valueBody} />
@@ -229,8 +229,8 @@ function ValuesSection() {
           </div>
 
           {/* ✦ WHAT WE BELIEVE SHAPES BETTER WORK. (22:813) */}
-          <div className="mt-[clamp(20px,3.3vw,50px)] flex items-center gap-[5px]">
-            <Star4 className="w-[12px]" fill="#741a14" />
+          <div className="mt-[max(20px,3.3vw)] flex items-center gap-[5px]">
+            <Star4 className="w-[max(12px,0.794vw)]" fill="#741a14" />
             <Eyebrow>{ABOUT_PAGE.valuesCaption}</Eyebrow>
           </div>
         </div>
@@ -241,27 +241,27 @@ function ValuesSection() {
 
 export default function AboutBody() {
   return (
-    <div className="bg-[#fff3d3] pb-[clamp(72px,13vw,196px)] text-black">
+    <div className="bg-[#fff3d3] pb-[max(72px,13vw)] text-black">
       {/* AT MAPLE, + statement (22:754/752) — 16 bold maroon + 30.22 Medium */}
-      <section className="pl-[9.66%] pr-[8%] pt-[clamp(56px,7.47vw,113px)]">
+      <section className="pl-[9.66%] pr-[8%] pt-[max(56px,7.47vw)]">
         <Reveal>
-          <span className="font-sans-luxury text-[clamp(13px,1.06vw,16px)] font-bold uppercase leading-[1.5] text-[#741a14]">
+          <span className="font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[1.5] text-[#741a14]">
             {ABOUT_PAGE.atMaple}
           </span>
         </Reveal>
         {/* trionn paragraph reveal: per-WORD blur cascade */}
         <BlurTextReveal
           text={ABOUT_PAGE.atMapleBody}
-          className="mt-[clamp(6px,0.66vw,10px)] max-w-[643px] font-sans-luxury text-[clamp(19px,2vw,30.2px)] font-medium leading-[1.5] text-black"
+          className="mt-[max(6px,0.66vw)] max-w-[643px] font-sans-luxury text-[max(19px,2vw)] font-medium leading-[1.5] text-black"
         />
       </section>
 
-      <Rule className="mt-[clamp(32px,5.03vw,76px)]" />
+      <Rule className="mt-[max(32px,5.03vw)]" />
 
       {/* Badge + mission (22:763-768 / 22:756 / Group 20) */}
-      <section className="grid grid-cols-1 gap-12 pl-[9.66%] pr-[11.57%] pt-[clamp(40px,6.55vw,99px)] lg:grid-cols-[68.7%_1fr] lg:gap-0">
+      <section className="grid grid-cols-1 gap-12 pl-[9.66%] pr-[11.57%] pt-[max(40px,6.55vw)] lg:grid-cols-[68.7%_1fr] lg:gap-0">
         <Reveal>
-          <div className="flex h-[79px] w-[clamp(240px,18vw,272px)] overflow-hidden rounded-[4px] border border-[#741a14]">
+          <div className="flex h-[79px] w-[max(240px,18vw)] overflow-hidden rounded-[4px] border border-[#741a14]">
             <div className="flex w-[37.5%] items-center justify-center bg-[#741a14]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/figma/logo-mark.svg" alt="Maple Studios" className="h-[27px] w-auto" />
@@ -278,7 +278,7 @@ export default function AboutBody() {
           {ABOUT_PAGE.mission.map((m, i) => (
             <p
               key={i}
-              className="max-w-[373px] font-sans-luxury text-[clamp(12px,1.06vw,16px)] leading-[1.5] text-black"
+              className="max-w-[373px] font-sans-luxury text-[max(12px,1.06vw)] leading-[1.5] text-black"
             >
               {m}
             </p>
@@ -286,13 +286,13 @@ export default function AboutBody() {
           <UnderlineLink
             label={ABOUT_PAGE.missionCta}
             href="/contact"
-            width="191px"
-            className="mt-[clamp(16px,4vw,61px)]"
+            width="max(191px,12.632vw)"
+            className="mt-[max(16px,4vw)]"
           />
         </Reveal>
       </section>
 
-      <Rule starLeft="20.5%" className="mt-[clamp(56px,14.2vw,215px)]" />
+      <Rule starLeft="20.5%" className="mt-[max(56px,14.2vw)]" />
 
       {/* Our values — trionn paperfold (video reference) */}
       <ValuesSection />

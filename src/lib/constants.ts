@@ -13,8 +13,8 @@ export const HERO_DATA = {
   },
   cta: "START A PROJECT",
   subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact.",
-  headlineMain: "Designed to",
-  headlineSub: "mean purpose.",
+  headlineMain: "Intelligence,",
+  headlineSub: "built into business.",
 };
 
 export const ABOUT_DATA = {
@@ -487,13 +487,13 @@ export const SERVICES_PAGE = {
     title: "Area of expertise",
     subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact.",
     eyebrow: "WHAT WE DO BEST",
-    // Figma 14:8896 (typos "8. MOBILE DESION" corrected)
+    // Discipline tags per Maple_Studios_Services_Page_Content.docx
     listLines: [
-      "AI & INTELLIGENT AUTOMATION WEB DEVELOPMENT PRODUCT DESIGN",
-      "WEBSITE & MOBILE DESIGN WORDPRESS DEVELOPMENT BRANDING",
+      "AI & INTELLIGENT AUTOMATION WEB & APP DEVELOPMENT PRODUCT DESIGN",
+      "WEBSITE & MOBILE DESIGN IMMERSIVE & 3D EXPERIENCES BRANDING",
     ],
   },
-  intro: "Focused disciplines where strategy, design, and technology work as one",
+  intro: "Focused disciplines where strategy, design, and technology work as one.",
   introLinks: [
     { label: "VIEW ALL PROJECTS", href: "/work" },
     { label: "LET'S CONNECT", href: "/contact" },
@@ -506,7 +506,8 @@ export const SERVICES_PAGE = {
     {
       id: "ai",
       title: "AI & Intelligent Automation",
-      description: "AI that does your business's job — talks to customers,\nruns the boring parts, and never sleeps.",
+      description:
+        "We build AI into the parts of your business that need it most —\ntalking to customers, handling repeat work, and surfacing answers before someone has to go looking for them.",
       capsLabel: "OUR CORE CAPABILITIES",
       caps: [
         "AI-powered digital experiences",
@@ -521,7 +522,8 @@ export const SERVICES_PAGE = {
     {
       id: "web",
       title: "Web & App Development",
-      description: "Sites and apps that don't buckle under real traffic —\nmodern stack, zero duct tape.",
+      description:
+        "We design and build sites and applications that hold up under real traffic,\nreal content, and real growth — using a modern stack with no shortcuts underneath.",
       capsLabel: "OUR CORE CAPABILITIES",
       caps: [
         "High-performance marketing sites",
@@ -536,7 +538,8 @@ export const SERVICES_PAGE = {
     {
       id: "immersive",
       title: "Immersive & 3D Experiences",
-      description: "Let people touch the product before they buy it —\n3D rooms, configurators, AR previews.",
+      description:
+        "We give people something to explore, not just scroll past —\n3D product views, configurators, and AR previews that make the product tangible before it's purchased.",
       capsLabel: "OUR CORE CAPABILITIES",
       caps: [
         "Interactive 3D scenes",
@@ -550,7 +553,7 @@ export const SERVICES_PAGE = {
     },
   ],
   stackHeading: ["TECHNOLOGY", "STACK"],
-  stackNote: "WE DESIGN FOR LONGEVITY CLARITY FIRST, CRAFT ALWAYS, BUILT TO SCALE",
+  stackNote: "WE DESIGN FOR LONGEVITY — CLARITY FIRST, CRAFT ALWAYS, BUILT TO SCALE.",
   capabilities: [
     { n: "1.", title: "AI & Intelligent Automation", platformsLabel: "AI PLATFORMS", platforms: ["OpenAI API", "Anthropic Claude"], coreLabel: "OUR CORE CAPABILITIES", core: ["Custom agents and copilots", "Retrieval and knowledge systems", "Workflow automation across teams", "Evaluation and guardrails built in", "Fine-tuned prompt systems"] },
     { n: "2.", title: "Web & Product Engineering", platformsLabel: "FRAMEWORKS", platforms: ["Next.js / React", "Node & Edge runtimes"], coreLabel: "OUR CORE CAPABILITIES", core: ["Design systems at scale", "Commerce and CMS builds", "Performance engineering", "Accessibility by default", "CI/CD and preview environments"] },

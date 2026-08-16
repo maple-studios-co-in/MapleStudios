@@ -38,7 +38,7 @@ function UnderlineLink({
   label,
   color = "#741a14",
   arrow = "/figma/arrow-maroon.svg",
-  width = "191px",
+  width = "max(191px,12.632vw)",
   href = "#contact",
   small = false,
 }: {
@@ -53,7 +53,7 @@ function UnderlineLink({
     <a href={href} className="group flex shrink-0 flex-col" style={{ width }}>
       <span className="flex items-center justify-between">
         <span
-          className={`font-sans-luxury font-bold uppercase ${small ? "text-[12px]" : "text-[14px]"}`}
+          className={`font-sans-luxury font-bold uppercase ${small ? "text-[12px]" : "text-[max(14px,0.926vw)]"}`}
           style={{ color }}
         >
           {label}
@@ -62,7 +62,7 @@ function UnderlineLink({
         <img
           src={arrow}
           alt=""
-          className="w-[15px] transition-transform duration-300 group-hover:translate-x-1"
+          className="w-[max(15px,0.992vw)] transition-transform duration-300 group-hover:translate-x-1"
         />
       </span>
       <span className="mt-[9px] h-px w-full" style={{ background: color }} />
@@ -96,11 +96,11 @@ function ProjectCard({
         </div>
       </Link>
       <div className="pt-[18px]">
-        <h3 className="font-sans-luxury text-[clamp(19px,1.65vw,25px)] font-bold leading-[1.08] text-black">
+        <h3 className="font-sans-luxury text-[max(19px,1.65vw)] font-bold leading-[1.08] text-black">
           {project.title}
         </h3>
         <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-          <p className="max-w-[340px] whitespace-pre-line font-sans-luxury text-[14px] leading-snug text-black">
+          <p className="max-w-[340px] whitespace-pre-line font-sans-luxury text-[max(14px,0.926vw)] leading-snug text-black">
             {project.description}
           </p>
           <Link href={href} className="group flex w-[148px] shrink-0 flex-col">
@@ -197,13 +197,13 @@ export default function WorkSection() {
               style={dims.vw ? { width: dims.vw } : undefined}
             >
               <div className="flex flex-col justify-center pl-[8%] pr-[6%]">
-                <h2 className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] leading-[1.11] text-black">
+                <h2 className="font-serif-luxury text-[max(44px,5.29vw)] leading-[1.11] text-black">
                   {WORK_DATA.headingLines[0]}
                   <br />
                   {WORK_DATA.headingLines[1]}
                 </h2>
                 <div className="mt-[38px]">
-                  <UnderlineLink label={WORK_DATA.viewAll} href="/work" width="clamp(150px,12.63vw,191px)" />
+                  <UnderlineLink label={WORK_DATA.viewAll} href="/work" width="max(150px,12.63vw)" />
                 </div>
               </div>
               <div className="border-l border-black/60 py-[64px] pl-[3.75%] pr-[2.56%]">
@@ -240,10 +240,10 @@ export default function WorkSection() {
               transition={{ type: "spring", stiffness: 20, damping: 8, mass: 0.9 }}
               className="flex w-[36vw] shrink-0 flex-col gap-8 self-center pl-[2vw]"
             >
-              <p className="font-sans-luxury text-[clamp(16px,1.32vw,20px)] leading-[1.35] text-black">
+              <p className="font-sans-luxury text-[max(16px,1.32vw)] leading-[1.35] text-black">
                 {WORK_DATA.discover.text}
               </p>
-              <UnderlineLink label={WORK_DATA.discover.cta} href="/work" width="191px" />
+              <UnderlineLink label={WORK_DATA.discover.cta} href="/work" width="max(191px,12.632vw)" />
             </motion.div>
 
             {/* Final panel: the services stage slides in horizontally, then the
@@ -262,13 +262,13 @@ export default function WorkSection() {
       <div className="lg:hidden">
         <div className="flex flex-col gap-10 px-[8%] py-16">
           <div>
-            <h2 className="font-serif-luxury text-[clamp(44px,5.29vw,80px)] leading-[1.11] text-black">
+            <h2 className="font-serif-luxury text-[max(44px,5.29vw)] leading-[1.11] text-black">
               {WORK_DATA.headingLines[0]}
               <br />
               {WORK_DATA.headingLines[1]}
             </h2>
             <div className="mt-[28px]">
-              <UnderlineLink label={WORK_DATA.viewAll} href="/work" width="191px" />
+              <UnderlineLink label={WORK_DATA.viewAll} href="/work" width="max(191px,12.632vw)" />
             </div>
           </div>
           {WORK_DATA.projects.map((p) => (

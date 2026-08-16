@@ -27,7 +27,7 @@ import BlurTextReveal from "@/components/common/BlurTextReveal";
 /* ————— Founder (2124:211) — full-bleed portrait with overlaid type ————— */
 export function FounderSection() {
   return (
-    <section className="relative mt-[clamp(96px,15vw,227px)] w-full">
+    <section className="relative mt-[max(96px,15vw)] w-full">
       <div className="relative w-full overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -42,7 +42,7 @@ export function FounderSection() {
             as="h2"
             mode="chars"
             text={ABOUT_PAGE.founder.name}
-            className="font-serif-luxury text-[clamp(40px,6.61vw,100px)] font-semibold leading-normal text-[#fff3d3]"
+            className="font-serif-luxury text-[max(40px,6.61vw)] font-semibold leading-normal text-[#fff3d3]"
           />
         </div>
 
@@ -52,7 +52,7 @@ export function FounderSection() {
             as="p"
             mode="chars"
             text={ABOUT_PAGE.founder.role}
-            className="font-sans-luxury text-[clamp(18px,2.65vw,40px)] font-medium leading-[1.5] text-white"
+            className="font-sans-luxury text-[max(18px,2.65vw)] font-medium leading-[1.5] text-white"
           />
         </div>
 
@@ -64,19 +64,19 @@ export function FounderSection() {
             <img
               src="/figma/about/quote-mark.svg"
               alt=""
-              className="absolute left-0 top-[0.06em] w-[clamp(34px,5.29vw,80px)] rotate-180"
+              className="absolute left-0 top-[0.06em] w-[max(34px,5.29vw)] rotate-180"
             />
             <BlurTextReveal
               text={ABOUT_PAGE.founder.statement}
-              style={{ textIndent: "clamp(50px,7.3vw,112px)" }}
-              className="font-sans-luxury text-[clamp(26px,4.63vw,70px)] font-medium leading-none text-[#fff3d3]"
+              style={{ textIndent: "max(50px,7.3vw)" }}
+              className="font-sans-luxury text-[max(26px,4.63vw)] font-medium leading-none text-[#fff3d3]"
             />
           </div>
         </div>
 
         {/* supporting paragraph, lower right (2124:221) */}
         <Reveal delay={0.08} className="absolute left-[61.57%] top-[89.2%] w-[33.7%] -translate-y-1/2">
-          <p className="font-sans-luxury text-[clamp(12px,1.46vw,22px)] font-medium leading-[1.5] text-white">
+          <p className="font-sans-luxury text-[max(12px,1.46vw)] font-medium leading-[1.5] text-white">
             {ABOUT_PAGE.founder.body}
           </p>
         </Reveal>
@@ -426,7 +426,7 @@ export function TeamSection() {
   const entered = useInView(clusterRef, { once: true, amount: 0.3 });
 
   return (
-    <section className="relative w-full pt-[clamp(48px,7.47vw,113px)]">
+    <section className="relative w-full pt-[max(48px,7.47vw)]">
       {/* Different skills, / one standard — staggered centres, per-char
           trionn heading reveal (2124:222/223) */}
       <div className="relative text-center">
@@ -434,20 +434,20 @@ export function TeamSection() {
           as="p"
           mode="chars"
           text={ABOUT_PAGE.team.headline1}
-          className="relative left-[-7.21%] font-serif-luxury text-[clamp(52px,9.37vw,142px)] font-normal leading-[0.7] text-[#741a14]"
+          className="relative left-[-7.21%] font-serif-luxury text-[max(52px,9.37vw)] font-normal leading-[0.7] text-[#741a14]"
         />
         <BlurTextReveal
           as="p"
           mode="chars"
           text={ABOUT_PAGE.team.headline2}
-          className="relative left-[8.23%] mt-[clamp(10px,0.86vw,13px)] font-serif-luxury text-[clamp(52px,9.37vw,142px)] font-normal leading-[0.7] text-[#741a14]"
+          className="relative left-[8.23%] mt-[max(10px,0.86vw)] font-serif-luxury text-[max(52px,9.37vw)] font-normal leading-[0.7] text-[#741a14]"
         />
       </div>
 
       {/* card cluster — aspect-locked to the Figma geometry (1512x1334) */}
       <div
         ref={clusterRef}
-        className="relative mt-[clamp(140px,37.7vw,570px)] aspect-[1512/1334] w-full"
+        className="relative mt-[max(140px,37.7vw)] aspect-[1512/1334] w-full"
       >
         {/* each hairline pairs with CARDS[i]; when that card floats, its
             line carries the SAME hoisted keyframes/phase, so the pair moves
@@ -518,7 +518,7 @@ export function TeamSection() {
               )}
             </>
           ) : (
-            <span className="px-4 text-center font-sans-luxury text-[clamp(11px,0.93vw,14px)] font-bold uppercase leading-[1.2] text-[#741a14]">
+            <span className="px-4 text-center font-sans-luxury text-[max(11px,0.93vw)] font-bold uppercase leading-[1.2] text-[#741a14]">
               {ABOUT_PAGE.team.dragHint}
             </span>
           )}
@@ -526,7 +526,7 @@ export function TeamSection() {
       </div>
 
       {/* JOIN OUR TEAM (2124:248-250) */}
-      <div className="mt-[clamp(40px,5.29vw,80px)] flex justify-center">
+      <div className="mt-[max(40px,5.29vw)] flex justify-center">
         <UnderlineLink label={ABOUT_PAGE.team.cta} href="/contact" width="241px" />
       </div>
     </section>

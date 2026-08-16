@@ -118,7 +118,7 @@ function SpawnCard({
         suppressHydrationWarning
       >
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-sans-luxury text-[14px] font-bold leading-normal text-white">
+          <h3 className="font-sans-luxury text-[max(14px,0.926vw)] font-bold leading-normal text-white">
             {card.title}
           </h3>
           <Image
@@ -129,7 +129,7 @@ function SpawnCard({
             className="mt-0.5 size-7 shrink-0 object-contain"
           />
         </div>
-        <p className="mt-2 font-sans-luxury text-[14px] font-normal leading-normal text-white">
+        <p className="mt-2 font-sans-luxury text-[max(14px,0.926vw)] font-normal leading-normal text-white">
           <span className="font-bold">{card.lead}</span> {card.body}
         </p>
       </motion.article>
@@ -174,7 +174,7 @@ export default function ServicesStage({ progress }: { progress: MotionValue<numb
       <motion.div style={{ color: ink }} className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <motion.span
           style={{ opacity: labelOpacity }}
-          className="font-sans-luxury text-[clamp(13px,1vw,16px)] font-bold uppercase tracking-[0.2em]"
+          className="font-sans-luxury text-[max(13px,1vw)] font-bold uppercase tracking-[0.2em]"
         >
           {WORK_DATA.servicesLabel}
         </motion.span>
@@ -182,7 +182,7 @@ export default function ServicesStage({ progress }: { progress: MotionValue<numb
           {WORK_DATA.servicesLines.map((line, li) => (
             <h2
               key={line}
-              className="font-serif-luxury text-[clamp(44px,7vw,112px)] leading-[0.9]"
+              className="font-serif-luxury text-[max(44px,7vw)] leading-[0.9]"
             >
               {line.split("").map((ch, ci) => (
                 <BurstLetter key={`${li}-${ci}`} progress={progress} ch={ch} index={li * 20 + ci} />
