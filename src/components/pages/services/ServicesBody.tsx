@@ -196,12 +196,12 @@ function ServicesHero() {
         </motion.span>
       </motion.div>
 
-      {/* Lower band — INVERTED per review: the site maroon becomes the
-          canvas, the cream becomes the type. Holds the intro statement,
-          twin links, marquee and caption; the original inter-block gap is
-          split half cream (mt) / half maroon (pt) so the rhythm reads
-          unchanged. */}
-      <div className="relative z-10 mt-[max(48px,7.5vw)] bg-[#741a14] pt-[max(48px,7.5vw)]">
+      {/* Lower band — same #5d1411 as the hero above it, so the whole
+          hero→marquee stretch reads as ONE seamless dark maroon scene
+          (per review). Holds the intro statement, twin links, marquee and
+          caption; the original inter-block gap is split across mt/pt so
+          the rhythm reads unchanged. */}
+      <div className="relative z-10 mt-[max(48px,7.5vw)] bg-[#5d1411] pt-[max(48px,7.5vw)]">
         {/* Intro statement — Catilde Light 80, cream on maroon (14:8680) */}
         <Reveal>
           <h2 className="mx-auto max-w-[80%] font-serif-luxury text-[max(38px,5.29vw)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
