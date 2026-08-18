@@ -240,8 +240,9 @@ export const WORK_PAGE = {
     subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact.",
   },
   cta: "MORE ABOUT US",
-  // Same projects as WORK_DATA — drives /work grid + hero floating thumbs.
-  // Detail-page taglines for case studies come from Maple_Studios.docx.
+  // WORK_DATA's projects plus Sarvottam Udyog (a /work-page-only entry) —
+  // drives /work grid + hero floating thumbs. Detail-page taglines for case
+  // studies come from Maple_Studios.docx / Maple_Studios-1.docx.
   projects: [
     {
       id: "get-shoku",
@@ -253,7 +254,7 @@ export const WORK_PAGE = {
       id: "ecommerce",
       title: "Ecommerce",
       description:
-        "More products don't mean more sales — better journeys do. We design e-commerce systems that make discovery, decision-making and checkout feel effortless.",
+        "Luxury furniture. Without the luxury friction. — E-commerce & app experience for a luxury furniture brand.",
       image: "/images/card-maple-furnishers.webp",
     },
     {
@@ -272,8 +273,15 @@ export const WORK_PAGE = {
       id: "kalaa-kaari",
       title: "Kalaa Kaari",
       description:
-        "Craft has a story. The digital experience should too.\nA brand-led digital experience that brings heritage, craft and contemporary commerce together.",
+        "We didn't build another studio website. — Digital identity & brand-first web experience for an independent creative studio.",
       image: "/images/card-kalaa-kaari.webp",
+    },
+    {
+      id: "sarvottam",
+      title: "Sarvottam Udyog",
+      description:
+        "From enquiry to order, one system. — CRM, automation & business systems for an industrial manufacturer.",
+      image: "/images/card-sarvottam.webp",
     },
   ],
   exploreCta: "EXPLORE PROJECT",
@@ -318,8 +326,16 @@ export const WORK_DETAIL = {
   // Project pages that flip the scheme: the cream that is normally the ink
   // becomes the ground and the maroon ground becomes the ink. Add an id here
   // to invert that project's page — nothing else needs touching.
-  // Cream page scheme for the PDF case studies
-  lightProjects: ["get-shoku", "maple-furnishers", "maple-lens"],
+  // Cream page scheme for the PDF case studies — every project detail page
+  // runs cream (#FFF3D3) ground with maroon (#741A14) ink.
+  lightProjects: [
+    "get-shoku",
+    "ecommerce",
+    "maple-furnishers",
+    "maple-lens",
+    "kalaa-kaari",
+    "sarvottam",
+  ],
   // Projects whose rail shows a real case-study deck, keyed by project id.
   // Anything not listed falls back to the repeated hero shot.
   // Mapping:
@@ -364,6 +380,45 @@ export const WORK_DETAIL = {
         approach: 3211,
         outcome: 6876,
         "what-we-did": 11294,
+      },
+    },
+    ecommerce: {
+      dir: "/work/ecommerce/deck-v1",
+      count: 12,
+      canvasH: 13608,
+      tileW: 1440,
+      tileH: 851,
+      anchors: {
+        challenge: 2092,
+        approach: 4952,
+        outcome: 9557,
+        "what-we-did": 11101,
+      },
+    },
+    "kalaa-kaari": {
+      dir: "/work/kalaa-kaari/deck-v1",
+      count: 12,
+      canvasH: 13027,
+      tileW: 1440,
+      tileH: 816,
+      anchors: {
+        challenge: 3741,
+        approach: 7120,
+        outcome: 9547,
+        "what-we-did": 12132,
+      },
+    },
+    sarvottam: {
+      dir: "/work/sarvottam/deck-v1",
+      count: 12,
+      canvasH: 13416,
+      tileW: 1440,
+      tileH: 839,
+      anchors: {
+        challenge: 3582,
+        approach: 4997,
+        outcome: 8084,
+        "what-we-did": 10450,
       },
     },
   } satisfies Record<string, WorkDeck>,
@@ -434,6 +489,72 @@ export const WORK_DETAIL = {
         id: "what-we-did",
         label: "WHAT WE DID",
         body: "Brand strategy, product discovery, and the UI/UX for the full furnishing experience — delivered as one continuous engagement from brand story to shippable product.",
+      },
+    ],
+    ecommerce: [
+      {
+        id: "challenge",
+        label: "THE CHALLENGE",
+        body: "Buying luxury furniture online meant buying blind. A screen can't show you how a sofa ages, how quiet the craftsmanship is, or how something is built to survive real living — so browsing never built enough trust to actually buy. Big-ticket decisions were being asked of people with catalog-browsing tools.",
+      },
+      {
+        id: "approach",
+        label: "APPROACH",
+        body: "We designed the decision to buy, not just the store. “The Maple Difference” — Ages Beautifully, Quiet Luxury, Strength You Don't See, Built for Real Living — became a trust layer built into the journey itself, not a features list. We mapped the full arc as Discover → Define → Design → Engineer → Enable → Evolve, and structured the buying flow around Want It → Understand It → Make It Yours → Buy It. Showing the workshop in Kirti Nagar, and the piece's path from there to a customer's home, gave the brand's provenance an actual visual role instead of a claim.",
+      },
+      {
+        id: "outcome",
+        label: "OUTCOME",
+        body: "The journey doesn't end at checkout — it ends when the piece feels like it belongs in the home it was bought for. Theme-based browsing lets customers shop by how they want to live, not just by SKU. What used to be a cold scroll through a catalog now feels like a piece being chosen, not sold.",
+      },
+      {
+        id: "what-we-did",
+        label: "WHAT WE DID",
+        body: "UX strategy, web and app design, and the trust-content system spanning workshop to home — delivered as one continuous engagement from browse to belonging.",
+      },
+    ],
+    "kalaa-kaari": [
+      {
+        id: "challenge",
+        label: "THE CHALLENGE",
+        body: "Kalaakaari's work had character — expressive, editorial, craft-first — but the studio's digital presence didn't carry any of it. A standard studio website couldn't hold what the brand actually stood for: Kalaa (the art), Kaari (the fire), Culture (the pulse).",
+      },
+      {
+        id: "approach",
+        label: "APPROACH",
+        body: "We built a digital space that behaves like Kalaakaari, not one that just describes it. System architecture, UX strategy, web development, and visual direction were treated as a single track, so the site's motion, tone, and type could carry the same editorial energy as the studio's own work — not sit on top of it as decoration.",
+      },
+      {
+        id: "outcome",
+        label: "OUTCOME",
+        body: "Craft meets code. We didn't just make the site look like Kalaakaari — we made it feel like them, so the brand's identity lives in how the site behaves, not just in how it's styled.",
+      },
+      {
+        id: "what-we-did",
+        label: "WHAT WE DID",
+        body: "UX strategy, visual direction, and web development — delivered as one continuous engagement from brand identity to digital presence.",
+      },
+    ],
+    sarvottam: [
+      {
+        id: "challenge",
+        label: "THE CHALLENGE",
+        body: "The business — cable systems, hydraulics, process industries, material handling, engineering — was complex. The workflow shouldn't have been. Every deal moved through email, WhatsApp, phone calls, and Excel before it ever became an enquiry, quotation, or order. Too many handoffs, too little visibility, and every product line brought its own set of requirements and follow-ups.",
+      },
+      {
+        id: "approach",
+        label: "APPROACH",
+        body: "We didn't build another dashboard — we built a CRM that understands what's actually being sold. Multiple products, multiple requirements, multiple follow-ups all needed to connect through one system, so we mapped the real deal path — enquiry, customer, requirement, quotation, follow-up, order — and built the CRM around that sequence instead of around generic sales-tool logic.",
+      },
+      {
+        id: "outcome",
+        label: "OUTCOME",
+        body: "One customer. One record. One source of truth. Every interaction — from the first enquiry to the next follow-up — now stays in context, so the team spends its time moving deals instead of hunting for where one was left off.",
+      },
+      {
+        id: "what-we-did",
+        label: "WHAT WE DID",
+        body: "CRM and automation design, business systems architecture, and the dashboard interface — delivered as one continuous engagement from scattered handoffs to one connected system.",
       },
     ],
     "maple-lens": [

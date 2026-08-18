@@ -45,7 +45,7 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
     <main
       className={`relative min-h-screen ${
         light
-          ? "bg-[#FFF3D3] text-[#2f0500] selection:bg-[#741a14] selection:text-[#FFF3D3]"
+          ? "bg-[#FFF3D3] text-[#741a14] selection:bg-[#741a14] selection:text-[#FFF3D3]"
           : "bg-[#5d1411] text-white selection:bg-[#761c17] selection:text-white"
       }`}
     >
