@@ -11,11 +11,10 @@ type Project = (typeof WORK_PAGE.projects)[number];
 
 /**
  * The page runs in one of two schemes (WORK_DETAIL.lightProjects picks which).
- * `light` is the maroon scheme turned inside out: the cream that is normally
- * the ink becomes the ground, and the maroon becomes the ink — with the
- * DARKEST shade carrying body copy, mirroring how the dark scheme puts its
- * brightest shade (white) there. Class names are spelled out in full because
- * Tailwind only compiles literals it can see.
+ * `light` is the maroon scheme turned inside out: cream (#FFF3D3) becomes the
+ * ground and brand maroon (#741A14) carries ALL the ink — headings and body
+ * alike. Class names are spelled out in full because Tailwind only compiles
+ * literals it can see.
  *
  * `base` is a real background-color under the gradient, not decoration: the
  * navbar recolors itself by sampling the computed background-color of what
@@ -43,11 +42,11 @@ const PALETTES = {
     gradient: null,
     cycler: false,
     ink: "text-[#741a14]",
-    body: "text-[#2f0500]",
-    muted: "text-[#2f0500]/55",
-    mutedHover: "hover:text-[#2f0500]",
-    subtle: "text-[#2f0500]/60",
-    subtleHover: "group-hover:text-[#2f0500]",
+    body: "text-[#741a14]",
+    muted: "text-[#741a14]/55",
+    mutedHover: "hover:text-[#741a14]",
+    subtle: "text-[#741a14]/60",
+    subtleHover: "group-hover:text-[#741a14]",
     rule: "bg-[#741a14]",
     activeTab: "border-b border-[#741a14] text-[#741a14]",
     arrow: "/figma/arrow-maroon.svg",
