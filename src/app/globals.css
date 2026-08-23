@@ -142,6 +142,7 @@
   will-change: opacity, transform;
 }
 
+
 /* 4-point star ornament: a small, continuous wobble so every star on the
    site reads as alive rather than pasted on. Animates `transform` only —
    Tailwind's translate utilities use the separate `translate` property in

@@ -44,3 +44,6 @@ yarn-error.log*
 # case-study source PDFs (28 MB) — shipped as the WebP decks under
 # public/work/<slug>/deck-v1, 0.8 MB each (scripts/gen-workdeck.py)
 /*.pdf
+
+# runtime booking store (seeded on first run) - never commit
+/data/

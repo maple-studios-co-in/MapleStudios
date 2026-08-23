@@ -48,10 +48,12 @@ function Strip({
   progress,
   index,
   total,
+  color,
 }: {
   progress: MotionValue<number>;
   index: number;
   total: number;
+  color: string;
 }) {
   // Scattered start times spread over 4/7 of the run, each strip taking the
   // remaining 3/7 — so the last one lands exactly on STRIP_DONE.
@@ -68,11 +70,12 @@ function Strip({
         top: `${(index / total) * 100}%`,
         height: `${100 / total + 0.4}%`,
         scaleY,
+        background: color,
       }}
       // pointer-events-auto: the strips themselves must stay hit-testable so
       // the adaptive navbar can sense the cream background under it via
       // elementsFromPoint (which skips pointer-transparent nodes)
-      className="pointer-events-auto absolute inset-x-0 origin-center bg-[#fff3d3] will-change-transform"
+      className="pointer-events-auto absolute inset-x-0 origin-center will-change-transform"
     />
   );
 }
@@ -81,10 +84,15 @@ export default function StripExit({
   children,
   bands = 10,
   className = "",
+  /** Strip colour — match the section that comes NEXT, so when the cover
+      completes the screen already IS that section's ground and it slides up
+      seamlessly (cream by default; the contact hero hands off to maroon). */
+  color = "#fff3d3",
 }: {
   children: React.ReactNode;
   bands?: number;
   className?: string;
+  color?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -160,7 +168,7 @@ export default function StripExit({
             style={short ? { height: `calc(100% + ${RUNWAY_VH}vh)` } : undefined}
           >
             {Array.from({ length: bandCount }, (_, i) => (
-              <Strip key={i} progress={smooth} index={i} total={bandCount} />
+              <Strip key={i} progress={smooth} index={i} total={bandCount} color={color} />
             ))}
           </div>
         </div>

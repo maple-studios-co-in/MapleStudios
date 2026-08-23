@@ -4,12 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView } from "motion/react";
 
 /**
- * The hero badge's count-up: the readout sprints from 0h 00m to the real
+ * The hero badge's count-up: the readout climbs from 0h 00m to the real
  * average — 22h 40m — the first time the badge scrolls into view,
  * decelerating on a cubic ease-out so the final digits click into place
  * (a stat reveal, not a live stopwatch; seconds intentionally not shown).
  * Plays once per page load. Each changed digit rolls up behind its own
  * mask (odometer, not a tick).
+ *
+ * The climb is quantized into STEPS eased checkpoints, one per roll: a digit
+ * is re-keyed at most once per step, and each roll (0.36s) finishes inside
+ * its step window (0.4s). The earlier 40ms free-running poll re-keyed every
+ * digit dozens of times mid-roll — AnimatePresence piled up hundreds of
+ * overlapping enter/exit spans, the main thread choked, and slots sat blank
+ * (each incoming char was replaced before it ever climbed into view), which
+ * is why the card lagged and showed a lone digit.
  *
  * Renders 0h 00m on the server AND on the first client render, so the
  * markup hydrates identically.
@@ -18,6 +26,7 @@ import { AnimatePresence, motion, useInView } from "motion/react";
 // 22h 40m — avg. time to first live build
 const TARGET_SECONDS = 22 * 3600 + 40 * 60;
 const COUNT_MS = 2800;
+const STEPS = 7;
 function RollDigit({ char }: { char: string }) {
   // non-digits (the h/m/s letters and spaces) never animate — they'd jitter
   if (!/\d/.test(char)) {
@@ -31,7 +40,7 @@ function RollDigit({ char }: { char: string }) {
           initial={{ y: "110%" }}
           animate={{ y: "0%" }}
           exit={{ y: "-110%" }}
-          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
           className="absolute inset-0 flex items-center justify-center"
         >
           {char}
@@ -54,16 +63,13 @@ export default function BuildTimer({
 
   useEffect(() => {
     if (!inView) return;
-    const started = performance.now();
-    // 25fps poll is plenty — the eased value crosses whole seconds far
-    // faster than the digits can roll anyway, and the final frame snaps
-    // to the exact target
+    let step = 0;
     const id = setInterval(() => {
-      const t = Math.min((performance.now() - started) / COUNT_MS, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // cubic ease-out
+      step += 1;
+      const eased = 1 - Math.pow(1 - step / STEPS, 3); // cubic ease-out
       setElapsed(Math.round(TARGET_SECONDS * eased));
-      if (t >= 1) clearInterval(id);
-    }, 40);
+      if (step >= STEPS) clearInterval(id);
+    }, COUNT_MS / STEPS);
     return () => clearInterval(id);
   }, [inView]);
 

@@ -621,12 +621,29 @@ export const SERVICES_PAGE = {
   ],
   words: ["BRANDING", "DESIGN", "AI"],
   wordsCaption: "CAPABILITIES SHAPED TO SCALE WITH AMBITION.",
-  // Split-screen service panels (Figma Groups 29-31): pinned left visual,
-  // heading + capabilities list right — one panel per discipline.
+  // Split-screen service panels, trionn.com/services layout. LEFT half: a
+  // FLAT colour behind the image card (`leftBg` — cream or deep maroon, no
+  // gradient cycling on these by request), the small 2-line uppercase
+  // statement above the card, and the card's own overlay copy (`overlay`:
+  // bottom-left two-liner in Red Hat Display 35px/700 (+400 line), bottom-
+  // right tag 13.85px/300 — supplied typography). RIGHT half cream with
+  // title / description / capabilities. `portrait` cards keep the image's
+  // full height so nothing is cropped. Panels pin and the next slides up OVER
+  // the pinned one. ORDER IS DELIBERATE (user-specified).
   panels: [
     {
       id: "ai",
       title: "AI & Intelligent Automation",
+      leftBg: "#FFF3D3",
+      statement: ["AI THAT WORKS.", "BUILT FOR BUSINESS."],
+      overlay: {
+        lines: [
+          { text: "AI & Intelligent", bold: true },
+          { text: "Automation", bold: false },
+        ],
+        tag: "// WORK SMARTER. SCALE FASTER.",
+        ink: "#000",
+      },
       description:
         "We build AI into the parts of your business that need it most —\ntalking to customers, handling repeat work, and surfacing answers before someone has to go looking for them.",
       capsLabel: "OUR CORE CAPABILITIES",
@@ -638,11 +655,49 @@ export const SERVICES_PAGE = {
         "Semantic search & recommendations",
         "AI-powered business automation",
       ],
-      image: "/figma/worker-ai-card.png",
+      image: "/images/services/svc-ai-brain.webp",
+    },
+    {
+      id: "ads",
+      title: "AI Ads & Campaign System",
+      leftBg: "#3A0906",
+      statement: ["MORE VARIATIONS. BETTER TESTING.", "FASTER GROWTH."],
+      overlay: {
+        lines: [
+          { text: "From one idea to your", bold: false },
+          { text: "next winning campaign.", bold: true },
+        ],
+        tag: "// CREATE. TEST. OPTIMIZE. SCALE.",
+        ink: "#000",
+        /** longer copy — set a size so each line still fits on ONE line */
+        size: 27,
+      },
+      description:
+        "One brief in. Endless campaign possibilities out.\nGenerate ad concepts, copy, creatives, landing pages and variations — then test what works and scale the winners.",
+      capsLabel: "OUR CORE CAPABILITIES",
+      caps: [
+        "AI Creative",
+        "Campaign Strategy",
+        "Multi-Channel",
+        "A/B Testing",
+        "Optimization",
+        "Scaling",
+      ],
+      image: "/images/services/svc-ads-engine.webp",
     },
     {
       id: "web",
       title: "Web & App Development",
+      leftBg: "#FFF3D3",
+      statement: ["PRODUCTS PEOPLE ACTUALLY USE", "DESIGN • BUILD • SHIP"],
+      overlay: {
+        lines: [
+          { text: "Web & App", bold: true },
+          { text: "Development", bold: false },
+        ],
+        tag: "// FAST. SOLID. SCALABLE.",
+        ink: "#fff",
+      },
       description:
         "We design and build sites and applications that hold up under real traffic,\nreal content, and real growth — using a modern stack with no shortcuts underneath.",
       capsLabel: "OUR CORE CAPABILITIES",
@@ -654,11 +709,22 @@ export const SERVICES_PAGE = {
         "Performance engineering",
         "API design & integrations",
       ],
-      image: "/figma/worker-ai-card.png",
+      image: "/images/services/svc-web-dairy.webp",
     },
     {
       id: "immersive",
       title: "Immersive & 3D Experiences",
+      leftBg: "#3A0906",
+      statement: ["EXPLORE PRODUCTS IN 3D", "CONFIGURE • VISUALIZE • BUY"],
+      overlay: {
+        lines: [
+          { text: "Turn Browsing", bold: false },
+          { text: "Into Experience.", bold: true },
+        ],
+        tag: "// CREATE. TEST. OPTIMIZE. SCALE.",
+        ink: "#fff",
+        size: 29,
+      },
       description:
         "We give people something to explore, not just scroll past —\n3D product views, configurators, and AR previews that make the product tangible before it's purchased.",
       capsLabel: "OUR CORE CAPABILITIES",
@@ -670,7 +736,38 @@ export const SERVICES_PAGE = {
         "Motion & interaction design",
         "Immersive storytelling",
       ],
-      image: "/figma/worker-ai-card.png",
+      image: "/images/services/svc-3d-bedroom.webp",
+    },
+    {
+      id: "in-house-tools",
+      title: "In-House Tools",
+      leftBg: "#FFF3D3",
+      statement: ["If your business has a process,", "we can build the system around it."],
+      overlay: {
+        /** deliberately empty — this card carries no caption, only the tag */
+        lines: [] as { text: string; bold: boolean }[],
+        tag: "// BUILT AROUND YOUR OPERATIONS.",
+        ink: "#fff",
+      },
+      description:
+        "Your business has its own way of working. Your software should too.\nWe build the custom tools, AI systems, and automations that fit directly into your operations — from internal dashboards and workflows to intelligent agents and connected platforms.",
+      capsLabel: "OUR CORE CAPABILITIES",
+      caps: [
+        "Custom Software",
+        "AI Workflows",
+        "Automation",
+        "Dashboards",
+        "Integrations",
+        "AI Agents",
+      ],
+      image: "/images/services/svc-inhouse-robot.webp",
+      /** 1024×1536 transparent PNG — shown whole in a portrait card, never cropped */
+      portrait: true,
+      /** Figma 2235:108 — cream panel, robot on its own deep-maroon card with
+          faint vertical rules (the transparent PNG needs a ground of its own) */
+      cardBg:
+        "radial-gradient(58% 62% at 50% 42%, #7A1B14 0%, #4E0F0B 52%, #2F0500 100%)",
+      cardRules: true,
     },
   ],
   stackHeading: ["TECHNOLOGY", "STACK"],
@@ -695,15 +792,47 @@ export const SERVICES_PAGE = {
 export const CONTACT_PAGE = {
   hero: { title: "Let's start something.", subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact." },
   note: "WE DESIGN FOR LONGEVITY CLARITY FIRST, CRAFT ALWAYS, BUILT TO SCALE",
-  step: "01 / 05",
-  formHeading: "Let's start with the basics.",
+  formHeading: "Let's work together",
   formSub: "A few details to begin the conversation.",
+  // trionn.com field set: name / email / company, service + budget pickers,
+  // a goals textarea, and the Send Inquiry action.
   fields: [
-    { id: "name", label: "Full Name*", type: "text", required: true },
-    { id: "email", label: "Email Address*", type: "email", required: true },
-    { id: "company", label: "Company or Brand", type: "text", required: false },
+    { id: "name", label: "Full Name", type: "text", required: true },
+    { id: "email", label: "Email address", type: "email", required: true },
+    { id: "company", label: "Company / Website name", type: "text", required: false },
   ],
-  submit: "CONTINUE",
+  services: {
+    placeholder: "Select a service",
+    options: [
+      "Website Design & Development",
+      "UI/UX Design",
+      "Web Development",
+      "Mobile App Design",
+      "Branding & Identity",
+      "AI-Powered Digital Product",
+      "Something Else",
+    ],
+  },
+  budgets: {
+    placeholder: "Select your estimated budget",
+    options: ["Under $5K", "$5K - $15K", "$15K - $30K", "$30K - $60K", "$60K+", "Not sure yet"],
+  },
+  message: {
+    id: "message",
+    label: "Share a little about your goals, timeline, and requirements...",
+  },
+  submit: "SEND INQUIRY",
+  or: "or",
+  bookCall: {
+    cta: "BOOK A 30-MINUTE CALL",
+    heading: "Pick a slot that suits you",
+    sub: "Live availability from our calendar — all times are IST (GMT+5:30).",
+    confirm: "CONFIRM BOOKING",
+    successTitle: "You're booked.",
+    successBody: "A confirmation is on its way — we'll meet you on the call.",
+    empty: "No open slots in the next two weeks — send the form instead and we'll find a time.",
+    note: "Prefer email? Write to contact@maplestudios.co.in — we reply within a day.",
+  },
   columns: [
     { title: "Location", body: "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people." },
     { title: "Join us", body: "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people." },
@@ -711,12 +840,60 @@ export const CONTACT_PAGE = {
   email: "contact@maplestudios.co.in",
   emailNote: "Or, reach out via contact form.",
   faqHeading: "Questions",
+  // Verbatim from FAQs.pdf (2026-08-22). Shape: question + prose answer, with
+  // optional `bullets` and a closing `after` paragraph (only Q06 uses those).
   faqs: [
-    { q: "AI & Intelligent Automation", platformsLabel: "AI PLATFORMS", platforms: ["OpenAI API", "Anthropic Claude"], coreLabel: "OUR CORE CAPABILITIES", core: ["AI platform simplifying hiring, management", "Retrieval and knowledge systems", "Workflow automation across teams", "Agents that action, not just answer", "Measurement and guardrails built in"] },
-    { q: "How fast can we start?", platformsLabel: "TYPICAL TIMELINE", platforms: ["Kickoff in 48 hours", "First build in a day"], coreLabel: "WHAT YOU GET", core: ["A scoped plan before we build", "Weekly shipping cadence", "Direct access to the makers"] },
-    { q: "What does an engagement cost?", platformsLabel: "ENGAGEMENT MODELS", platforms: ["Project-based", "Monthly retainer"], coreLabel: "HOW WE SCOPE", core: ["Fixed scope, fixed price", "Retainers for continuous work", "No surprise line items"] },
-    { q: "Do you work with existing teams?", platformsLabel: "WAYS WE PLUG IN", platforms: ["Embedded squad", "Advisory + build"], coreLabel: "WHAT THAT LOOKS LIKE", core: ["We adopt your rituals", "Handover documentation included", "Your team owns what we ship"] },
-  ],
+    {
+      q: "What do you actually build?",
+      a: "Websites, digital products, AI systems, internal tools, and immersive experiences. We work across design and development—from high-converting websites and mobile apps to AI agents, automation systems, custom platforms, and 3D/AR experiences.",
+    },
+    {
+      q: "Do you work with startups or established businesses?",
+      a: "Both. We work with startups building their first product, growing businesses improving their digital systems, and established teams looking to launch something new or modernize what they already have.",
+    },
+    {
+      q: "Can you work with our existing team?",
+      a: "Absolutely. We can work as an extension of your team, take ownership of a specific project, or handle the entire build from strategy through launch. We adapt to your tools, processes, and existing technology wherever it makes sense.",
+    },
+    {
+      q: "How does a project usually start?",
+      a: "With a conversation, not a sales pitch. We start by understanding what you're trying to achieve, what isn't working today, your users, technical constraints, and the outcome you need. From there, we define the scope, approach, timeline, and next steps.",
+    },
+    {
+      q: "How long does a project take?",
+      a: "It depends on what we're building. A focused website or prototype can move quickly, while a full digital product, AI platform, or custom system takes longer. Before we start, you'll get a clear scope and realistic delivery plan.",
+    },
+    {
+      q: "How do you price projects?",
+      a: "We price based on scope, complexity, and the level of involvement required. Projects can be structured as:",
+      bullets: ["Fixed-scope projects", "Monthly retainers", "Ongoing product partnerships"],
+      after: "We define what's included before work begins, so there are no surprise charges later.",
+    },
+    {
+      q: "Can you sign an NDA?",
+      a: "Yes. If your project involves confidential product ideas, business processes, customer data, or proprietary technology, we're happy to put an NDA in place before sharing sensitive information.",
+    },
+    {
+      q: "Do you provide support after launch?",
+      a: "Yes. Launch isn't the end of the relationship. We can continue with maintenance, optimization, new features, AI improvements, performance work, and ongoing product development depending on what your business needs.",
+    },
+    {
+      q: "Can you work on an existing website or product?",
+      a: "Yes. We don't always need to start from zero. We can audit, redesign, rebuild, optimize, or extend an existing product—while keeping what already works and fixing what doesn't.",
+    },
+    {
+      q: "What makes Maple different?",
+      a: "We don't just deliver screens or code. We build the system behind the idea. That means design, technology, AI, automation, and product thinking can work together from the start—so the final product isn't just visually strong, but useful, scalable, and built to perform.",
+    },
+    {
+      q: "Do you use AI in every project?",
+      a: "No—and that's intentional. We use AI where it creates a genuine advantage. Sometimes that's an AI agent or automated workflow. Sometimes it's simply better product architecture, design, or development. The technology follows the problem, not the other way around.",
+    },
+    {
+      q: "Are you currently taking on new projects?",
+      a: "Yes, subject to availability. We deliberately keep the number of active projects manageable so we can stay close to the work and maintain the quality of what we ship.",
+    },
+  ] as { q: string; a: string; bullets?: string[]; after?: string }[],
 };
 
 // /about — Figma frame 22:624 ("About", 1512x4158)
