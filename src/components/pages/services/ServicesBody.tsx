@@ -10,8 +10,10 @@ import {
   type MotionValue,
 } from "motion/react";
 import { SERVICES_PAGE } from "@/lib/constants";
-import { Eyebrow, Reveal, UnderlineLink } from "../PageKit";
+import { Eyebrow, HERO_GRADIENT, Reveal, UnderlineLink } from "../PageKit";
 import ServicesOrbit from "./ServicesOrbit";
+import GradientCycler from "@/components/common/GradientCycler";
+import StripExit from "@/components/common/StripExit";
 
 /* Linear 0→1 ramp between two progress marks (function-form transforms stay
    on motion's JS path — see HeroSection's WAAPI note). */
@@ -113,7 +115,13 @@ function ServicesHero() {
   ];
 
   return (
-    <section className="relative isolate overflow-hidden bg-[#5d1411] text-center text-[#fff3d3]">
+    <section
+      className="relative isolate overflow-hidden text-center text-[#fff3d3]"
+      style={{ background: HERO_GRADIENT }}
+    >
+      {/* One cycling gradient across the WHOLE dark scene (hero + lower band),
+          same treatment as the home hero — the flat #5d1411 panels are gone */}
+      <GradientCycler />
       <ServicesOrbit activeNodeIndex={hoveredDiscipline} />
 
       {/* Eyebrow — ✦ WHAT WE DO BEST (14:8895) */}
@@ -201,7 +209,8 @@ function ServicesHero() {
           (per review). Holds the intro statement, twin links, marquee and
           caption; the original inter-block gap is split across mt/pt so
           the rhythm reads unchanged. */}
-      <div className="relative z-10 mt-[max(48px,7.5vw)] bg-[#5d1411] pt-[max(48px,7.5vw)]">
+      {/* transparent: the section's gradient + cycler paint the whole scene */}
+      <div className="relative z-10 mt-[max(48px,7.5vw)] pt-[max(48px,7.5vw)]">
         {/* Intro statement — Catilde Light 80, cream on maroon (14:8680) */}
         <Reveal>
           <h2 className="mx-auto max-w-[80%] font-serif-luxury text-[max(38px,5.29vw)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
@@ -258,11 +267,16 @@ function ServicesHero() {
   );
 }
 
-/* ————— Split-screen service panels (Figma Groups 29-31) with the
-   trionn.com/services hand-off: each panel pins at the top of the viewport
-   and the NEXT panel slides up OVER it (its pinned content never moves),
-   exactly like the reference capture. Sibling sticky stack: later panels
-   cover earlier ones; spacers between panels give each a pinned dwell. ————— */
+/* ————— Split-screen service panels, trionn.com/services layout (reference
+   recording 2026-08-20): LEFT half — flat colour (cream / deep maroon per
+   panel, no gradient cycling here by request), small 2-line uppercase
+   statement centred ABOVE the image card, and the card's own overlay copy
+   (supplied mockups: two-liner bottom-left, tag bottom-right) — RIGHT half
+   cream with title, description and the underlined capabilities list. The
+   hand-off is unchanged: each panel pins at the top of the viewport and the
+   NEXT one slides up OVER it. ————— */
+const OVERLAY_FONT = "'Red Hat Display', 'Plus Jakarta Sans', system-ui, sans-serif";
+
 function ServicePanel({
   panel,
   index,
@@ -270,67 +284,112 @@ function ServicePanel({
   panel: (typeof SERVICES_PAGE.panels)[number];
   index: number;
 }) {
+  const darkLeft = panel.leftBg.toUpperCase() !== "#FFF3D3";
+  const portrait = "portrait" in panel && panel.portrait === true;
+  const statementInk = darkLeft ? "text-[#D9B98A]" : "text-[#741a14]";
+  const cardBg = "cardBg" in panel ? panel.cardBg : undefined;
+  /** 35px is the design default; longer two-liners set their own size */
+  const overlaySize = "size" in panel.overlay ? panel.overlay.size : 35;
+
   return (
     <div
-      className="relative bg-[#fff3d3] transform-gpu lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden"
+      className="relative transform-gpu lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden"
       style={{ zIndex: index + 1 }}
     >
-      {/* Top rule + crossing star riding the panel's leading edge (Line 7 +
-          Vector) — seated 11px inside the edge so the straddling ✦ is never
-          clipped by the panel's overflow-hidden */}
-      <div
-        aria-hidden="true"
-        className="absolute left-[7.87%] right-[6.08%] top-[11px] hidden h-px bg-black/60 lg:block"
-      />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/figma/about/star-maroon.svg"
-        alt=""
-        className="star-twinkle absolute left-[50.86%] top-[11px] hidden w-[max(21px,1.389vw)] -translate-x-1/2 -translate-y-1/2 lg:block"
-      />
-      {/* Continuous centre divider (Line 8) — starts at the rule */}
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 left-[50.86%] top-[11px] hidden w-px bg-black/60 lg:block"
-      />
+      <div className="grid h-full grid-cols-1 lg:grid-cols-2">
+        {/* LEFT — visual half: statement above the image card */}
+        <div
+          className="relative flex flex-col items-center justify-center gap-[max(18px,1.6vw)] px-[5%] py-16 text-center lg:py-0"
+          style={{ background: panel.leftBg }}
+        >
+          <div>
+            <p className={`font-sans-luxury text-[max(12px,0.86vw)] font-bold uppercase leading-[1.5] tracking-[0.08em] ${statementInk}`}>
+              {panel.statement[0]}
+            </p>
+            <p className={`font-sans-luxury text-[max(12px,0.86vw)] font-bold uppercase leading-[1.5] tracking-[0.08em] ${statementInk}`}>
+              {panel.statement[1]}
+            </p>
+          </div>
 
-      <div className="flex h-full items-center py-16 lg:py-0">
-        <div className="grid w-full grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-0">
-          {/* Left visual — 600x380, r7 (Link 14:8812) */}
-          <div className="px-[8%] lg:pl-[10.28%] lg:pr-[10.32%]">
-            <div className="overflow-hidden rounded-[7px] lg:translate-y-[2.9vw]">
-              <Image
-                src={panel.image}
-                alt={panel.title}
-                width={600}
-                height={380}
-                className="aspect-[600/380] w-full object-cover"
-              />
+          {/* Card: the SAME 600x380 frame on every panel, so each panel's
+              heading sits at the same height down the pinned stack. The
+              transparent robot png gets its own deep-maroon ground + faint
+              vertical rules and is contained inside that frame (never
+              cropped) instead of driving a taller card of its own. */}
+          <div
+            className="relative aspect-[600/380] w-[90%] overflow-hidden rounded-[10px]"
+            style={cardBg ? { background: cardBg } : undefined}
+          >
+            {/* Faint vertical rules on the card ground (Figma) */}
+            {"cardRules" in panel && panel.cardRules ? (
+              <div aria-hidden="true" className="absolute inset-0">
+                {[18, 34, 50, 66, 82].map((x) => (
+                  <span
+                    key={x}
+                    className="absolute inset-y-0 w-px bg-[#fff3d3]/[0.07]"
+                    style={{ left: `${x}%` }}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            <Image
+              src={panel.image}
+              alt={panel.title}
+              fill
+              sizes="(min-width: 1024px) 45vw, 90vw"
+              priority={index === 0}
+              className={portrait ? "object-contain" : "object-cover"}
+            />
+
+            {/* Overlay copy — supplied typography: two-liner Red Hat Display
+                35px / 100% (700 + 400 lines), tag 13.85px / 300 / 150%.
+                Longer copy overrides `size` so each line stays on ONE line. */}
+            <div
+              className="pointer-events-none absolute inset-0 flex flex-row items-end justify-between gap-4 p-[max(18px,1.7vw)]"
+              style={{ color: panel.overlay.ink }}
+            >
+              <p
+                className="whitespace-nowrap text-left"
+                style={{ fontFamily: OVERLAY_FONT, fontSize: overlaySize, lineHeight: "100%" }}
+              >
+                {panel.overlay.lines.map((l) => (
+                  <span key={l.text} className="block" style={{ fontWeight: l.bold ? 700 : 400 }}>
+                    {l.text}
+                  </span>
+                ))}
+              </p>
+              <p
+                className="shrink-0 whitespace-nowrap text-left uppercase"
+                style={{ fontFamily: OVERLAY_FONT, fontSize: 13.85, fontWeight: 300, lineHeight: "150%" }}
+              >
+                {panel.overlay.tag}
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Right column — heading, description, capabilities (14:8930-8959) */}
-          <div className="px-[8%] lg:pl-[17.06%] lg:pr-[15.87%]">
-            <h3 className="font-sans-luxury text-[max(22px,2.12vw)] font-bold leading-[0.85] text-black">
-              {panel.title}
-            </h3>
-            <p className="mt-[max(12px,1.79vw)] whitespace-pre-line font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black">
-              {panel.description}
-            </p>
-            <p className="mt-[max(40px,7.34vw)] font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] text-black">
-              {panel.capsLabel}
-            </p>
-            <ul className="mt-[max(14px,2.31vw)] flex flex-col gap-[0.79vw]">
-              {panel.caps.map((c) => (
-                <li
-                  key={c}
-                  className="border-b border-black/60 pb-[max(8px,1.06vw)] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black lg:max-w-[84.8%]"
-                >
-                  {c}
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* RIGHT — cream content half: title, description, capabilities */}
+        <div className="flex flex-col justify-center bg-[#fff3d3] px-[8%] py-16 text-black lg:py-0 lg:pl-[10.5%] lg:pr-[12%]">
+          <h3 className="font-sans-luxury text-[max(22px,1.98vw)] font-bold leading-[1.05] text-black">
+            {panel.title}
+          </h3>
+          <p className="mt-[max(12px,1.32vw)] whitespace-pre-line font-sans-luxury text-[max(14px,1.06vw)] leading-normal text-black">
+            {panel.description}
+          </p>
+          <p className="mt-[max(28px,3.9vw)] font-sans-luxury text-[max(13px,0.99vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] text-black/70">
+            {panel.capsLabel}
+          </p>
+          <ul className="mt-[max(12px,1.45vw)] flex flex-col gap-[0.66vw]">
+            {panel.caps.map((c) => (
+              <li
+                key={c}
+                className="border-b border-black/55 pb-[max(7px,0.86vw)] font-sans-luxury text-[max(14px,1.06vw)] leading-normal text-black lg:max-w-[66%]"
+              >
+                {c}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
@@ -339,7 +398,10 @@ function ServicePanel({
 
 function ServicePanels() {
   return (
-    <section className="relative bg-[#fff3d3] pt-[max(48px,8.93vw)]">
+    // relative z-20 -mt-[90vh]: rides up OVER the hero's finished strip screen
+    // (home-page StripExit hand-off pattern — KeyFacts / ClientStories do the
+    // same), so the first cream panel slides seamlessly off the cream strips.
+    <section className="relative z-20 -mt-[90vh] bg-[#fff3d3] pt-[max(48px,8.93vw)]">
       {SERVICES_PAGE.panels.map((p, i) => (
         <Fragment key={p.id}>
           {/* Dwell runway: the previous panel stays pinned while this scrolls by */}
@@ -682,7 +744,12 @@ function ProcessSection() {
 export default function ServicesBody() {
   return (
     <div className="bg-[#fff3d3] text-black">
-      <ServicesHero />
+      {/* Dark hero exits through the cream strip effect (home-page pattern):
+          its last screen pins while the strips grow, then the first cream
+          panel slides over the finished cover. */}
+      <StripExit>
+        <ServicesHero />
+      </StripExit>
       <ServicePanels />
       <TechStack />
       <CapabilityAccordion />

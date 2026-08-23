@@ -39,6 +39,8 @@ export default function ServicesVideoSection() {
   };
 
   return (
+    // The full-bleed particle film IS this section's living dark treatment —
+    // the site-wide "dark = cycling gradient" rule applies to flat surfaces.
     <section ref={sectionRef} id="services" className="relative bg-[#0a0202] text-white lg:hidden">
       <video
         ref={videoRef}
