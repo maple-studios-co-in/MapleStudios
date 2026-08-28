@@ -189,7 +189,7 @@ export default function WorkSection() {
         className="hidden lg:block"
         style={{ height: total ? `calc(100vh + ${total}px)` : "auto" }}
       >
-        <div className="sticky top-0 flex h-screen transform-gpu items-center overflow-hidden">
+        <div className="sticky top-0 flex h-screen items-center overflow-hidden">
           <motion.div ref={trackRef} style={{ x }} className="flex h-full items-center gap-[7vw]">
             {/* Slide 1: heading | first project (the Figma two-column layout) */}
             <div

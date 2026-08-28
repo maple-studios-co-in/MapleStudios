@@ -75,7 +75,15 @@ function Strip({
       // pointer-events-auto: the strips themselves must stay hit-testable so
       // the adaptive navbar can sense the cream background under it via
       // elementsFromPoint (which skips pointer-transparent nodes)
-      className="pointer-events-auto absolute inset-x-0 origin-center will-change-transform"
+      //
+      // NO will-change here. Each StripExit renders 10-24 of these and a page
+      // mounts several, so a permanent `will-change: transform` pinned ~95
+      // composited layers on the home page alone — WebKit evicts and
+      // re-rasterizes under that pressure, which reads as scroll flicker.
+      // These are flat solid-colour rects: repainting one is trivial, and the
+      // browser still promotes them on its own while the transform is
+      // actually animating.
+      className="pointer-events-auto absolute inset-x-0 origin-center"
     />
   );
 }

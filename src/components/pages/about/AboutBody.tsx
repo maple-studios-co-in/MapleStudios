@@ -32,7 +32,7 @@ export function AboutHero() {
     // bottom-anchored marquee rides down with the new fold. One number tunes
     // the whole composition; the copy can never be covered because the bird
     // remains in normal flow BELOW it.
-    <section className="relative isolate flex h-[128svh] flex-col overflow-hidden bg-[#fff3d3] text-center text-black">
+    <section className="relative isolate flex h-[96svh] flex-col overflow-hidden bg-[#fff3d3] text-center text-black md:h-[128svh]">
       {/* Statement (22:645) — Catilde 60px / 400 / normal / 3px tracking /
           #741A14 / centred. The words materialise from blur in random
           order on load — trionn's BlurTextReveal, same numbers. */}
@@ -61,7 +61,7 @@ export function AboutHero() {
           src="/figma/about/eagle-live.webp"
           depthSrc="/figma/about/eagle-live-depth.jpg"
           ariaLabel="Bald eagle"
-          className="aspect-[1024/1094] h-full max-h-full w-auto max-w-[92vw]"
+          className="aspect-[1024/1094] h-auto w-[92vw] max-w-[92vw] md:h-full md:max-h-full md:w-auto"
         />
       </motion.div>
 
@@ -137,12 +137,16 @@ function FoldCard({
           the folding plane is just a faint dark sheet until it opens */}
       <motion.div
         style={{ opacity: face }}
-        className="grid h-[max(88px,8.14vw)] grid-cols-1 items-center gap-2 bg-white pl-[4.06%] pr-[1.27%] sm:grid-cols-[51.5%_1fr]"
+        /* min-h, not h: the Figma rows are 123px and the per-row body copy
+           fits at the 1512 reference width, but at narrower widths the
+           longest body wraps to an extra line — a fixed height would spill
+           it outside the white card */
+        className="grid min-h-[max(88px,8.14vw)] grid-cols-1 items-center gap-2 bg-white py-3 pl-[4.06%] pr-[1.27%] sm:grid-cols-[51.5%_1fr]"
       >
         <h3 className="font-sans-luxury text-[max(18px,1.98vw)] font-medium leading-[1.5] text-black">
           {title}
         </h3>
-        <p className="hidden max-w-[373px] font-sans-luxury text-[max(12px,1.06vw)] font-medium leading-[1.5] text-black sm:block">
+        <p className="max-w-[373px] font-sans-luxury text-[max(13px,1.06vw)] font-medium leading-[1.5] text-black">
           {body}
         </p>
       </motion.div>
@@ -200,7 +204,7 @@ function ValuesSection() {
       <div className="grid grid-cols-1 items-start gap-10 pl-[9.59%] pr-[10.45%] lg:grid-cols-[34.7%_1fr] lg:gap-0">
         {/* Our values — Catilde 70, tracking 3.5 (22:775); pinned (sticky)
             while the stack unfolds, exactly trionn's pin behaviour */}
-        <div className="transform-gpu lg:sticky lg:top-[15svh] lg:self-start">
+        <div className="lg:sticky lg:top-[15svh] lg:self-start">
           {/* trionn heading reveal: per-CHAR blur cascade in random order */}
           <BlurTextReveal
             as="h2"
@@ -224,7 +228,7 @@ function ValuesSection() {
             className="mt-[max(24px,4.83vw)] flex flex-col gap-[4px]"
           >
             {ABOUT_PAGE.values.map((v, i) => (
-              <FoldCard key={v} T={T} index={i} title={v} body={ABOUT_PAGE.valueBody} />
+              <FoldCard key={v.title} T={T} index={i} title={v.title} body={v.body} />
             ))}
           </div>
 

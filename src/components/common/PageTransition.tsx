@@ -151,8 +151,18 @@ export default function PageTransition() {
             ease: [0.65, 0, 0.35, 1],
             delay: (covering ? ORDER[i % ORDER.length] : ORDER[(BANDS - 1 - i) % ORDER.length]) * STEP_S,
           }}
-          style={{ top: `${(i / BANDS) * 100}%`, height: `${100 / BANDS + 0.4}%`, scaleY: 0 }}
-          className="absolute inset-x-0 origin-center bg-[#fff3d3] will-change-transform"
+          style={{
+            top: `${(i / BANDS) * 100}%`,
+            height: `${100 / BANDS + 0.4}%`,
+            scaleY: 0,
+            // Only hint the compositor while a transition is actually running.
+            // This overlay lives in the root layout, so a permanent
+            // `will-change: transform` kept TEN full-viewport layers resident
+            // on every page for the whole session — pure WebKit layer
+            // pressure for something that is invisible 99% of the time.
+            willChange: active ? "transform" : "auto",
+          }}
+          className="absolute inset-x-0 origin-center bg-[#fff3d3]"
         />
       ))}
 

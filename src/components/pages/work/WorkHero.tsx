@@ -130,7 +130,7 @@ function FloatingThumb({
   return (
     <motion.div
       style={{ left: spec.left, top: spec.top, x, y, opacity, rotate, width: `clamp(56px,${spec.size}vw,160px)` }}
-      className="absolute z-0 will-change-transform"
+      className="absolute z-0"
     >
       {/* free-flow wandering lives on an inner node so it composes with the
           scroll fling: each card drifts through its own waypoint loop */}

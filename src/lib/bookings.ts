@@ -161,7 +161,26 @@ export async function removeSlot(
   return { ok: true };
 }
 
+/** The local-demo fallback key. Only ever accepted OFF a production host. */
+const DEV_ADMIN_KEY = "maple-admin";
+
+/**
+ * True when the deployment actually has an admin key configured.
+ *
+ * On a production host an unset MAPLE_ADMIN_KEY used to silently fall back to
+ * the published demo key above — which, now that /admin exposes contact-form
+ * inquiries (names, emails, message bodies), would hand that data to anyone
+ * who tried it. So production FAILS CLOSED: without the env var no key is
+ * accepted at all, and the routes say so explicitly instead of pretending the
+ * operator typed the wrong thing.
+ */
+export function isAdminKeyConfigured() {
+  if (process.env.MAPLE_ADMIN_KEY) return true;
+  return !(process.env.VERCEL || process.env.NODE_ENV === "production");
+}
+
 export function isAdminKeyValid(key: string | null | undefined) {
-  const expected = process.env.MAPLE_ADMIN_KEY || "maple-admin";
+  if (!isAdminKeyConfigured()) return false;
+  const expected = process.env.MAPLE_ADMIN_KEY || DEV_ADMIN_KEY;
   return Boolean(key) && key === expected;
 }

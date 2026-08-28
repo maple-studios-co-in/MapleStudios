@@ -117,15 +117,13 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Auto-cycling reddish gradients: 7 shades (Default → Variant7) crossfade on
-   a 24.5s loop (delay (i-1)*3.5s per layer) and each layer slowly pans/zooms
-   while lit, so the light visibly travels — clearly, not subliminally. */
-@keyframes gradientCycle {
-  0% { opacity: 0; }
-  5% { opacity: 1; }
-  14.3% { opacity: 1; }
-  20% { opacity: 0; }
-  100% { opacity: 0; }
+/* Auto-cycling reddish gradients (GradientCycler.tsx). The component mounts
+   at most TWO shades at a time — the outgoing one and the incoming one — so
+   these rules drive exactly one crossfade and one drift, never a seven-layer
+   stack. See the component header for why that matters on WebKit. */
+@keyframes gradientFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes gradientDrift {
@@ -134,12 +132,20 @@
   100% { transform: scale(1.02) translate3d(-1.5%, 1.5%, 0); }
 }
 
-.gradient-cycle {
-  opacity: 0;
-  animation:
-    gradientCycle 24.5s linear infinite,
-    gradientDrift 24.5s ease-in-out infinite;
-  will-change: opacity, transform;
+/* the single drifting layer that both shades paint into */
+.gradient-drift {
+  animation: gradientDrift 24.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* incoming shade; duration must match FADE_MS in GradientCycler.tsx */
+.gradient-fade-in {
+  animation: gradientFadeIn 1.4s linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-drift { animation: none; will-change: auto; }
+  .gradient-fade-in { animation-duration: 0.01ms; }
 }
 
 
@@ -178,23 +184,17 @@
 }
 
 /* ————— WebKit (Safari / iOS) scroll-flicker guards ————— */
-/* Infinite-animating surfaces flash on WebKit when their promoted layers
-   re-rasterize mid-scroll; a hidden backface keeps the layer stable. The
-   marquee track additionally exceeds iOS max layer texture width
-   (~8-10k px at max-content), so stability there matters double. */
-.animate-marquee,
-.gradient-cycle,
+/* A single continuously-animating full-viewport surface is stable on WebKit
+   with a hidden backface — it stops the promoted layer being re-rasterized
+   mid-scroll. Apply it ONLY to elements that are (a) few and (b) viewport
+   sized.
+   NOT the marquee: its track is `max-content` (5000px+, and >16000 device px
+   at DPR 3), which is at or beyond WebKit's maximum layer texture width.
+   Forcing that into one promoted layer is what made the band flash or drop
+   out entirely; left alone, WebKit tiles it normally. */
 .hero-glow {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-}
-
-/* GradientCycler pauses its 7-layer stack while its host is scrolled out
-   of view (see GradientCycler.tsx) — off-screen instances kept animating
-   full-viewport layers, and that compositor churn is what flickered
-   scrolls on Safari/iOS. */
-[data-offscreen] .gradient-cycle {
-  animation-play-state: paused;
 }
 
 /* Hero breathing gradient — compositor-only (opacity/transform) */
