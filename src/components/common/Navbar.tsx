@@ -60,7 +60,17 @@ export default function Navbar() {
       setOnLight(light);
       setPastHero(window.scrollY > window.innerHeight * 0.8);
     };
+    // `sample()` forces layout (elementsFromPoint) and a style recalc walk
+    // (getComputedStyle per ancestor). Running that on EVERY scroll frame
+    // stalls the main thread and starves the compositor — on WebKit that
+    // shows up as tearing/flicker while scrolling. The navbar only needs to
+    // notice a light/dark background change, so cap it at ~8Hz.
+    const MIN_GAP_MS = 120;
+    let last = 0;
     const onScroll = () => {
+      const now = performance.now();
+      if (now - last < MIN_GAP_MS) return;
+      last = now;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(sample);
     };
@@ -84,7 +94,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 px-5 sm:px-8 py-6 transition-all duration-300">
+      <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-8 py-4 sm:py-6 transition-all duration-300">
         {/* Full-bleed: logo pinned to the far left, controls to the far right */}
         <div className="flex w-full items-center justify-between">
           {/* Logo (Figma P8Asset mark + wordmark) — full strength over the
@@ -95,19 +105,19 @@ export default function Navbar() {
               pastHero ? "opacity-40 hover:opacity-90" : "opacity-100"
             }`}
           >
-            <LogoMark className={`h-[27px] w-auto transition-colors duration-300 ${ink}`} />
-            <span className={`font-serif-luxury text-2xl tracking-wide transition-colors duration-300 ${ink}`}>
+            <LogoMark className={`h-[22px] w-auto transition-colors duration-300 sm:h-[27px] ${ink}`} />
+            <span className={`font-serif-luxury text-lg tracking-wide transition-colors duration-300 sm:text-2xl ${ink}`}>
               Maple Studios
             </span>
           </Link>
 
           {/* Right Navigation Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Audio Toggle Pill */}
             <button
               onClick={toggleSound}
               aria-label="Toggle Sound"
-              className={`px-3 py-2 rounded-full flex items-center gap-2 text-xs font-sans-luxury tracking-wider transition-all cursor-pointer border backdrop-blur-md transform-gpu ${
+              className={`hidden sm:flex px-3 py-2 rounded-full items-center gap-2 text-xs font-sans-luxury tracking-wider transition-all cursor-pointer border backdrop-blur-md ${
                 onLight
                   ? "border-[#741a14]/25 bg-[#741a14]/10 text-[#741a14] hover:bg-[#741a14]/20"
                   : "border-white/15 bg-black/30 text-white/90 hover:bg-black/45"
@@ -128,7 +138,7 @@ export default function Navbar() {
             {/* Let's Talk Button — solid pill, inverted per background */}
             <Link
               href="/contact"
-              className={`px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider transition-all duration-300 shadow-lg hover:shadow-xl uppercase border ${
+              className={`px-3 py-2 rounded-full text-[10px] sm:text-xs sm:px-4 font-sans-luxury font-medium tracking-wider transition-all duration-300 shadow-lg hover:shadow-xl uppercase border ${
                 onLight
                   ? "bg-[#741a14] border-[#741a14] text-[#fff3d3] hover:bg-transparent hover:text-[#741a14]"
                   : "bg-white border-white text-black hover:bg-transparent hover:text-white"
@@ -140,7 +150,7 @@ export default function Navbar() {
             {/* Menu Button — outlined pill, inked per background */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`border px-4 py-2 rounded-full text-xs font-sans-luxury font-medium tracking-wider transition-all duration-300 uppercase flex items-center gap-2 cursor-pointer backdrop-blur-md transform-gpu ${
+              className={`border px-3 py-2 rounded-full text-[10px] sm:text-xs sm:px-4 font-sans-luxury font-medium tracking-wider transition-all duration-300 uppercase flex items-center gap-2 cursor-pointer backdrop-blur-md ${
                 onLight
                   ? "border-[#741a14] text-[#741a14] hover:bg-[#741a14]/10"
                   : "border-white/80 bg-black/30 text-white hover:bg-black/45"

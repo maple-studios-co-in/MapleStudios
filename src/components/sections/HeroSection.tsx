@@ -86,7 +86,7 @@ export default function HeroSection() {
     {/* Transparent on purpose: the maroon scene (radial + cycling shades +
         breathing glow) is painted ONCE by <SceneBackdrop /> behind the hero,
         the About screen and the marquee — one continuous field, no seams. */}
-    <section className="sticky top-0 isolate h-svh transform-gpu overflow-hidden text-white">
+    <section className="sticky top-0 isolate h-svh overflow-hidden text-white">
       {/* The hero is a Figma CANVAS: every position below is a % of this box
           and every size a % of its width, so the composition only holds if the
           BOX scales. Sizes are therefore cqw — a share of this element — and
@@ -153,12 +153,12 @@ export default function HeroSection() {
       {/* ——— Headline + START A PROJECT (one anchored block, top-left) ———
           Two-line Catilde lockup; the CTA is anchored below it so they can
           never collide at short viewports. */}
-      <div className="absolute left-[1.85%] top-[17.2%] z-10">
+      <div className="absolute left-[4.8%] top-[17.2%] z-10 md:left-[1.85%]">
         <motion.h1
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.15 }}
-          className="font-serif-luxury text-[#fff3d3] text-[max(42px,5.29cqw)] font-normal leading-[1.11] tracking-[0.05em] whitespace-nowrap"
+          className="font-serif-luxury text-[#fff3d3] text-[max(32px,5.29cqw)] font-normal leading-[1.11] tracking-[0.05em] whitespace-nowrap"
         >
           <span className="block">{HERO_DATA.headlineMain}</span>
           <span className="block">{HERO_DATA.headlineSub}</span>
@@ -251,7 +251,7 @@ export default function HeroSection() {
           Lives OUTSIDE the Scene A dissolve: full strength over the hero
           (z-20 glass, so the "se." of "purpose." reads through it), then it
           settles to a faint floating ghost behind the About statement. */}
-      <div className="absolute left-1/2 top-[40.9%] z-20 w-[max(300px,37.83cqw)] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+      <div className="absolute left-1/2 top-[53%] z-20 w-[max(200px,37.83cqw)] -translate-x-1/2 -translate-y-1/2 pointer-events-none md:top-[40.9%] md:w-[max(300px,37.83cqw)]">
         {/* scroll-driven: fade to ghost, drift down, grow slightly */}
         <motion.div style={{ opacity: markOpacity, y: markY, scale: markScale }}>
           {/* entrance */}

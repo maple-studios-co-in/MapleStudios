@@ -64,33 +64,47 @@ export function WordMarquee({
       almost on the bottom edge (about hero under the magnified eagle) */
   tight?: boolean;
 }) {
-  const row = [...words, ...words, ...words];
+  // EXACTLY TWO identical copies, each carrying its own trailing gap, so the
+  // `translateX(-50%)` loop lands one copy along — i.e. perfectly seamless.
+  // The old track held THREE copies and still translated -50%, which stops
+  // half a copy short and visibly jumps every time the animation restarts.
+  // Two copies also halve the track width, which matters: at `max-content`
+  // this row is thousands of CSS px (>16k device px at DPR 3), around
+  // WebKit's maximum layer texture width.
   return (
     <div className={`overflow-hidden ${tight ? "py-[max(6px,0.8vw)]" : "py-[max(24px,3vw)]"}`}>
-      <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
-        {row.map((w, i) => (
-          <span key={`${w}-${i}`} className="flex items-center gap-[3vw]">
-            <span
-              className={`font-serif-luxury uppercase leading-normal tracking-[0.05em] ${
-                tight
-                  ? "text-[max(28px,4.69vw)]" // 0.5x — band shrinks, and being bottom-anchored the row drops toward the fold
-                  : "text-[max(56px,9.37vw)]"
-              }`}
-              style={{ color }}
-            >
-              {w}
-            </span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={star}
-              alt=""
-              className="star-twinkle w-[max(21px,1.389vw)] shrink-0"
-              style={{ animationDelay: `${(i % 5) * 0.55}s` }}
-            />
-          </span>
+      <div className="animate-marquee flex w-max items-center whitespace-nowrap">
+        {[0, 1].map((copy) => (
+          <div
+            key={copy}
+            aria-hidden={copy === 1}
+            className="flex shrink-0 items-center gap-[3vw] pr-[3vw]"
+          >
+            {words.map((w, i) => (
+              <span key={`${w}-${i}`} className="flex items-center gap-[3vw]">
+                <span
+                  className={`font-serif-luxury uppercase leading-normal tracking-[0.05em] ${
+                    tight
+                      ? "text-[max(28px,4.69vw)]" // 0.5x — band shrinks, and being bottom-anchored the row drops toward the fold
+                      : "text-[max(56px,9.37vw)]"
+                  }`}
+                  style={{ color }}
+                >
+                  {w}
+                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={star}
+                  alt=""
+                  className="star-twinkle w-[max(21px,1.389vw)] shrink-0"
+                  style={{ animationDelay: `${(i % 5) * 0.55}s` }}
+                />
+              </span>
+            ))}
+          </div>
         ))}
       </div>
-      <p className={`${tight ? "mt-2" : "mt-6"} flex items-center justify-center gap-[5px] text-center`}>
+      <p className={`${tight ? "mt-2" : "mt-6"} flex items-center justify-center gap-[5px] px-5 text-center`}>
         <Star4 className="w-[max(12px,0.794vw)]" fill={color} />
         <Eyebrow color={color}>{caption}</Eyebrow>
       </p>
@@ -234,11 +248,15 @@ function ServicesHero() {
 
         {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on maroon (14:8697xx) */}
         <div className="mt-[max(56px,11vw)] w-full select-none overflow-hidden">
-          <div className="animate-marquee flex w-max items-center gap-[3vw] whitespace-nowrap">
-            {[...Array(6)].map((_, i) => (
+          {/* two copies, each with its own trailing gap — see WordMarquee:
+              -50% must land exactly one copy along, and a shorter track keeps
+              the layer inside WebKit's max texture width */}
+          <div className="animate-marquee flex w-max items-center whitespace-nowrap">
+            {[0, 1].map((i) => (
               <span
                 key={i}
-                className="flex items-center gap-[3vw] font-serif-luxury text-[max(56px,9.37vw)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
+                aria-hidden={i === 1}
+                className="flex shrink-0 items-center gap-[3vw] pr-[3vw] font-serif-luxury text-[max(44px,9.37vw)] font-normal uppercase leading-normal tracking-[0.05em] text-[#fff3d3]"
               >
                 {SERVICES_PAGE.words.map((word, wi) => (
                   <span key={word} className="flex items-center gap-[3vw]">
@@ -293,7 +311,7 @@ function ServicePanel({
 
   return (
     <div
-      className="relative transform-gpu lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden"
+      className="relative lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden"
       style={{ zIndex: index + 1 }}
     >
       <div className="grid h-full grid-cols-1 lg:grid-cols-2">
@@ -346,12 +364,18 @@ function ServicePanel({
                 35px / 100% (700 + 400 lines), tag 13.85px / 300 / 150%.
                 Longer copy overrides `size` so each line stays on ONE line. */}
             <div
-              className="pointer-events-none absolute inset-0 flex flex-row items-end justify-between gap-4 p-[max(18px,1.7vw)]"
+              className="pointer-events-none absolute inset-0 flex flex-col items-start justify-end gap-2 p-[max(18px,1.7vw)] sm:flex-row sm:items-end sm:justify-between sm:gap-4"
               style={{ color: panel.overlay.ink }}
             >
               <p
                 className="whitespace-nowrap text-left"
-                style={{ fontFamily: OVERLAY_FONT, fontSize: overlaySize, lineHeight: "100%" }}
+                style={{
+                  fontFamily: OVERLAY_FONT,
+                  // the card is ~90vw, so cap the headline against the
+                  // viewport too — a fixed 35px overflowed a phone-width card
+                  fontSize: `min(${overlaySize}px, 7.4vw)`,
+                  lineHeight: "100%",
+                }}
               >
                 {panel.overlay.lines.map((l) => (
                   <span key={l.text} className="block" style={{ fontWeight: l.bold ? 700 : 400 }}>
@@ -361,7 +385,12 @@ function ServicePanel({
               </p>
               <p
                 className="shrink-0 whitespace-nowrap text-left uppercase"
-                style={{ fontFamily: OVERLAY_FONT, fontSize: 13.85, fontWeight: 300, lineHeight: "150%" }}
+                style={{
+                  fontFamily: OVERLAY_FONT,
+                  fontSize: "min(13.85px, 3.2vw)",
+                  fontWeight: 300,
+                  lineHeight: "150%",
+                }}
               >
                 {panel.overlay.tag}
               </p>

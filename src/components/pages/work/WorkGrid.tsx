@@ -51,7 +51,7 @@ function ProjectEntry({
       <motion.span
         aria-hidden="true"
         style={{ y: ghostY, opacity: ghostOpacity }}
-        className="pointer-events-none absolute inset-x-0 top-0 select-none text-center font-serif-luxury text-[max(64px,11vw)] uppercase leading-none tracking-[-0.02em] text-[#fff3d3]"
+        className="pointer-events-none absolute inset-x-0 top-0 select-none overflow-hidden text-center font-serif-luxury text-[max(38px,11vw)] uppercase leading-none tracking-[-0.02em] text-[#fff3d3]"
       >
         {project.title}
       </motion.span>

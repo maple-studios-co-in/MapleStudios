@@ -49,7 +49,7 @@ function BurstLetter({
   return (
     <motion.span
       style={{ x, y, rotate, opacity }}
-      className="inline-block will-change-transform"
+      className="inline-block"
       suppressHydrationWarning
     >
       {ch}
@@ -114,7 +114,7 @@ function SpawnCard({
     <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none">
       <motion.article
         style={{ x, y, opacity, scale }}
-        className="w-[290px] rounded-[12px] border border-white/20 bg-[#2a0c0a]/55 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-[14px] will-change-transform"
+        className="w-[290px] rounded-[12px] border border-white/20 bg-[#2a0c0a]/55 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-[14px]"
         suppressHydrationWarning
       >
         <div className="flex items-start justify-between gap-3">

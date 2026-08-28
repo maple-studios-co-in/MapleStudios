@@ -19,11 +19,19 @@ export default function AboutSection() {
       {/* No top border — the marquee lives on the same continuous gradient
           scene as the hero/about, a rule here read as a section break */}
       <div className="w-full pt-8 overflow-hidden select-none">
-        <div className="animate-marquee whitespace-nowrap flex items-center gap-[3vw]">
-          {[...Array(6)].map((_, i) => (
+        {/* EXACTLY TWO copies, each carrying its own trailing gap: the
+            `translateX(-50%)` loop then lands precisely one copy along. The
+            old track held SIX copies separated by a shared flex gap, so -50%
+            stopped half a gap short and the row visibly jumped on every
+            restart. Two copies also cut the track width by two thirds — at
+            `max-content` it was 5400 CSS px (>16k device px at DPR 3), around
+            WebKit's maximum layer texture width. */}
+        <div className="animate-marquee whitespace-nowrap flex items-center">
+          {[0, 1].map((i) => (
             <span
               key={i}
-              className="flex items-center gap-[3vw] font-serif-luxury text-[max(64px,9.37vw)] tracking-[0.05em] text-[#fff3d3] font-normal uppercase"
+              aria-hidden={i === 1}
+              className="flex shrink-0 items-center gap-[3vw] pr-[3vw] font-serif-luxury text-[max(44px,9.37vw)] tracking-[0.05em] text-[#fff3d3] font-normal uppercase"
             >
               {ABOUT_DATA.marqueeText
                 .split("✦")

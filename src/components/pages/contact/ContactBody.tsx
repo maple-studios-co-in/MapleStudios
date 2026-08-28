@@ -214,6 +214,23 @@ export function ContactMaroon() {
       message,
     ];
     setSent(true);
+    // Record the inquiry for /admin BEFORE handing the visitor to their mail
+    // client. `keepalive` is the load-bearing bit: assigning window.location
+    // starts a navigation that would otherwise cancel an in-flight fetch.
+    // Fire-and-forget on purpose — a failure here must never block sending.
+    void fetch("/api/inquiries", {
+      method: "POST",
+      keepalive: true,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: values.name ?? "",
+        email: values.email ?? "",
+        company: values.company ?? "",
+        service,
+        budget,
+        message,
+      }),
+    }).catch(() => {});
     window.location.href = `mailto:${CONTACT_PAGE.email}?subject=${encodeURIComponent(
       "New project inquiry"
     )}&body=${encodeURIComponent(lines.join("\n"))}`;

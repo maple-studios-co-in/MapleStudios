@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
+import { PageHeading, useAdmin } from "./AdminShell";
 
 /**
  * /admin/slots — the studio-side calendar behind the contact page's
@@ -12,8 +13,8 @@ import { motion } from "motion/react";
  *   filled    = open (visible on the contact page) → click to close
  *   maroon    = booked (name + email shown)        → ✕ frees it again
  *
- * Auth is a single key sent as x-admin-key (MAPLE_ADMIN_KEY, default
- * "maple-admin" for local demos), remembered in sessionStorage.
+ * Auth used to be duplicated in here; it now lives in <AdminShell>, which
+ * owns the key prompt and hands every screen the same `adminFetch`.
  */
 type SlotBooking = { name: string; email: string; note?: string; at: string };
 type Slot = { id: string; date: string; time: string; booking: SlotBooking | null };
@@ -31,8 +32,7 @@ function isoDate(d: Date) {
 }
 
 export default function AdminSlots() {
-  const [key, setKey] = useState("");
-  const [authed, setAuthed] = useState(false);
+  const { adminFetch } = useAdmin();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [day, setDay] = useState(() => isoDate(new Date(Date.now() + 86400000)));
   const [error, setError] = useState<string | null>(null);
@@ -44,35 +44,19 @@ export default function AdminSlots() {
     return out;
   }, []);
 
-  const hdrs = useCallback(
-    (): HeadersInit => ({ "x-admin-key": key, "content-type": "application/json" }),
-    [key]
-  );
-
-  const load = useCallback(
-    async (k: string) => {
-      const res = await fetch("/api/admin/slots", { headers: { "x-admin-key": k }, cache: "no-store" });
-      if (res.status === 401) {
-        setAuthed(false);
-        setError("That key wasn't accepted.");
-        return false;
-      }
-      const data = (await res.json()) as { slots: Slot[] };
-      setSlots(data.slots);
-      setAuthed(true);
-      setError(null);
-      sessionStorage.setItem("maple-admin-key", k);
-      return true;
-    },
-    []
-  );
+  const load = useCallback(async () => {
+    const res = await adminFetch("/api/admin/slots");
+    if (!res.ok) {
+      setError("Could not load the calendar.");
+      return;
+    }
+    const data = (await res.json()) as { slots: Slot[] };
+    setSlots(data.slots);
+    setError(null);
+  }, [adminFetch]);
 
   useEffect(() => {
-    const saved = sessionStorage.getItem("maple-admin-key");
-    if (saved) {
-      setKey(saved);
-      void load(saved);
-    }
+    void load();
   }, [load]);
 
   const byId = useMemo(() => new Map(slots.map((s) => [s.id, s])), [slots]);
@@ -84,68 +68,31 @@ export default function AdminSlots() {
     setError(null);
     try {
       if (!existing) {
-        const res = await fetch("/api/admin/slots", {
+        const res = await adminFetch("/api/admin/slots", {
           method: "POST",
-          headers: hdrs(),
           body: JSON.stringify({ date: day, time }),
         });
         if (!res.ok) throw new Error((await res.json()).error);
       } else if (existing.booking) {
         if (!window.confirm(`Free ${existing.booking.name}'s ${time} booking? They will NOT be emailed automatically.`))
           return;
-        const res = await fetch(`/api/admin/slots?id=${encodeURIComponent(id)}&free=1`, {
+        const res = await adminFetch(`/api/admin/slots?id=${encodeURIComponent(id)}&free=1`, {
           method: "DELETE",
-          headers: hdrs(),
         });
         if (!res.ok) throw new Error((await res.json()).error);
       } else {
-        const res = await fetch(`/api/admin/slots?id=${encodeURIComponent(id)}`, {
+        const res = await adminFetch(`/api/admin/slots?id=${encodeURIComponent(id)}`, {
           method: "DELETE",
-          headers: hdrs(),
         });
         if (!res.ok) throw new Error((await res.json()).error);
       }
-      await load(key);
+      await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setBusyId(null);
     }
   };
-
-  if (!authed) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6">
-        <h1 className="font-serif-luxury text-[clamp(30px,4vw,46px)] text-[#741a14]">Slot manager</h1>
-        <p className="mt-2 max-w-[360px] text-center font-sans-luxury text-[13.5px] text-black/70">
-          Enter the admin key to manage the call slots shown on the contact page.
-        </p>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void load(key);
-          }}
-          className="mt-6 flex w-full max-w-[360px] flex-col gap-3"
-        >
-          <input
-            type="password"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="Admin key"
-            aria-label="Admin key"
-            className="h-[52px] w-full rounded-[8px] border border-[#741a14]/40 bg-transparent px-5 font-sans-luxury text-[14px] text-black outline-none focus:border-[#741a14]"
-          />
-          <button
-            type="submit"
-            className="h-[52px] cursor-pointer rounded-[8px] bg-[#741a14] font-sans-luxury text-[13px] font-bold uppercase tracking-[0.08em] text-[#fff3d3] transition-opacity hover:opacity-90"
-          >
-            Open calendar
-          </button>
-          {error ? <p className="font-sans-luxury text-[12.5px] text-[#a1281e]">{error}</p> : null}
-        </form>
-      </div>
-    );
-  }
 
   const dayMeta = (d: string) => {
     const dt = new Date(`${d}T00:00:00`);
@@ -155,29 +102,27 @@ export default function AdminSlots() {
   const bookedCount = (d: string) => slots.filter((s) => s.date === d && s.booking).length;
 
   return (
-    <div className="px-[5%] pb-24">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-serif-luxury text-[clamp(30px,4vw,46px)] text-[#741a14]">Slot manager</h1>
-          <p className="mt-1 font-sans-luxury text-[13.5px] text-black/70">
-            What you open here is exactly what visitors can book on the contact page. Times are IST.
-          </p>
-        </div>
-        <div className="flex items-center gap-4 font-sans-luxury text-[12px] text-black/70">
-          <span className="flex items-center gap-2">
-            <span className="inline-block size-3 rounded-[3px] border border-[#741a14]/50" /> closed
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="inline-block size-3 rounded-[3px] bg-[#2c7a4b]" /> open
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="inline-block size-3 rounded-[3px] bg-[#741a14]" /> booked
-          </span>
-        </div>
-      </div>
+    <>
+      <PageHeading
+        title="Availability"
+        sub="What you open here is exactly what visitors can book on the contact page. Times are IST."
+        action={
+          <div className="flex items-center gap-4 font-sans-luxury text-[12px] text-black/70">
+            <span className="flex items-center gap-2">
+              <span className="inline-block size-3 rounded-[3px] border border-[#741a14]/50" /> closed
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="inline-block size-3 rounded-[3px] bg-[#2c7a4b]" /> open
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="inline-block size-3 rounded-[3px] bg-[#741a14]" /> booked
+            </span>
+          </div>
+        }
+      />
 
       {/* Day strip */}
-      <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2">
         {days.map((d) => {
           const m = dayMeta(d);
           const active = d === day;
@@ -244,6 +189,6 @@ export default function AdminSlots() {
       </div>
 
       {error ? <p className="mt-4 font-sans-luxury text-[13px] text-[#a1281e]">{error}</p> : null}
-    </div>
+    </>
   );
 }

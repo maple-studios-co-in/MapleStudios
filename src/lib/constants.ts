@@ -899,37 +899,55 @@ export const CONTACT_PAGE = {
 // /about — Figma frame 22:624 ("About", 1512x4158)
 export const ABOUT_PAGE = {
   hero: {
-    title: "Maple is a growth-compressed product studio. What normally takes a quarter, we take from seed to shipped in a day",
-    subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact.",
+    title: "We turn good ideas into digital products people want to use",
+    subtitle: "We bring designers, engineers and specialists together around a single idea, and build the right team for the problem in front of us.",
   },
   words: ["BRANDING", "DESIGN", "AI"],
-  wordsCaption: "CAPABILITIES SHAPED TO SCALE WITH AMBITION.",
+  wordsCaption: "IDEAS BECOME CLEARER WHEN THE RIGHT PEOPLE BUILD THEM TOGETHER.",
   atMaple: "AT MAPLE,",
-  atMapleBody: "We build teams around ideas. Each project is led by designers, engineers, and specialists chosen specifically for the challenge at hand.",
-  badge: "SHAPING IDEAS TO DIGITAL DIRECTION IN 24 HOURS",
+  atMapleBody: "We bring designers, engineers and specialists together around a single idea. Instead of forcing every project through the same process, we build the right team for the problem in front of us.",
+  badge: "IDEAS IN. DIGITAL PRODUCTS OUT.",
   mission: [
-    "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people.",
-    "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people.",
+    "Our goal is simple: make technology easier to understand, easier to use and more useful to the people it is built for.",
+    "We work quickly, but we do not rush the thinking. Every project gets the attention it needs to find a clear direction and turn that direction into something real.",
   ],
   missionCta: "LET'S CONNECT",
   valuesHeading: "Our values",
-  valuesIntro: "We're proud to be one of India's most creative and recognized web design studios, driven by purpose, aesthetics and bold ideas.",
+  valuesIntro: "We care about the quality of the work, the way we get there and the people we build it with.",
+  // each row carries its own body copy (Figma 2124:183-206)
   values: [
-    "Driven by excellence",
-    "Honesty & Authenticity",
-    "Designs that last",
-    "Purposeful decision",
-    "Creativity with impact",
-    "Experience & attitude",
+    {
+      title: "Driven by excellence",
+      body: "We look closely. We question the first answer, refine the details and keep working until the final result feels considered.",
+    },
+    {
+      title: "Honesty & Authenticity",
+      body: "We keep conversations straightforward. No unnecessary jargon, no inflated promises and no pretending something is right when it needs more work.",
+    },
+    {
+      title: "Designs that last",
+      body: "We want the work to remain useful after the launch. That means making choices that can grow with a business rather than following a trend for the sake of it.",
+    },
+    {
+      title: "Purposeful decision",
+      body: "Every part of a project should have a reason behind it. If a feature, visual element or piece of content does not add value, we leave it out.",
+    },
+    {
+      title: "Creativity with impact",
+      body: "Good ideas should do more than look interesting. They should help a business communicate better, solve a problem or create a better experience.",
+    },
+    {
+      title: "Experience & judgement",
+      body: "Experience teaches you when to push an idea and when to simplify it. We bring that judgement to every project, including the lessons that came from things that did not work.",
+    },
   ],
-  valueBody: "Our work is shaped by high standards, continuous learning, and deep respect for craft, pushing every project beyond the expected.",
-  valuesCaption: "WHAT WE BELIEVE SHAPES BETTER WORK",
+  valuesCaption: "WHAT WE BELIEVE SHOWS UP IN THE WORK.",
   // Founder + team sections (Figma 2124:211 / 2124:105 lower region)
   founder: {
     name: "Aditya Agrawal",
     role: "FOUNDER & CEO",
-    statement: "Focused disciplines where strategy, design, and technology work as one",
-    body: "We're proud to be one of India's most creative and recognized web design studios, driven by purpose, aesthetics and bold ideas.",
+    statement: "Good work isn't about doing more it's about doing the right things with total focus",
+    body: "We're proud to be one of the most creative and web design studios, driven by purpose, aesthetics and bold ideas.",
   },
   team: {
     headline1: "Different skills,",

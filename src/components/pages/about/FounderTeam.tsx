@@ -58,29 +58,41 @@ export function FounderSection() {
 
         {/* hanging opening quote + statement (2124:215/214) — the first
             line indents past the rotated quote glyph, Figma-style */}
-        <div className="absolute left-[5.62%] top-[57%] w-[70.2%]">
+        <div className="absolute left-[5.62%] top-[52%] w-[84%] md:top-[57%] md:w-[70.2%]">
           <div className="relative">
+            {/* Desktop: the glyph hangs in the first line's indent, Figma
+                style. Phone: the type is only ~15px, so a hanging glyph is
+                taller than a line and struck through line two — sit it on its
+                own line above instead and zero the indent. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/figma/about/quote-mark.svg"
               alt=""
-              className="absolute left-0 top-[0.06em] w-[max(34px,5.29vw)] rotate-180"
+              className="relative mb-1 block w-[26px] rotate-180 md:absolute md:left-0 md:top-[0.06em] md:mb-0 md:w-[max(34px,5.29vw)]"
             />
             <BlurTextReveal
               text={ABOUT_PAGE.founder.statement}
-              style={{ textIndent: "max(50px,7.3vw)" }}
-              className="font-sans-luxury text-[max(26px,4.63vw)] font-medium leading-none text-[#fff3d3]"
+              style={{ textIndent: "var(--quote-indent)" }}
+              className="font-sans-luxury text-[max(15px,4.63vw)] font-medium leading-[1.06] text-[#fff3d3] [--quote-indent:0px] md:leading-none md:[--quote-indent:max(50px,7.3vw)]"
             />
           </div>
         </div>
 
-        {/* supporting paragraph, lower right (2124:221) */}
-        <Reveal delay={0.08} className="absolute left-[61.57%] top-[89.2%] w-[33.7%] -translate-y-1/2">
+        {/* supporting paragraph, lower right (2124:221) — overlaid from md
+            up; on phones the band is far too short to hold it as well */}
+        <Reveal delay={0.08} className="absolute left-[61.57%] top-[89.2%] hidden w-[33.7%] -translate-y-1/2 md:block">
           <p className="font-sans-luxury text-[max(12px,1.46vw)] font-medium leading-[1.5] text-white">
             {ABOUT_PAGE.founder.body}
           </p>
         </Reveal>
       </div>
+
+      {/* same paragraph, stacked under the band on phones */}
+      <Reveal delay={0.08} className="px-[9.66%] pt-[max(20px,3vw)] md:hidden">
+        <p className="font-sans-luxury text-[15px] font-medium leading-[1.5] text-black">
+          {ABOUT_PAGE.founder.body}
+        </p>
+      </Reveal>
     </section>
   );
 }
@@ -256,7 +268,10 @@ function MemberCard({
         top: `${spec.top}%`,
         width: `${spec.width}%`,
         zIndex: lifted ? 45 : 30,
-        willChange: "transform",
+        // no permanent will-change: motion applies it for the duration of an
+        // animation on its own, and ten pinned card layers (plus their
+        // connector lines) is exactly the WebKit layer pressure that made
+        // this page flicker once it had settled
       }}
       className="absolute aspect-[4/5]"
     >
@@ -434,20 +449,20 @@ export function TeamSection() {
           as="p"
           mode="chars"
           text={ABOUT_PAGE.team.headline1}
-          className="relative left-[-7.21%] font-serif-luxury text-[max(52px,9.37vw)] font-normal leading-[0.7] text-[#741a14]"
+          className="relative left-0 font-serif-luxury text-[max(30px,9.37vw)] font-normal leading-[0.7] text-[#741a14] md:left-[-7.21%]"
         />
         <BlurTextReveal
           as="p"
           mode="chars"
           text={ABOUT_PAGE.team.headline2}
-          className="relative left-[8.23%] mt-[max(10px,0.86vw)] font-serif-luxury text-[max(52px,9.37vw)] font-normal leading-[0.7] text-[#741a14]"
+          className="relative left-0 mt-[max(10px,0.86vw)] font-serif-luxury text-[max(30px,9.37vw)] font-normal leading-[0.7] text-[#741a14] md:left-[8.23%]"
         />
       </div>
 
       {/* card cluster — aspect-locked to the Figma geometry (1512x1334) */}
       <div
         ref={clusterRef}
-        className="relative mt-[max(140px,37.7vw)] aspect-[1512/1334] w-full"
+        className="relative mt-[max(140px,37.7vw)] aspect-[1512/1334] w-full overflow-x-clip"
       >
         {/* each hairline pairs with CARDS[i]; when that card floats, its
             line carries the SAME hoisted keyframes/phase, so the pair moves
