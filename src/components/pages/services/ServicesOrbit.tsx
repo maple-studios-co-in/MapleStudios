@@ -46,7 +46,7 @@ export default function ServicesOrbit({
     <div
       ref={hostRef}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-x-0 top-0 z-0 h-[max(420px,min(52vw,100svh))] ${className}`}
+      className={`pointer-events-none absolute inset-x-0 top-[calc(20svh-33px)] z-0 h-[320px] lg:top-0 lg:h-[max(420px,min(52vw,100svh))] ${className}`}
     >
       {mounted ? <OrbitScene activeNodeIndex={activeNodeIndex} running={inView} /> : null}
     </div>

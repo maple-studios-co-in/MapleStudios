@@ -25,7 +25,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       // unbounded vw padding (15.5vw = 297px at 1920) inflates the footer past
       // the viewport and drags the kicker up under the fixed navbar. See the
       // note above the component for the full derivation.
-      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[min(max(120px,15.5vw),18svh)] pt-[min(max(128px,13.5vw),20svh)] text-[#fff3d3] ${
+      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[40px] pt-[96px] sm:pb-[min(max(120px,15.5vw),18svh)] sm:pt-[min(max(128px,13.5vw),20svh)] text-[#fff3d3] ${
         seamless ? "bg-transparent" : "rounded-t-[8px] bg-[#741a14]"
       }`}
     >
@@ -43,7 +43,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       </motion.p>
 
       {/* Heading + CTA */}
-      <div className="mt-[min(max(28px,3.4vw),6svh)] flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-[24px] flex flex-col gap-6 sm:mt-[min(max(28px,3.4vw),6svh)] sm:gap-10 lg:flex-row lg:items-center lg:justify-between">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -81,7 +81,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
 
       {/* Contact columns — mt-auto pins them to the footer's bottom band so
           extra viewport height opens up between heading and columns */}
-      <div className="mt-auto grid grid-cols-1 gap-10 pt-[max(40px,3.8vw)] sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:gap-x-[max(48px,8vw)]">
+      <div className="mt-auto grid grid-cols-1 gap-7 pt-[28px] sm:grid-cols-2 sm:gap-10 sm:pt-[max(40px,3.8vw)] lg:grid-cols-[1fr_auto_auto] lg:gap-x-[max(48px,8vw)]">
         <p className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
           {FOOTER_DATA.copyright}
         </p>

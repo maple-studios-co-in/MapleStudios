@@ -622,6 +622,13 @@ export const SERVICES_PAGE = {
     ],
   },
   intro: "Focused disciplines where strategy, design, and technology work as one.",
+  // Phone layout breaks the intro on these exact points; desktop keeps the
+  // single string and lets its own box width do the wrapping.
+  introLines: [
+    "Focused disciplines",
+    "where strategy, design, and",
+    "technology work as one.",
+  ],
   introLinks: [
     { label: "VIEW ALL PROJECTS", href: "/work" },
     { label: "LET'S CONNECT", href: "/contact" },

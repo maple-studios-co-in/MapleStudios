@@ -143,10 +143,10 @@ function ServicesHero() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="relative z-10 flex items-center justify-center gap-[5px] pt-[max(140px,17.5vw)]"
+        className="relative z-10 flex items-center justify-center gap-[5px] pt-[max(96px,17.5vw)]"
       >
         <Star4 className="w-[max(12px,0.794vw)]" fill="#fff3d3" />
-        <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] tracking-[-0.337px] text-[#fff3d3]">
+        <span className="font-sans-luxury text-[13.2px] font-bold uppercase leading-[1] tracking-[-0.02em] text-[#fff3d3] lg:text-[max(14px,0.926vw)] lg:leading-[max(16.88px,1.116vw)] lg:tracking-[-0.337px]">
           {SERVICES_PAGE.hero.eyebrow}
         </span>
       </motion.div>
@@ -156,7 +156,7 @@ function ServicesHero() {
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.1 }}
-        className="relative z-10 mt-[max(14px,2vw)] font-serif-luxury text-[max(44px,5.29vw)] font-normal leading-normal tracking-[0.05em] text-[#fff3d3]"
+        className="relative z-10 mt-[20svh] font-serif-luxury text-[35.2px] font-normal leading-none tracking-[0.02em] text-[#fff3d3] lg:mt-[max(14px,2vw)] lg:text-[max(44px,5.29vw)] lg:leading-normal lg:tracking-[0.05em]"
       >
         {SERVICES_PAGE.hero.title}
       </motion.h1>
@@ -166,7 +166,7 @@ function ServicesHero() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.3 }}
-        className="relative z-10 mx-auto mt-[max(64px,10.8vw)] max-w-[90%] font-sans-luxury text-[max(12px,1.06vw)] font-bold uppercase leading-[1.5] text-[#fff3d3]"
+        className="relative z-10 mx-auto mt-[20svh] max-w-[92%] font-sans-luxury text-[13.2px] font-normal uppercase leading-[1.35] tracking-[-0.02em] text-[#fff3d3]/70 lg:mt-[max(64px,10.8vw)] lg:max-w-[90%] lg:text-[max(12px,1.06vw)] lg:font-bold lg:leading-[1.5] lg:tracking-normal lg:text-[#fff3d3]"
       >
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
           {DISCIPLINES_ROW1.map((item, i) => (
@@ -225,15 +225,40 @@ function ServicesHero() {
           the rhythm reads unchanged. */}
       {/* transparent: the section's gradient + cycler paint the whole scene */}
       <div className="relative z-10 mt-[max(48px,7.5vw)] pt-[max(48px,7.5vw)]">
+        {/* On phones the intro and the marquee each get their own screen:
+            they were sharing one, so the eye never rested between them. */}
         {/* Intro statement — Catilde Light 80, cream on maroon (14:8680) */}
-        <Reveal>
-          <h2 className="mx-auto max-w-[80%] font-serif-luxury text-[max(38px,5.29vw)] font-light leading-none text-[#fff3d3] lg:max-w-[76%]">
-            {SERVICES_PAGE.intro}
+        <Reveal className="flex min-h-[100svh] flex-col justify-center pt-[10svh] lg:block lg:min-h-0 lg:pt-0">
+          <h2 className="mx-auto max-w-[92%] font-serif-luxury text-[26px] font-light leading-[1.12] text-[#fff3d3] lg:max-w-[76%] lg:text-[max(38px,5.29vw)] lg:leading-none">
+            {/* three designed lines on phones, one flowing string on desktop */}
+            <span className="lg:hidden">
+              {SERVICES_PAGE.introLines.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </span>
+            <span className="hidden lg:inline">{SERVICES_PAGE.intro}</span>
           </h2>
+
+          {/* Twin links ride WITH the intro screen, side by side */}
+          <div className="mt-[max(28px,5.29vw)] flex flex-nowrap items-start justify-center gap-[24px] px-3 lg:hidden">
+            {SERVICES_PAGE.introLinks.map((l) => (
+              <UnderlineLink
+                key={l.label}
+                label={l.label}
+                href={l.href}
+                color="#fff3d3"
+                arrow="/figma/arrow-cream.svg"
+                width="min(40vw,170px)"
+                labelClassName="text-[11px] lg:text-[max(14px,0.926vw)]"
+              />
+            ))}
+          </div>
         </Reveal>
 
         {/* Twin links — VIEW ALL PROJECTS / LET'S CONNECT (Group 21) */}
-        <Reveal className="mt-[max(40px,5.29vw)] flex flex-wrap items-center justify-center gap-[max(24px,5.29vw)] px-6">
+        <Reveal className="mt-[max(40px,5.29vw)] hidden flex-wrap items-center justify-center gap-[max(24px,5.29vw)] px-6 lg:flex">
           {SERVICES_PAGE.introLinks.map((l) => (
             <UnderlineLink
               key={l.label}
@@ -247,7 +272,7 @@ function ServicesHero() {
         </Reveal>
 
         {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on maroon (14:8697xx) */}
-        <div className="mt-[max(56px,11vw)] w-full select-none overflow-hidden">
+        <div className="mt-0 flex min-h-[100svh] w-full select-none items-center overflow-hidden lg:mt-[max(56px,11vw)] lg:min-h-0 lg:block">
           {/* two copies, each with its own trailing gap — see WordMarquee:
               -50% must land exactly one copy along, and a shorter track keeps
               the layer inside WebKit's max texture width */}
@@ -317,7 +342,7 @@ function ServicePanel({
       <div className="grid h-full grid-cols-1 lg:grid-cols-2">
         {/* LEFT — visual half: statement above the image card */}
         <div
-          className="relative flex flex-col items-center justify-center gap-[max(18px,1.6vw)] px-[5%] py-16 text-center lg:py-0"
+          className="relative flex flex-col items-center justify-center gap-[max(18px,1.6vw)] px-[max(18px,4.7%)] pb-[max(40px,7vw)] pt-[max(48px,8vw)] text-center lg:px-[5%] lg:py-0"
           style={{ background: panel.leftBg }}
         >
           <div>
@@ -335,7 +360,7 @@ function ServicePanel({
               vertical rules and is contained inside that frame (never
               cropped) instead of driving a taller card of its own. */}
           <div
-            className="relative aspect-[600/380] w-[90%] overflow-hidden rounded-[10px]"
+            className="relative aspect-[600/380] w-full overflow-hidden rounded-[10px] lg:w-[90%]"
             style={cardBg ? { background: cardBg } : undefined}
           >
             {/* Faint vertical rules on the card ground (Figma) */}
@@ -373,7 +398,7 @@ function ServicePanel({
                   fontFamily: OVERLAY_FONT,
                   // the card is ~90vw, so cap the headline against the
                   // viewport too — a fixed 35px overflowed a phone-width card
-                  fontSize: `min(${overlaySize}px, 7.4vw)`,
+                  fontSize: `min(${overlaySize}px, 5.1vw)`,
                   lineHeight: "100%",
                 }}
               >
@@ -387,7 +412,7 @@ function ServicePanel({
                 className="shrink-0 whitespace-nowrap text-left uppercase"
                 style={{
                   fontFamily: OVERLAY_FONT,
-                  fontSize: "min(13.85px, 3.2vw)",
+                  fontSize: "min(13.85px, 2.6vw)",
                   fontWeight: 300,
                   lineHeight: "150%",
                 }}
@@ -399,21 +424,23 @@ function ServicePanel({
         </div>
 
         {/* RIGHT — cream content half: title, description, capabilities */}
-        <div className="flex flex-col justify-center bg-[#fff3d3] px-[8%] py-16 text-black lg:py-0 lg:pl-[10.5%] lg:pr-[12%]">
-          <h3 className="font-sans-luxury text-[max(22px,1.98vw)] font-bold leading-[1.05] text-black">
+        <div className="flex flex-col justify-center bg-[#fff3d3] px-[max(18px,4.7%)] pb-[max(56px,9vw)] pt-[max(64px,10vw)] text-black lg:px-0 lg:py-0 lg:pl-[10.5%] lg:pr-[12%]">
+          <h3 className="font-sans-luxury text-[29.3px] font-normal leading-[1] tracking-[-0.04em] text-black lg:text-[max(22px,1.98vw)] lg:font-bold lg:leading-[1.05] lg:tracking-normal">
             {panel.title}
           </h3>
-          <p className="mt-[max(12px,1.32vw)] whitespace-pre-line font-sans-luxury text-[max(14px,1.06vw)] leading-normal text-black">
+          <p className="mt-[18px] whitespace-pre-line font-sans-luxury text-[14.65px] font-normal leading-[1.35] text-black lg:mt-[max(12px,1.32vw)] lg:text-[max(14px,1.06vw)] lg:leading-normal">
             {panel.description}
           </p>
-          <p className="mt-[max(28px,3.9vw)] font-sans-luxury text-[max(13px,0.99vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] text-black/70">
+          <p className="mt-[47px] font-sans-luxury text-[13.2px] font-normal uppercase leading-[1] tracking-[-0.02em] text-black/55 lg:mt-[max(28px,3.9vw)] lg:text-[max(13px,0.99vw)] lg:font-bold lg:leading-[max(16.88px,1.116vw)] lg:tracking-normal lg:text-black/70">
             {panel.capsLabel}
           </p>
-          <ul className="mt-[max(12px,1.45vw)] flex flex-col gap-[0.66vw]">
+          {/* 41px row rhythm with a hairline rule, last row unruled — trionn's
+              capability list. Desktop keeps its own tighter spacing. */}
+          <ul className="mt-[16px] flex flex-col lg:mt-[max(12px,1.45vw)] lg:gap-[0.66vw]">
             {panel.caps.map((c) => (
               <li
                 key={c}
-                className="border-b border-black/55 pb-[max(7px,0.86vw)] font-sans-luxury text-[max(14px,1.06vw)] leading-normal text-black lg:max-w-[66%]"
+                className="border-b border-black/20 py-[12px] font-sans-luxury text-[14.65px] leading-[1.15] text-black last:border-b-0 lg:border-black/55 lg:py-0 lg:pb-[max(7px,0.86vw)] lg:text-[max(14px,1.06vw)] lg:leading-normal lg:last:border-b lg:max-w-[66%]"
               >
                 {c}
               </li>
@@ -655,25 +682,27 @@ function ProcessStep({
   );
 
   return (
-    <div>
+    <div className="grid grid-cols-[72px_1fr] items-start gap-x-[17px] border-t border-black/15 py-[10px] first:border-t-0 first:pt-0 md:block md:border-t-0 md:py-0">
       <motion.p
         style={{ opacity: labelOpacity, y: labelY }}
-        className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] tracking-[-0.337px] text-black"
+        className="font-sans-luxury text-[13.2px] font-bold uppercase leading-[1] tracking-[-0.02em] text-black md:text-[max(14px,0.926vw)] md:leading-[max(16.88px,1.116vw)] md:tracking-[-0.337px]"
       >
         {step.step}
       </motion.p>
-      <motion.h3
-        style={{ opacity: titleOpacity, y: titleY }}
-        className="mt-[max(20px,2.9vw)] font-serif-luxury text-[max(24px,2.12vw)] font-normal leading-normal text-black"
-      >
-        {step.title}
-      </motion.h3>
-      <motion.p
-        style={{ opacity: bodyOpacity, y: bodyY, filter: bodyBlur }}
-        className="mt-[max(12px,1.92vw)] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black"
-      >
-        {step.body}
-      </motion.p>
+      <div>
+        <motion.h3
+          style={{ opacity: titleOpacity, y: titleY }}
+          className="font-serif-luxury text-[20.5px] font-normal leading-[1] tracking-[-0.03em] text-black md:mt-[max(20px,2.9vw)] md:text-[max(24px,2.12vw)] md:leading-normal md:tracking-normal"
+        >
+          {step.title}
+        </motion.h3>
+        <motion.p
+          style={{ opacity: bodyOpacity, y: bodyY, filter: bodyBlur }}
+          className="mt-[8px] font-sans-luxury text-[14.65px] leading-[1.28] text-black md:mt-[max(12px,1.92vw)] md:text-[max(14px,1.19vw)] md:leading-normal"
+        >
+          {step.body}
+        </motion.p>
+      </div>
     </div>
   );
 }
@@ -714,7 +743,8 @@ function ProcessSection() {
     restDelta: 0.001,
   });
   // Show completes at 90% of the runway — the finished scene dwells a beat
-  // before the pin releases and the page scrolls on
+  // before the pin releases and the page scrolls on. Phones are pinned too
+  // now, so the same figure holds on both.
   const progress = useTransform(smooth, (p) => ramp(p, 0, 0.9));
 
   // The rule, its tip and the ✦ stops all run on `sweep` — progress
@@ -731,8 +761,12 @@ function ProcessSection() {
 
   return (
     <section className="relative pt-[max(64px,8vw)] pb-[max(96px,10vw)]">
-      <div ref={wrapRef} className="relative lg:h-[800vh]">
-        <div className="lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center lg:overflow-hidden">
+      {/* Phones pin too, now that the four steps are compact rows that fit
+          one screen together (the earlier attempt clipped a tall stacked
+          column). 260vh of runway gives the scrub room to bring the rows in
+          one at a time. Desktop keeps its 800vh show. */}
+      <div ref={wrapRef} className="relative min-[360px]:h-[260vh] lg:h-[800vh]">
+        <div className="flex flex-col justify-center pt-[76px] min-[360px]:sticky min-[360px]:top-0 min-[360px]:h-svh min-[360px]:overflow-hidden lg:h-screen lg:pt-0">
           <div className="grid grid-cols-1 gap-8 pl-[8%] pr-[8%] lg:grid-cols-[16.4%_1fr] lg:gap-0 lg:pl-[2.05%] lg:pr-[6.08%]">
             <div>
               <Reveal>
@@ -749,7 +783,7 @@ function ProcessSection() {
                 </p>
               </Reveal>
 
-              <div className="mt-[max(40px,5.09vw)] grid grid-cols-1 gap-y-12 sm:grid-cols-2 md:grid-cols-4 md:gap-x-[2.7%]">
+              <div className="mt-[16px] grid grid-cols-1 gap-y-0 md:mt-[max(40px,5.09vw)] md:grid-cols-4 md:gap-y-12 md:gap-x-[2.7%]">
                 {SERVICES_PAGE.steps.map((s, i) => (
                   <ProcessStep key={s.step} progress={progress} index={i} step={s} />
                 ))}
