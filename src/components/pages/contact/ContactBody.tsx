@@ -42,11 +42,14 @@ export function ContactHero() {
 
       {/* maroon scroll cue (supplied SVG) — inline so it inherits nothing and
           cannot be recoloured by the cream ground */}
-      <svg
+      <motion.svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 20 20"
         fill="none"
         aria-hidden="true"
+        // gentle, endless bob so the cue reads as an invitation to scroll
+        animate={{ y: [0, 6, 0] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         className="mt-10 size-[max(20px,1.323vw)]"
       >
         <circle cx="10" cy="10" r="9.75" stroke="#741A14" strokeWidth="0.5" />
@@ -54,7 +57,7 @@ export function ContactHero() {
           d="M10.3819 6C10.3819 5.78909 10.2109 5.61812 10 5.61812C9.78909 5.61812 9.61812 5.78909 9.61812 6L10 6L10.3819 6ZM9.72997 13.27C9.8791 13.4192 10.1209 13.4192 10.27 13.27L12.7003 10.8398C12.8494 10.6906 12.8494 10.4488 12.7003 10.2997C12.5512 10.1506 12.3094 10.1506 12.1602 10.2997L10 12.4599L7.83975 10.2997C7.69062 10.1506 7.44883 10.1506 7.29969 10.2997C7.15056 10.4488 7.15056 10.6906 7.29969 10.8398L9.72997 13.27ZM10 6L9.61812 6L9.61812 13L10 13L10.3819 13L10.3819 6L10 6Z"
           fill="#741A14"
         />
-      </svg>
+      </motion.svg>
     </section>
   );
 }
@@ -495,7 +498,7 @@ export function ContactQuestions() {
                 <span className="font-sans-luxury text-[max(15px,1.32vw)] text-black">
                   {i + 1}.
                 </span>
-                <span className="font-sans-luxury text-[max(17px,1.65vw)] font-bold text-black md:text-center">
+                <span className="font-sans-luxury text-[max(17px,1.65vw)] font-bold text-black">
                   {f.q}
                 </span>
                 <motion.span

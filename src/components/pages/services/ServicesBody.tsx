@@ -624,6 +624,11 @@ function CapabilityAccordion() {
    scrolling back up rewinds it. A spring smooths the scrub so wheel flicks
    read as fluid motion instead of jumps. ————— */
 const STAR_STOPS = [0.1218, 0.3993, 0.6768, 0.9542];
+/** Progress at which the drawing tip finishes its travel. The last ✦ sits at
+    95.42% of the rule, and a column needs 0.26 of progress to fully reveal,
+    so a tip that only lands at p=1 leaves the fourth step permanently
+    half-drawn. Ending the sweep here gives it 0.31 of runway to complete. */
+const SWEEP_END = 0.69;
 
 function ProcessStep({
   progress,
@@ -634,8 +639,9 @@ function ProcessStep({
   index: number;
   step: (typeof SERVICES_PAGE.steps)[number];
 }) {
-  // Reveal starts the moment the line tip reaches this column's ✦ stop
-  const f = STAR_STOPS[index];
+  // Reveal starts the moment the line tip reaches this column's ✦ stop —
+  // which now happens at stop x SWEEP_END, since the tip finishes early.
+  const f = STAR_STOPS[index] * SWEEP_END;
   const labelOpacity = useTransform(progress, (p) => ramp(p, f, f + 0.06));
   const labelY = useTransform(progress, (p) => (1 - ramp(p, f, f + 0.06)) * 14);
   const titleOpacity = useTransform(progress, (p) => ramp(p, f + 0.02, f + 0.1));
@@ -711,12 +717,16 @@ function ProcessSection() {
   // before the pin releases and the page scrolls on
   const progress = useTransform(smooth, (p) => ramp(p, 0, 0.9));
 
-  const tipLeft = useTransform(progress, (p) => `${Math.min(p, 1) * 100}%`);
-  // Tip: spins while travelling (reads ×/+/× like the capture), then hands
+  // The rule, its tip and the ✦ stops all run on `sweep` — progress
+  // renormalised so the line finishes drawing at SWEEP_END rather than at the
+  // very end of the runway.
+  const sweep = useTransform(progress, (p) => Math.min(p / SWEEP_END, 1));
+  const tipLeft = useTransform(sweep, (s) => `${s * 100}%`);
+  // Tip: spins while travelling (reads x/+/x like the capture), then hands
   // off into the final ✦ stop and fades
-  const tipRotate = useTransform(progress, (p) => 45 + p * 450);
-  const tipOpacity = useTransform(progress, (p) =>
-    p < 0.005 ? 0 : p < 0.94 ? 1 : 1 - ramp(p, 0.94, 0.985)
+  const tipRotate = useTransform(sweep, (s) => 45 + s * 450);
+  const tipOpacity = useTransform(sweep, (s) =>
+    s < 0.005 ? 0 : s < 0.94 ? 1 : 1 - ramp(s, 0.94, 0.985)
   );
 
   return (
@@ -750,7 +760,7 @@ function ProcessSection() {
           {/* Self-drawing rule with ✦ stops + spinning tip (Line 18 + Vectors) */}
           <div className="relative ml-[7.87%] mt-[max(48px,6.15vw)] h-[21px] w-[86.05%]">
             <motion.div
-              style={{ scaleX: progress }}
+              style={{ scaleX: sweep }}
               className="absolute top-1/2 h-px w-full origin-left bg-black/40"
             />
             <motion.img
@@ -761,7 +771,7 @@ function ProcessSection() {
               className="absolute top-1/2 w-[max(17px,1.124vw)] -translate-x-1/2 -translate-y-1/2"
             />
             {STAR_STOPS.map((stop) => (
-              <ProcessStar key={stop} progress={progress} stop={stop} />
+              <ProcessStar key={stop} progress={sweep} stop={stop} />
             ))}
           </div>
         </div>

@@ -20,10 +20,12 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       // viewport top, so the kicker always rests at its own pt (≥120px) —
       // clear of the fixed navbar on EVERY viewport height (a fixed-height
       // footer parks the kicker in the navbar band on tall screens).
-      // pt raised from max(120px,12.9vw): the kicker was clearing the fixed
-      // navbar band by only a few px, so "LET'S BUILD WORK THAT INSPIRES." read
-      // as if it were glued to the Maple Studios lockup above it.
-      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[max(140px,15.5vw)] pt-[max(168px,17vw)] text-[#fff3d3] ${
+      // Vertical padding is capped against svh as well as vw. At full scroll
+      // the kicker sits at `vh - content - pb` from the viewport top, so an
+      // unbounded vw padding (15.5vw = 297px at 1920) inflates the footer past
+      // the viewport and drags the kicker up under the fixed navbar. See the
+      // note above the component for the full derivation.
+      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[min(max(120px,15.5vw),18svh)] pt-[min(max(128px,13.5vw),20svh)] text-[#fff3d3] ${
         seamless ? "bg-transparent" : "rounded-t-[8px] bg-[#741a14]"
       }`}
     >
@@ -41,7 +43,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       </motion.p>
 
       {/* Heading + CTA */}
-      <div className="mt-[max(36px,4.2vw)] flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-[min(max(28px,3.4vw),6svh)] flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -60,10 +62,10 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 2, delay: 0.42 }}
-          className="group flex w-[241px] shrink-0 flex-col"
+          className="group flex w-[max(241px,16vw)] shrink-0 flex-col"
         >
           <span className="flex items-center justify-between">
-            <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
+            <span className="whitespace-nowrap font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
               {FOOTER_DATA.cta}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
