@@ -120,6 +120,7 @@ export function UnderlineLink({
   arrow = "/figma/arrow-maroon.svg",
   width = "max(191px,12.632vw)",
   className = "",
+  labelClassName,
 }: {
   label: string;
   href?: string;
@@ -127,11 +128,19 @@ export function UnderlineLink({
   arrow?: string;
   width?: string;
   className?: string;
+  /** Override the label's type scale (the services twin-links need a smaller
+      one to sit side by side on a 360px phone). */
+  labelClassName?: string;
 }) {
   return (
     <a href={href} className={`group flex shrink-0 flex-col ${className}`} style={{ width }}>
       <span className="flex items-center justify-between">
-        <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase" style={{ color }}>
+        <span
+          className={`whitespace-nowrap font-sans-luxury font-bold uppercase ${
+            labelClassName || "text-[max(14px,0.926vw)]"
+          }`}
+          style={{ color }}
+        >
           {label}
         </span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
