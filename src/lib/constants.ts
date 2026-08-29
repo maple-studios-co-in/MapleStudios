@@ -36,7 +36,7 @@ export const ABOUT_DATA = {
   cta: "MORE ABOUT US",
   focusedVision: "FOCUSED VISION",
   measuredExecution: "MEASURED EXECUTION.",
-  marqueeText: "INNOVATE ✦ IMPACT ✦ INSPIRE ✦",
+  marqueeText: "AUTOMATE ✦ INTEGRATE ✦ ACCELERATE ✦",
   bottomSub: "✦ FROM IDEA TO OUTCOME",
 };
 
