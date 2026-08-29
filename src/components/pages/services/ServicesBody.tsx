@@ -739,7 +739,7 @@ function ProcessSection() {
                 </p>
               </Reveal>
 
-              <div className="mt-[max(40px,5.09vw)] grid grid-cols-1 gap-y-12 md:grid-cols-3 md:gap-x-[2.7%]">
+              <div className="mt-[max(40px,5.09vw)] grid grid-cols-1 gap-y-12 sm:grid-cols-2 md:grid-cols-4 md:gap-x-[2.7%]">
                 {SERVICES_PAGE.steps.map((s, i) => (
                   <ProcessStep key={s.step} progress={progress} index={i} step={s} />
                 ))}

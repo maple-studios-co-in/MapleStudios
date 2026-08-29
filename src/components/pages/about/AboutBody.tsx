@@ -38,11 +38,23 @@ export function AboutHero() {
           order on load — trionn's BlurTextReveal, same numbers. */}
       {/* No z-index: the eagle (later in the DOM) rides OVER the statement's
           lower line, exactly like the reference composition */}
-      <BlurTextReveal
-        as="h1"
-        text={ABOUT_PAGE.hero.title}
-        className="mx-auto max-w-[79.2%] shrink-0 pt-[clamp(88px,14svh,142px)] font-serif-luxury text-[clamp(19px,min(3.4vw,6.4svh),52px)] font-normal leading-[1.12] tracking-[0.05em] text-[#741a14]"
-      />
+      {/* Two lines, exactly as designed: line 1 runs to "digital products",
+          line 2 is "people want to use". Each line is its own BlurTextReveal
+          block so the break can never move with the box width; the size is
+          capped by BOTH the viewport and the line's own character count so
+          line 1 always fits on one line. Weight, family, tracking, leading and
+          colour are unchanged. */}
+      <div className="mx-auto w-full max-w-[92%] shrink-0 pt-[clamp(88px,14svh,142px)]">
+        {ABOUT_PAGE.hero.titleLines.map((line, i) => (
+          <BlurTextReveal
+            key={line}
+            as={i === 0 ? "h1" : "p"}
+            text={line}
+            delay={i * 0.12}
+            className="whitespace-nowrap font-serif-luxury text-[min(2.42vw,6.4svh,44px)] font-normal leading-[1.12] tracking-[0.05em] text-[#741a14]"
+          />
+        ))}
+      </div>
 
       {/* Eagle (156:767) — sized purely by layout: in normal flow below
           the statement, taking every pixel the screen has left down to the

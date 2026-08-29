@@ -20,7 +20,10 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       // viewport top, so the kicker always rests at its own pt (≥120px) —
       // clear of the fixed navbar on EVERY viewport height (a fixed-height
       // footer parks the kicker in the navbar band on tall screens).
-      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[max(140px,15.5vw)] pt-[max(120px,12.9vw)] text-[#fff3d3] ${
+      // pt raised from max(120px,12.9vw): the kicker was clearing the fixed
+      // navbar band by only a few px, so "LET'S BUILD WORK THAT INSPIRES." read
+      // as if it were glued to the Maple Studios lockup above it.
+      className={`relative isolate flex min-h-[100svh] flex-col overflow-hidden px-[max(20px,2.12%)] pb-[max(140px,15.5vw)] pt-[max(168px,17vw)] text-[#fff3d3] ${
         seamless ? "bg-transparent" : "rounded-t-[8px] bg-[#741a14]"
       }`}
     >
@@ -38,7 +41,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       </motion.p>
 
       {/* Heading + CTA */}
-      <div className="mt-[max(20px,2.6vw)] flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-[max(36px,4.2vw)] flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

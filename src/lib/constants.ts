@@ -19,7 +19,14 @@ export const HERO_DATA = {
 
 export const ABOUT_DATA = {
   tag: "ABOUT",
-  headline: "Maple is an independent digital studio crafting meaningful brand experiences through strategy, design, and technology.",
+  // Rendered line-by-line (HeroSection Scene B) so the break points are the
+  // designed ones rather than whatever the box width happens to produce.
+  headlineLines: [
+    "Maple is an independent digital",
+    "studio crafting meaningful",
+    "product experiences through",
+    "strategy, design, and technology.",
+  ],
   leftColumn: [
     "WE DESIGN FOR LONGEVITY",
     "CLARITY FIRST, CRAFT ALWAYS,",
@@ -35,7 +42,7 @@ export const ABOUT_DATA = {
 
 export const KEY_FACTS_DATA = {
   heading: "Maple Facts",
-  subtitle: "A snapshot of our experience and impact",
+  subtitleLines: ["A snapshot of our", "experience and impact"],
   cards: [
     {
       id: "awards",
@@ -785,6 +792,7 @@ export const SERVICES_PAGE = {
     { step: "STEP - 1", title: "Understand", body: "We map the problem, the audience, and the constraints before a single pixel moves." },
     { step: "STEP - 2", title: "Design & Build", body: "Strategy, design, and engineering run as one track — shipping in days, not quarters." },
     { step: "STEP - 3", title: "Refine & Evolve", body: "We measure what shipped, tighten what matters, and keep the system compounding." },
+    { step: "STEP - 4", title: "Improve", body: "Launching isn't the finish line. We look at what works, what doesn't and what can become better — then keep moving." },
   ],
 };
 
@@ -834,8 +842,16 @@ export const CONTACT_PAGE = {
     note: "Prefer email? Write to contact@maplestudios.co.in — we reply within a day.",
   },
   columns: [
-    { title: "Location", body: "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people." },
-    { title: "Join us", body: "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people." },
+    {
+      title: "Location",
+      // `lead` renders bold above the body (the studio name over its address)
+      lead: "MAPLE STUDIOS",
+      body: "A-2/56 - 57, W.H.S, Kirti Nagar,\nNew Delhi, Delhi, 110015",
+    },
+    {
+      title: "Join us",
+      body: "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people.",
+    },
   ],
   email: "contact@maplestudios.co.in",
   emailNote: "Or, reach out via contact form.",
@@ -899,6 +915,9 @@ export const CONTACT_PAGE = {
 // /about — Figma frame 22:624 ("About", 1512x4158)
 export const ABOUT_PAGE = {
   hero: {
+    // Two designed lines — the break lives in the copy so it can never drift
+    // with the box width. AboutHero renders each line as its own block.
+    titleLines: ["We turn good ideas into digital products", "people want to use"],
     title: "We turn good ideas into digital products people want to use",
     subtitle: "We bring designers, engineers and specialists together around a single idea, and build the right team for the problem in front of us.",
   },
