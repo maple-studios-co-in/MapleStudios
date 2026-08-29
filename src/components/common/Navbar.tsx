@@ -40,6 +40,44 @@ export default function Navbar() {
       }
       return a;
     };
+    /** The VISIBLE ground of an element: its background-color, or — when it
+        paints a gradient instead — the mean luminance of that gradient's
+        colour stops. Returns null when the element paints nothing, so the
+        probe keeps walking down the stack.
+
+        A gradient computes as background-IMAGE, never background-color. The
+        old colour-only probe therefore walked straight PAST any section whose
+        ground is a gradient (the services hero, the contact/work page mains)
+        and settled on whatever opaque colour sat far below it — on /services
+        that was the cream page wrapper, so the bar rendered maroon-on-maroon
+        over a dark hero and the wordmark disappeared. */
+    const RGB = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/g;
+    const lumOf = (m: RegExpMatchArray) => 0.2126 * +m[1] + 0.7152 * +m[2] + 0.0722 * +m[3];
+    const groundOf = (el: Element): number | null => {
+      const cs = getComputedStyle(el);
+      const alpha = effectiveAlpha(el);
+      if (alpha < 0.5) return null;
+
+      RGB.lastIndex = 0;
+      const solid = RGB.exec(cs.backgroundColor);
+      if (solid) {
+        const a = solid[4] === undefined ? 1 : parseFloat(solid[4]);
+        // see through translucent layers AND faded-out crossfade sheets
+        if (a * alpha >= 0.5) return lumOf(solid);
+      }
+
+      const img = cs.backgroundImage;
+      if (img && img !== "none" && img.includes("gradient(")) {
+        const stops = [...img.matchAll(RGB)].filter(
+          (m) => (m[4] === undefined ? 1 : parseFloat(m[4])) >= 0.5
+        );
+        if (stops.length) {
+          return stops.reduce((n, m) => n + lumOf(m), 0) / stops.length;
+        }
+      }
+      return null;
+    };
+
     const sample = () => {
       const header = headerRef.current;
       // probe the element stack under the middle of the navbar
@@ -47,13 +85,8 @@ export default function Navbar() {
       let light = false;
       for (const el of els) {
         if (header && header.contains(el)) continue;
-        const bg = getComputedStyle(el).backgroundColor;
-        const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-        if (!m) continue;
-        const colorAlpha = m[4] === undefined ? 1 : parseFloat(m[4]);
-        // see through translucent layers AND faded-out crossfade sheets
-        if (colorAlpha * effectiveAlpha(el) < 0.5) continue;
-        const luminance = 0.2126 * +m[1] + 0.7152 * +m[2] + 0.0722 * +m[3];
+        const luminance = groundOf(el);
+        if (luminance === null) continue;
         light = luminance > 160;
         break;
       }

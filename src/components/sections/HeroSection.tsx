@@ -64,7 +64,11 @@ export default function HeroSection() {
   // (starts before Scene A fully exits so the swap never has a dim gap)
   const aboutOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.26, 0.4));
   const aboutY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.26, 0.4)) * 40);
-  const aboutWords = ABOUT_DATA.headline.split(" ");
+  // Flatten to keep PinnedWord's index/total maths identical to before, but
+  // remember which line each word belongs to so the break points are the
+  // designed ones instead of whatever the box width produces.
+  const aboutLines = ABOUT_DATA.headlineLines.map((l) => l.split(" "));
+  const aboutWordCount = aboutLines.reduce((n, l) => n + l.length, 0);
   // The statement holds the COMPLETE screen alone while its words light up;
   // one more scroll beat then slides the whole sheet: statement screen
   // exits upward as the mission screen rides in from below — percentage y
@@ -278,10 +282,6 @@ export default function HeroSection() {
         style={{ opacity: aboutOpacity, y: aboutY }}
         className="absolute inset-0 z-10 overflow-hidden"
       >
-        <span className="absolute left-5 top-[92px] z-20 text-[max(12px,0.794cqw)] font-sans-luxury tracking-widest uppercase font-semibold text-white/70 sm:left-8">
-          {ABOUT_DATA.tag}
-        </span>
-
         {/* ——— Screen B1: the statement OWNS the full viewport while its
             words light up — Catilde 80 / 300 / lh 100% / cream (spec).
             80px = 5.29vw of the 1512 canvas; vh-capped for short windows.
@@ -295,11 +295,26 @@ export default function HeroSection() {
             {/* 5.1% of the canvas is the design's 77px at 1512; the 10vh arm
                 holds the statement inside short windows */}
             <p className="font-serif-luxury text-[max(30px,min(5.1cqw,10vh))] font-light leading-none text-[#fff3d3]">
-              {aboutWords.map((word, i) => (
-                <span key={`${word}-${i}`}>
-                  <PinnedWord progress={scrollYProgress} word={word} index={i} total={aboutWords.length} />{" "}
-                </span>
-              ))}
+              {(() => {
+                let w = -1;
+                return aboutLines.map((line, li) => (
+                  <span key={li} className="block">
+                    {line.map((word, wi) => {
+                      w += 1;
+                      return (
+                        <span key={`${word}-${li}-${wi}`}>
+                          <PinnedWord
+                            progress={scrollYProgress}
+                            word={word}
+                            index={w}
+                            total={aboutWordCount}
+                          />{" "}
+                        </span>
+                      );
+                    })}
+                  </span>
+                ));
+              })()}
             </p>
             {/* the star-rule sits SNUG under the statement (no dead band to
                 the fold) and exits upward with it */}
@@ -342,7 +357,7 @@ export default function HeroSection() {
             style={{ opacity: colsOpacity, y: colsY }}
             className="grid w-full grid-cols-1 items-start gap-8 md:grid-cols-[65.5%_1fr]"
           >
-            <div className="flex flex-col gap-1 text-[max(12px,0.794cqw)] font-sans-luxury tracking-widest text-white/70 uppercase leading-relaxed font-medium">
+            <div className="flex flex-col gap-1 font-sans-luxury text-[max(13px,1.06cqw)] font-bold uppercase leading-[1.5] tracking-widest text-[#fff3d3]">
               {ABOUT_DATA.leftColumn.map((line, idx) => (
                 <p key={idx}>{line}</p>
               ))}
@@ -374,7 +389,7 @@ export default function HeroSection() {
             style={{ opacity: visionOpacity }}
             className="w-full pt-[clamp(12px,7vh,110px)]"
           >
-            <p className="text-[max(11px,0.727cqw)] font-sans-luxury tracking-widest uppercase text-white/60 font-medium">
+            <p className="font-sans-luxury text-[max(13px,1.06cqw)] font-bold uppercase leading-[1.5] tracking-widest text-[#fff3d3]">
               {ABOUT_DATA.focusedVision}
               <br />
               {ABOUT_DATA.measuredExecution}

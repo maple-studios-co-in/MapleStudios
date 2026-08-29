@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CONTACT_PAGE } from "@/lib/constants";
 import { Reveal, Rule } from "../PageKit";
 import Fumes from "@/components/common/Fumes";
-import MapleOutlineMark from "@/components/common/MapleOutlineMark";
+import MapleLeafMark from "@/components/common/MapleLeafMark";
 import BookCall from "./BookCall";
 
 /** Hero: transparent over the page's fixed gradient. It is wrapped in a
@@ -13,19 +13,21 @@ import BookCall from "./BookCall";
     strips grow over it. */
 export function ContactHero() {
   return (
-    <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 pb-[max(56px,7vw)] pt-[max(120px,10vw)] text-center">
+    // Opaque cream so the page's fixed maroon gradient does not read through;
+    // the maroon strip exit still covers it on the way to the form.
+    <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden bg-[#fff3d3] px-6 pb-[max(56px,7vw)] pt-[max(120px,10vw)] text-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.9, ease: "easeOut" }}
       >
-        <MapleOutlineMark className="w-[max(150px,18.5vw)]" />
+        <MapleLeafMark className="w-[max(150px,18.5vw)] text-[#741a14]" />
       </motion.div>
       <motion.h1
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.7, delay: 0.3 }}
-        className="mt-[max(20px,2.6vw)] font-serif-luxury text-[max(40px,5.29vw)] font-normal leading-normal text-[#fff3d3]"
+        className="mt-[max(20px,2.6vw)] font-serif-luxury text-[max(40px,5.29vw)] font-normal leading-normal text-[#741a14]"
       >
         {CONTACT_PAGE.hero.title}
       </motion.h1>
@@ -33,15 +35,29 @@ export function ContactHero() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.5, delay: 0.55 }}
-        className="mt-4 max-w-[430px] font-sans-luxury text-[max(13px,1.19vw)] leading-normal text-white"
+        className="mt-4 max-w-[430px] font-sans-luxury text-[max(13px,1.19vw)] leading-normal text-[#741a14]"
       >
         {CONTACT_PAGE.hero.subtitle}
       </motion.p>
 
-      <div className="relative mt-10 size-[max(20px,1.323vw)]" aria-hidden="true">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
-      </div>
+      {/* maroon scroll cue (supplied SVG) — inline so it inherits nothing and
+          cannot be recoloured by the cream ground */}
+      <motion.svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="none"
+        aria-hidden="true"
+        // gentle, endless bob so the cue reads as an invitation to scroll
+        animate={{ y: [0, 6, 0] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        className="mt-10 size-[max(20px,1.323vw)]"
+      >
+        <circle cx="10" cy="10" r="9.75" stroke="#741A14" strokeWidth="0.5" />
+        <path
+          d="M10.3819 6C10.3819 5.78909 10.2109 5.61812 10 5.61812C9.78909 5.61812 9.61812 5.78909 9.61812 6L10 6L10.3819 6ZM9.72997 13.27C9.8791 13.4192 10.1209 13.4192 10.27 13.27L12.7003 10.8398C12.8494 10.6906 12.8494 10.4488 12.7003 10.2997C12.5512 10.1506 12.3094 10.1506 12.1602 10.2997L10 12.4599L7.83975 10.2997C7.69062 10.1506 7.44883 10.1506 7.29969 10.2997C7.15056 10.4488 7.15056 10.6906 7.29969 10.8398L9.72997 13.27ZM10 6L9.61812 6L9.61812 13L10 13L10.3819 13L10.3819 6L10 6Z"
+          fill="#741A14"
+        />
+      </motion.svg>
     </section>
   );
 }
@@ -421,7 +437,16 @@ export function ContactMaroon() {
             <h3 className="font-serif-luxury text-[max(34px,4.76vw)] font-normal leading-normal text-[#fff3d3]">
               {c.title}
             </h3>
-            <p className="mt-5 max-w-[330px] font-sans-luxury text-[max(14px,0.926vw)] leading-normal text-[#fff3d3]/90">
+            {"lead" in c && c.lead ? (
+              <p className="mt-5 font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-normal text-[#fff3d3]">
+                {c.lead}
+              </p>
+            ) : null}
+            <p
+              className={`max-w-[330px] whitespace-pre-line font-sans-luxury text-[max(14px,0.926vw)] leading-normal text-[#fff3d3]/90 ${
+                "lead" in c && c.lead ? "mt-3" : "mt-5"
+              }`}
+            >
               {c.body}
             </p>
           </Reveal>
@@ -473,7 +498,7 @@ export function ContactQuestions() {
                 <span className="font-sans-luxury text-[max(15px,1.32vw)] text-black">
                   {i + 1}.
                 </span>
-                <span className="font-sans-luxury text-[max(17px,1.65vw)] font-bold text-black md:text-center">
+                <span className="font-sans-luxury text-[max(17px,1.65vw)] font-bold text-black">
                   {f.q}
                 </span>
                 <motion.span

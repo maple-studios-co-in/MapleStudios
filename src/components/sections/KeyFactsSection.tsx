@@ -32,8 +32,12 @@ export default function KeyFactsSection() {
           <h2 className="font-serif-luxury text-[max(56px,6.61vw)] font-normal leading-normal text-[#741a14]">
             {KEY_FACTS_DATA.heading}
           </h2>
-          <p className="font-sans-luxury text-[max(15px,1.32vw)] text-black max-w-md font-medium">
-            {KEY_FACTS_DATA.subtitle}
+          <p className="font-sans-luxury text-[max(15px,1.32vw)] text-black font-medium">
+            {KEY_FACTS_DATA.subtitleLines.map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
           </p>
         </motion.div>
 
