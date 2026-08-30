@@ -27,7 +27,9 @@ export function ContactHero() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.7, delay: 0.3 }}
-        className="mt-[max(20px,2.6vw)] font-serif-luxury text-[max(40px,5.29vw)] font-normal leading-normal text-[#741a14]"
+        // 7.6vw + nowrap: "Let's start something." holds ONE line at every
+        // phone width (the 40px floor wrapped it at 375); desktop unchanged
+        className="mt-[max(20px,2.6vw)] whitespace-nowrap font-serif-luxury text-[7.6vw] font-normal leading-normal text-[#741a14] lg:text-[max(40px,5.29vw)]"
       >
         {CONTACT_PAGE.hero.title}
       </motion.h1>
@@ -41,8 +43,12 @@ export function ContactHero() {
       </motion.p>
 
       {/* maroon scroll cue (supplied SVG) — inline so it inherits nothing and
-          cannot be recoloured by the cream ground */}
-      <motion.svg
+          cannot be recoloured by the cream ground. Anchored to the BOTTOM of
+          the hero screen (trionn's contact cue sits ~40px off the fold), on a
+          plain wrapper — motion's bob owns the svg's transform, so the
+          centring translate must live one node up. */}
+      <div className="absolute bottom-[max(28px,4svh)] left-1/2 -translate-x-1/2">
+        <motion.svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 20 20"
         fill="none"
@@ -50,14 +56,15 @@ export function ContactHero() {
         // gentle, endless bob so the cue reads as an invitation to scroll
         animate={{ y: [0, 6, 0] }}
         transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-        className="mt-10 size-[max(20px,1.323vw)]"
+        className="size-[max(20px,1.323vw)]"
       >
         <circle cx="10" cy="10" r="9.75" stroke="#741A14" strokeWidth="0.5" />
         <path
           d="M10.3819 6C10.3819 5.78909 10.2109 5.61812 10 5.61812C9.78909 5.61812 9.61812 5.78909 9.61812 6L10 6L10.3819 6ZM9.72997 13.27C9.8791 13.4192 10.1209 13.4192 10.27 13.27L12.7003 10.8398C12.8494 10.6906 12.8494 10.4488 12.7003 10.2997C12.5512 10.1506 12.3094 10.1506 12.1602 10.2997L10 12.4599L7.83975 10.2997C7.69062 10.1506 7.44883 10.1506 7.29969 10.2997C7.15056 10.4488 7.15056 10.6906 7.29969 10.8398L9.72997 13.27ZM10 6L9.61812 6L9.61812 13L10 13L10.3819 13L10.3819 6L10 6Z"
           fill="#741A14"
         />
-      </motion.svg>
+        </motion.svg>
+      </div>
     </section>
   );
 }
@@ -430,8 +437,12 @@ export function ContactMaroon() {
 
       <Rule tone="cream" />
 
-      {/* Location / Join us */}
-      <section className="grid grid-cols-1 gap-10 px-[8%] pb-[max(80px,10vw)] pt-[max(48px,6vw)] lg:grid-cols-3">
+      {/* Location / Join us. Mobile pb-[200px]: the block sits on the maroon
+          section's LAST screen, which pins for the strip exit the moment the
+          section bottom reaches the fold — without this runway the columns
+          were still blur-revealing when the strips started growing over
+          them. Desktop keeps its original rhythm. */}
+      <section className="grid grid-cols-1 gap-10 px-[8%] pb-[200px] pt-[max(48px,6vw)] lg:grid-cols-3 lg:pb-[max(80px,10vw)]">
         {CONTACT_PAGE.columns.map((c, i) => (
           <Reveal key={c.title} delay={i * 0.08}>
             <h3 className="font-serif-luxury text-[max(34px,4.76vw)] font-normal leading-normal text-[#fff3d3]">
@@ -473,18 +484,22 @@ export function ContactQuestions() {
 
   return (
     // relative z-20 -mt-[90vh]: slides up over the maroon block's finished
-    // cream strip cover — same hand-off KeyFacts uses on the home page
-    <section className="relative z-20 -mt-[90vh] bg-[#fff3d3] px-[2%] pb-[max(64px,8vw)] pt-[max(72px,9vw)] text-black">
-      <Reveal className="text-center">
-        <h2 className="font-serif-luxury text-[max(56px,6.61vw)] font-normal leading-normal text-[#741a14]">
-          {CONTACT_PAGE.faqHeading}
-        </h2>
-        <p className="mx-auto mt-5 max-w-[320px] font-sans-luxury text-[16px] font-bold uppercase leading-[1.5] text-black">
-          {CONTACT_PAGE.note}
-        </p>
-      </Reveal>
+    // cream strip cover — same hand-off KeyFacts uses on the home page.
+    // trionn's contact FAQ layout: big LEFT-aligned "Questions" with its note
+    // beneath in a left column, the accordion in the right column; phones
+    // stack the two with the shared 18px gutter.
+    <section className="relative z-20 -mt-[90vh] bg-[#fff3d3] px-[18px] pb-[max(64px,8vw)] pt-[max(72px,9vw)] text-black lg:px-[6%]">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[32%_1fr] lg:gap-[6%]">
+        <Reveal>
+          <h2 className="font-serif-luxury text-[max(48px,6.61vw)] font-normal leading-normal text-[#741a14]">
+            {CONTACT_PAGE.faqHeading}
+          </h2>
+          <p className="mt-5 max-w-[320px] font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[1.5] text-black">
+            {CONTACT_PAGE.note}
+          </p>
+        </Reveal>
 
-      <div className="mt-[max(48px,6vw)]">
+        <div>
         {CONTACT_PAGE.faqs.map((f, i) => {
           const isOpen = open === i;
           return (
@@ -493,11 +508,8 @@ export function ContactQuestions() {
                 type="button"
                 onClick={() => setOpen(isOpen ? -1 : i)}
                 aria-expanded={isOpen}
-                className="grid w-full cursor-pointer grid-cols-[48px_1fr_48px] items-center gap-4 px-[2%] py-7 text-left"
+                className="grid w-full cursor-pointer grid-cols-[1fr_32px] items-center gap-4 py-6 text-left"
               >
-                <span className="font-sans-luxury text-[max(15px,1.32vw)] text-black">
-                  {i + 1}.
-                </span>
                 <span className="font-sans-luxury text-[max(17px,1.65vw)] font-bold text-black">
                   {f.q}
                 </span>
@@ -517,7 +529,7 @@ export function ContactQuestions() {
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 className="overflow-hidden"
               >
-                <div className="px-[2%] pb-10 pl-[calc(2%+48px)]">
+                <div className="pb-9">
                   <p className="max-w-[76ch] font-sans-luxury text-[max(14px,1.06vw)] leading-relaxed text-black/80">
                     {f.a}
                   </p>
@@ -544,6 +556,7 @@ export function ContactQuestions() {
             </div>
           );
         })}
+        </div>
       </div>
     </section>
   );

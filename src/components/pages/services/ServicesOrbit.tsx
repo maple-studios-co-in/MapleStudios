@@ -30,25 +30,51 @@ export default function ServicesOrbit({
   // scroll would thrash).
   const [mounted, setMounted] = useState(false);
   const [inView, setInView] = useState(true);
+  // Disassemble driver (trionn's services orbit): 0 = assembled ring at page
+  // top, 1 = relics scattered to the screen periphery. Completes by ~0.55
+  // viewports — on desktop the intro statement rides up early, and the
+  // relics must reach the edges before its copy is front-and-centre. Read
+  // per-frame inside the scene (ref, not state — no React re-renders).
+  const scatterRef = useRef(0);
 
   useEffect(() => {
     setMounted(true);
+    const onScroll = () => {
+      const vh = window.innerHeight || 1;
+      scatterRef.current = Math.min(1, Math.max(0, window.scrollY / (0.55 * vh)));
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     const host = hostRef.current;
-    if (!host) return;
+    if (!host) {
+      return () => window.removeEventListener("scroll", onScroll);
+    }
     const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), {
       rootMargin: "80px 0px",
     });
     io.observe(host);
-    return () => io.disconnect();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      io.disconnect();
+    };
   }, []);
 
   return (
+    // Spans the WHOLE hero; the inner sticky screen keeps the canvas on
+    // screen while the intro/marquee screens scroll by — trionn pins their
+    // orbit canvas the same way (theirs is position:fixed behind the first
+    // sections). The hero section must NOT be overflow-hidden or the sticky
+    // never engages.
     <div
       ref={hostRef}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-x-0 top-[calc(20svh-33px)] z-0 h-[320px] lg:top-0 lg:h-[max(420px,min(52vw,100svh))] ${className}`}
+      className={`pointer-events-none absolute inset-0 z-0 ${className}`}
     >
-      {mounted ? <OrbitScene activeNodeIndex={activeNodeIndex} running={inView} /> : null}
+      <div className="sticky top-0 h-svh">
+        {mounted ? (
+          <OrbitScene activeNodeIndex={activeNodeIndex} running={inView} scatter={scatterRef} />
+        ) : null}
+      </div>
     </div>
   );
 }

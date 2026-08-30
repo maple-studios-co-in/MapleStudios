@@ -61,6 +61,32 @@ const INIT_ROT: [number, number, number][] = [
   [0.3, -0.2, 0.12],
 ];
 
+/* Disassembled end state (trionn's services orbit): as the page scrolls the
+   relics leave the ring for fixed seats at the screen PERIPHERY — three down
+   each side at spread heights, framing the intro copy — while the guide
+   ellipses fade out. Targets are fractions of the half-viewport (screen
+   space), so the scatter composition holds on every aspect ratio. z nudges
+   a few units toward the camera for a hint of approach. */
+const SCATTER_TARGET: [number, number, number][] = [
+  [-0.86, 0.58, 3],
+  [0.87, 0.62, 2],
+  [-0.92, -0.02, 4],
+  [0.93, 0.04, 2.5],
+  [-0.8, -0.6, 3.5],
+  [0.85, -0.56, 2],
+];
+/** Extra settle-rotation each relic picks up while detaching. */
+const SCATTER_TUMBLE = [0.6, -0.8, 1.1, -0.5, 0.9, -0.7];
+
+/* Entrance choreography: on load the relics arrive ONE BY ONE — each glides
+   in radially from outside the ring while growing from nothing, takes its
+   seat, and the orbit's drift carries on beneath it. */
+const INTRO_START = 0.2; // s before the first relic sets off
+const INTRO_STAGGER = 0.3; // s between consecutive relics
+const INTRO_TRAVEL = 0.9; // s each relic takes to arrive
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const outCubic = (t: number) => 1 - (1 - t) ** 3;
+
 /** Rounded-rectangle path (optionally as a punch-out hole). */
 function roundedRect(w: number, h: number, r: number) {
   const p = new THREE.Shape();
@@ -201,16 +227,26 @@ function OrbitNode({
   pointer,
   activeRef,
   frozen,
+  scatterS,
+  introSkip,
 }: {
   index: number;
   pointer: React.RefObject<OrbitPointer>;
   activeRef: React.RefObject<number | null>;
   frozen: boolean;
+  /** smoothed 0..1 disassemble progress, written by the Rig each frame */
+  scatterS: React.RefObject<number>;
+  /** true = page loaded mid-scroll or reduced motion — start seated */
+  introSkip: boolean;
 }) {
   const outer = useRef<THREE.Group>(null!);
   const inner = useRef<THREE.Group>(null!);
   const glow = useRef(0);
   const proj = useMemo(() => new THREE.Vector3(), []);
+  const basePos = useMemo(() => new THREE.Vector3(), []);
+  const scatterPos = useMemo(() => new THREE.Vector3(), []);
+  const invMat = useMemo(() => new THREE.Matrix4(), []);
+  const { viewport } = useThree();
   const gold = index !== 0 && index !== 3;
   const [mat, alt] = useMemo(() => {
     const body = new THREE.MeshStandardMaterial({
@@ -239,16 +275,48 @@ function OrbitNode({
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime;
     const a = baseAngle + (frozen ? 0 : t * ORBIT_SPEED);
-    outer.current.position.set(
+    basePos.set(
       Math.cos(a),
       Math.sin(t * 0.45 + index * 2.3) * 0.04,
       Math.sin(a)
     );
 
-    if (!frozen) {
-      inner.current.rotation.x += dt * SELF_SPIN[index][0];
-      inner.current.rotation.y += dt * SELF_SPIN[index][1];
+    // Entrance: relic i sets off at its own staggered moment, gliding in
+    // from beyond the ring while growing from nothing — one by one.
+    const ie =
+      introSkip || frozen
+        ? 1
+        : outCubic(clamp01((t - INTRO_START - index * INTRO_STAGGER) / INTRO_TRAVEL));
+    if (ie < 1) {
+      basePos.x += Math.cos(a) * (1 - ie) * 1.5;
+      basePos.z += Math.sin(a) * (1 - ie) * 1.5;
+      basePos.y += (1 - ie) * 0.6;
     }
+
+    // Disassemble: blend the ring seat toward this relic's screen-periphery
+    // target (smoothstepped so departure/arrival ease). The target lives in
+    // WORLD space — pull it into this node's local (tilted, scaled, yawed)
+    // frame via the parent's inverse matrix so the blend is a straight lerp.
+    const sc = scatterS.current ?? 0;
+    const k = sc * sc * (3 - 2 * sc);
+    if (k > 0.001 && outer.current.parent) {
+      scatterPos.set(
+        (SCATTER_TARGET[index][0] * viewport.width) / 2,
+        (SCATTER_TARGET[index][1] * viewport.height) / 2,
+        SCATTER_TARGET[index][2]
+      );
+      invMat.copy(outer.current.parent.matrixWorld).invert();
+      scatterPos.applyMatrix4(invMat);
+      outer.current.position.lerpVectors(basePos, scatterPos, k);
+    } else {
+      outer.current.position.copy(basePos);
+    }
+
+    if (!frozen) {
+      inner.current.rotation.x += dt * SELF_SPIN[index][0] * (1 + k * 1.2);
+      inner.current.rotation.y += dt * SELF_SPIN[index][1] * (1 + k * 1.2);
+    }
+    inner.current.rotation.z = INIT_ROT[index][2] + SCATTER_TUMBLE[index] * k;
 
     // Proximity: project the relic to NDC and compare against the pointer
     proj.setFromMatrixPosition(outer.current.matrixWorld).project(state.camera);
@@ -257,7 +325,11 @@ function OrbitNode({
     const hot = activeRef.current === index || near;
 
     glow.current = THREE.MathUtils.damp(glow.current, hot ? 1 : 0, 6, dt);
-    outer.current.scale.setScalar(NODE_LOCAL * (1 + glow.current * 0.45));
+    // detached relics swell a touch — they read as drifting toward the viewer;
+    // during the entrance each grows from nothing as it arrives
+    outer.current.scale.setScalar(
+      NODE_LOCAL * (1 + glow.current * 0.45) * (1 + k * 0.5) * Math.max(ie, 0.001)
+    );
     mat.emissiveIntensity = 0.04 + glow.current * 0.5;
     alt.emissiveIntensity = 0.04 + glow.current * 0.5;
   });
@@ -271,8 +343,15 @@ function OrbitNode({
   );
 }
 
-/** Faint concentric guide ellipses — the sketchy multi-line ring of the capture. */
-function OrbitLines() {
+/** Faint concentric guide ellipses — the sketchy multi-line ring of the capture.
+    They dissolve as the orbit disassembles (gone by ~60% scatter, trionn's read). */
+function OrbitLines({
+  scatterS,
+  introSkip,
+}: {
+  scatterS: React.RefObject<number>;
+  introSkip: boolean;
+}) {
   const circle = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     for (let i = 0; i < 160; i++) {
@@ -288,11 +367,26 @@ function OrbitLines() {
     { s: 1.0, o: 0.18, rz: 0 },
     { s: 1.07, o: 0.08, rz: -0.025 },
   ];
+  const mats = useRef<(THREE.LineBasicMaterial | null)[]>([]);
+
+  useFrame((state) => {
+    const fade = 1 - Math.min(1, (scatterS.current ?? 0) * 1.7);
+    // the guide ellipses draw themselves in ahead of the arriving relics
+    const intro = introSkip ? 1 : clamp01((state.clock.elapsedTime - 0.1) / 1.2);
+    rings.forEach((r, i) => {
+      const m = mats.current[i];
+      if (m) m.opacity = r.o * fade * intro;
+    });
+  });
+
   return (
     <>
       {rings.map((r, i) => (
         <lineLoop key={i} geometry={circle} scale={r.s} rotation={[0, 0, r.rz]}>
           <lineBasicMaterial
+            ref={(m) => {
+              mats.current[i] = m;
+            }}
             color="#fff3d3"
             transparent
             opacity={r.o}
@@ -327,21 +421,28 @@ function Rig({
   activeRef,
   frozen,
   centerYFrac,
+  scatter,
+  introSkip,
 }: {
   pointer: React.RefObject<OrbitPointer>;
   activeRef: React.RefObject<number | null>;
   frozen: boolean;
   centerYFrac: number;
+  /** raw scroll-driven 0..1 disassemble progress from the DOM wrapper */
+  scatter: React.RefObject<number>;
+  introSkip: boolean;
 }) {
   const tilt = useRef<THREE.Group>(null!);
   const yaw = useRef<THREE.Group>(null!);
+  const scatterS = useRef(0);
   const { viewport } = useThree();
 
-  // Exact fit: ring radius + relic reach (hovered scale included) stays
-  // inside the host on both axes — nothing ever crops at the edges.
+  // Full-bleed fit (trionn): the ring's wide axis runs edge-to-edge — a hair
+  // past, so the side relics kiss the viewport edges instead of floating
+  // inside them. Height still guards the short axis on squat hosts.
   const halfW = viewport.width / 2;
   const halfH = viewport.height / 2;
-  const S = Math.min(halfW * 0.87, halfH * 2.2);
+  const S = Math.min(halfW * 1.02, halfH * 2.2);
   const yOff = (0.5 - centerYFrac) * viewport.height;
 
   useFrame((_, dt) => {
@@ -352,13 +453,20 @@ function Rig({
     tilt.current.rotation.x = THREE.MathUtils.damp(tilt.current.rotation.x, tx, 2.5, dt);
     tilt.current.rotation.z = THREE.MathUtils.damp(tilt.current.rotation.z, tz, 2.5, dt);
     yaw.current.rotation.y = THREE.MathUtils.damp(yaw.current.rotation.y, ty, 2.5, dt);
+    // One smoothed scatter value for the whole scene — wheel flicks glide
+    scatterS.current = THREE.MathUtils.damp(
+      scatterS.current,
+      Math.min(1, Math.max(0, scatter.current ?? 0)),
+      4.5,
+      dt
+    );
   });
 
   return (
     <group position={[0, yOff, 0]}>
       <group ref={tilt} rotation={[BASE_TILT_X, 0, BASE_TILT_Z]} scale={S}>
         <group ref={yaw}>
-          <OrbitLines />
+          <OrbitLines scatterS={scatterS} introSkip={introSkip} />
           {Array.from({ length: 6 }, (_, i) => (
             <OrbitNode
               key={i}
@@ -366,6 +474,8 @@ function Rig({
               pointer={pointer}
               activeRef={activeRef}
               frozen={frozen}
+              scatterS={scatterS}
+              introSkip={introSkip}
             />
           ))}
         </group>
@@ -377,9 +487,12 @@ function Rig({
 export default function OrbitScene({
   activeNodeIndex,
   running,
+  scatter,
 }: {
   activeNodeIndex: number | null;
   running: boolean;
+  /** scroll-driven 0..1 disassemble progress (ref — read per frame) */
+  scatter: React.RefObject<number>;
 }) {
   const pointer = useRef<OrbitPointer>({ px: 0.5, py: 0.45, nx: 10, ny: 10 });
   const activeRef = useRef<number | null>(activeNodeIndex);
@@ -390,6 +503,17 @@ export default function OrbitScene({
     () =>
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
+  // one-by-one entrance plays only for a fresh load AT the hero — a reload
+  // mid-scroll starts seated/scattered (flying relics in and instantly
+  // scattering them would read as a glitch)
+  const introSkip = useMemo(() => (scatter.current ?? 0) > 0.05, [scatter]);
+  // the ring wraps the "Area of expertise" title: on phones the title sits
+  // higher up the screen than on desktop, so the ring centre follows it
+  const centerYFrac = useMemo(
+    () =>
+      typeof window !== "undefined" && window.innerWidth < 1024 ? 0.36 : 0.47,
     []
   );
 
@@ -430,7 +554,9 @@ export default function OrbitScene({
           pointer={pointer}
           activeRef={activeRef}
           frozen={reduced}
-          centerYFrac={0.47}
+          centerYFrac={centerYFrac}
+          scatter={scatter}
+          introSkip={introSkip}
         />
       </Canvas>
     </div>

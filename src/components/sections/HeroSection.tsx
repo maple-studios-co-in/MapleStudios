@@ -195,19 +195,22 @@ export default function HeroSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.55 }}
-        className="absolute left-[81.02%] top-[48.56%] z-10 w-[max(190px,14.42cqw)] max-md:left-auto max-md:right-[4%] max-md:top-[34%]"
+        // phones: centred BELOW the glassy M (which owns 45–61% of the
+        // screen) — the old top-right spot sat the badge on the M's arm
+        className="absolute left-[81.02%] top-[48.56%] z-10 w-[max(190px,14.42cqw)] max-md:left-1/2 max-md:right-auto max-md:top-[71%] max-md:w-[200px] max-md:-translate-x-1/2"
       >
         <div className="flex aspect-[218/79] w-full overflow-hidden rounded-[4px] border border-white">
           {/* wider than the Figma 46.79%: the live stopwatch carries a third
               unit (seconds), which the original two-unit box cannot hold */}
           <div className="flex w-[57%] flex-col items-center justify-center rounded-[4px] bg-[#fff3d3] px-[2%] text-[#741a14]">
             <BuildTimer className="font-sans-luxury text-[max(13px,1.15cqw)] font-bold leading-[1.4]" />
-            <span className="font-sans-luxury text-[max(7px,0.68cqw)] font-normal leading-[1.3] tracking-[0.08em]">
+            {/* 9px floors: the old 7/8px labels were illegible on phones */}
+            <span className="font-sans-luxury text-[max(9px,0.68cqw)] font-normal leading-[1.3] tracking-[0.08em]">
               {HERO_DATA.badge.label}
             </span>
           </div>
           <div className="flex flex-1 items-center pl-[5%]">
-            <span className="font-sans-luxury text-[max(8px,0.73cqw)] font-medium uppercase leading-[1.5] text-white">
+            <span className="font-sans-luxury text-[max(9px,0.73cqw)] font-medium uppercase leading-[1.5] text-white">
               Avg. time to
               <br />
               first live build
@@ -221,7 +224,9 @@ export default function HeroSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.65 }}
-        className="absolute left-[81.02%] top-[72.4%] z-10 w-[16.47%] min-w-[200px] -translate-y-1/2 font-sans-luxury text-[max(13px,1.19cqw)] leading-[1.35] text-white max-md:left-auto max-md:right-[6%] max-md:top-[85%] max-md:w-[min(280px,60vw)]"
+        // phones: centred under the badge, reading as the hero's closing
+        // line — the old right-anchored ragged block looked stranded
+        className="absolute left-[81.02%] top-[72.4%] z-10 w-[16.47%] min-w-[200px] -translate-y-1/2 font-sans-luxury text-[max(13px,1.19cqw)] leading-[1.35] text-white max-md:left-1/2 max-md:right-auto max-md:top-[88%] max-md:w-[82%] max-md:min-w-0 max-md:-translate-x-1/2 max-md:text-center"
       >
         {HERO_DATA.subtitle}
       </motion.p>
@@ -231,7 +236,9 @@ export default function HeroSection() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 1 }}
-        className="absolute left-[2.18%] top-[73.4%] z-10 size-[max(20px,1.32cqw)]"
+        // phones: rides the badge's band at the far left so the lower third
+        // reads as one composed row (cue left · timer centre)
+        className="absolute left-[2.18%] top-[73.4%] z-10 size-[max(20px,1.32cqw)] max-md:left-[6%] max-md:top-[72.5%]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
@@ -298,7 +305,10 @@ export default function HeroSection() {
               {(() => {
                 let w = -1;
                 return aboutLines.map((line, li) => (
-                  <span key={li} className="block">
+                  // designed line breaks are a DESKTOP luxury: at phone
+                  // widths each forced line re-wraps mid-thought ("digital"
+                  // alone on a line) — inline on mobile lets the copy flow
+                  <span key={li} className="md:block">
                     {line.map((word, wi) => {
                       w += 1;
                       return (

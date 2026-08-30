@@ -185,12 +185,16 @@ export default function ProjectDetail({
     >
       {palette.cycler ? <GradientCycler /> : null}
       <div
-        className={`grid grid-cols-1 gap-10 pb-[max(64px,8vw)] pt-[max(120px,13vw)] lg:grid-cols-[34%_1fr] lg:gap-[4%] ${
-          deck ? "pl-[4%] pr-0" : "px-[4%]"
+        className={`grid grid-cols-1 gap-10 pb-[max(64px,8vw)] pt-[max(88px,13vw)] lg:grid-cols-[34%_1fr] lg:gap-[4%] ${
+          // deck rail: flush-right is a DESKTOP treatment; on phones the
+          // asymmetric pl-[4%]/pr-0 read as "the PDF is pushed right" — the
+          // strip goes full-bleed (centred) and the text column carries its
+          // own gutter instead
+          deck ? "px-0 lg:pl-[4%] lg:pr-0" : "px-[4%]"
         }`}
       >
         {/* ——— Sticky left column ——— */}
-        <div className="lg:sticky lg:top-[110px] lg:h-fit lg:self-start">
+        <div className={`lg:sticky lg:top-[110px] lg:h-fit lg:self-start ${deck ? "px-[4%] lg:px-0" : ""}`}>
           <Link href="/work" className="group flex w-[191px] flex-col">
             <span className="flex items-center justify-between">
               <span className={`font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase ${palette.ink}`}>
@@ -233,15 +237,17 @@ export default function ProjectDetail({
             ))}
           </ul>
 
-          {/* Tabs */}
-          <div className="mt-[max(28px,3.4vw)] flex flex-wrap gap-x-5 gap-y-2">
+          {/* Tabs — one row at EVERY width: 11px/12px gap on phones keeps all
+              four labels ("THE CHALLENGE · APPROACH · OUTCOME · WHAT WE DID")
+              on a single line at 375px; desktop keeps 13px/20px. */}
+          <div className="mt-[max(28px,3.4vw)] flex flex-nowrap gap-x-3 lg:gap-x-5">
             {tabs.map((t, i) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => openTab(i)}
                 aria-pressed={i === tab}
-                className={`cursor-pointer pb-1 font-sans-luxury text-[13px] font-bold uppercase transition-colors ${
+                className={`cursor-pointer whitespace-nowrap pb-1 font-sans-luxury text-[11px] font-bold uppercase transition-colors lg:text-[13px] ${
                   i === tab
                     ? palette.activeTab
                     : `border-b border-transparent ${palette.muted} ${palette.mutedHover}`
@@ -278,7 +284,7 @@ export default function ProjectDetail({
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
             // Pull the strip up so its top lands with the left title band
             // instead of sitting a step below BACK TO WORK
-            className="relative w-full self-start overflow-hidden rounded-l-[8px] lg:-mt-[max(48px,5.5vw)]"
+            className="relative w-full self-start overflow-hidden rounded-none lg:-mt-[max(48px,5.5vw)] lg:rounded-l-[8px]"
           >
             {deckTiles.map((src, i) => (
               <Image

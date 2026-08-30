@@ -14,6 +14,7 @@ import { Eyebrow, HERO_GRADIENT, Reveal, UnderlineLink } from "../PageKit";
 import ServicesOrbit from "./ServicesOrbit";
 import GradientCycler from "@/components/common/GradientCycler";
 import StripExit from "@/components/common/StripExit";
+import BlurTextReveal from "@/components/common/BlurTextReveal";
 
 /* Linear 0→1 ramp between two progress marks (function-form transforms stay
    on motion's JS path — see HeroSection's WAAPI note). */
@@ -55,6 +56,7 @@ export function WordMarquee({
   color = "#741a14",
   star = "/figma/about/star-maroon-sm.svg",
   tight = false,
+  captionAbove = false,
 }: {
   words: string[];
   caption: string;
@@ -63,7 +65,36 @@ export function WordMarquee({
   /** hug the fold: trims the band's breathing room so the word row sits
       almost on the bottom edge (about hero under the magnified eagle) */
   tight?: boolean;
+  /** PHONES ONLY: the small caption sits ABOVE the word row (trionn's
+      about-hero order) and materialises from blur like the page's other
+      copy. Desktop keeps the original caption-below-the-words layout. */
+  captionAbove?: boolean;
 }) {
+  /* two renderings of the same caption — the blur-reveal above-row for
+     phones, the plain Eyebrow below-row for desktop (and for every marquee
+     that never opts in) */
+  const captionRowAbove = (
+    <p className={`${tight ? "mb-2" : "mb-6"} flex items-center justify-center gap-[5px] px-5 text-center lg:hidden`}>
+      <Star4 className="w-[max(12px,0.794vw)]" fill={color} />
+      <BlurTextReveal
+        as="span"
+        text={caption}
+        delay={0.3}
+        className="font-sans-luxury text-[max(11px,0.926vw)] font-bold uppercase leading-[1.35] tracking-[-0.337px]"
+        style={{ color }}
+      />
+    </p>
+  );
+  const captionRowBelow = (below: boolean) => (
+    <p
+      className={`${tight ? "mt-2" : "mt-6"} ${
+        below ? "hidden lg:flex" : "flex"
+      } items-center justify-center gap-[5px] px-5 text-center`}
+    >
+      <Star4 className="w-[max(12px,0.794vw)]" fill={color} />
+      <Eyebrow color={color}>{caption}</Eyebrow>
+    </p>
+  );
   // EXACTLY TWO identical copies, each carrying its own trailing gap, so the
   // `translateX(-50%)` loop lands one copy along — i.e. perfectly seamless.
   // The old track held THREE copies and still translated -50%, which stops
@@ -73,6 +104,7 @@ export function WordMarquee({
   // WebKit's maximum layer texture width.
   return (
     <div className={`overflow-hidden ${tight ? "py-[max(6px,0.8vw)]" : "py-[max(24px,3vw)]"}`}>
+      {captionAbove ? captionRowAbove : null}
       <div className="animate-marquee flex w-max items-center whitespace-nowrap">
         {[0, 1].map((copy) => (
           <div
@@ -104,10 +136,7 @@ export function WordMarquee({
           </div>
         ))}
       </div>
-      <p className={`${tight ? "mt-2" : "mt-6"} flex items-center justify-center gap-[5px] px-5 text-center`}>
-        <Star4 className="w-[max(12px,0.794vw)]" fill={color} />
-        <Eyebrow color={color}>{caption}</Eyebrow>
-      </p>
+      {captionRowBelow(captionAbove)}
     </div>
   );
 }
@@ -129,8 +158,11 @@ function ServicesHero() {
   ];
 
   return (
+    // NO overflow-hidden here: the orbit canvas inside is position:sticky and
+    // an overflow ancestor would keep it from ever engaging (body's
+    // overflow-x clip already contains the drifting gradient layer).
     <section
-      className="relative isolate overflow-hidden text-center text-[#fff3d3]"
+      className="relative isolate text-center text-[#fff3d3]"
       style={{ background: HERO_GRADIENT }}
     >
       {/* One cycling gradient across the WHOLE dark scene (hero + lower band),
@@ -271,8 +303,11 @@ function ServicesHero() {
           ))}
         </Reveal>
 
-        {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on maroon (14:8697xx) */}
-        <div className="mt-0 flex min-h-[100svh] w-full select-none items-center overflow-hidden lg:mt-[max(56px,11vw)] lg:min-h-0 lg:block">
+        {/* BRANDING ✦ DESIGN ✦ AI marquee — cream on maroon (14:8697xx).
+            The caption lives INSIDE this screen-tall block: on phones both
+            centre together, so the caption reads just under the word row
+            instead of drifting half a screen down. */}
+        <div className="mt-0 flex min-h-[100svh] w-full select-none flex-col justify-center overflow-hidden lg:mt-[max(56px,11vw)] lg:min-h-0 lg:block">
           {/* two copies, each with its own trailing gap — see WordMarquee:
               -50% must land exactly one copy along, and a shorter track keeps
               the layer inside WebKit's max texture width */}
@@ -296,14 +331,14 @@ function ServicesHero() {
               </span>
             ))}
           </div>
-        </div>
 
-        {/* ✦ CAPABILITIES SHAPED TO SCALE WITH AMBITION. (Group 22) */}
-        <div className="mt-[max(24px,3.9vw)] flex items-center justify-center gap-[5px] pb-[max(48px,6.35vw)]">
-          <Star4 className="w-[max(12px,0.794vw)]" fill="#FFF3D3" />
-          <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] tracking-[-0.337px] text-[#fff3d3]">
-            {SERVICES_PAGE.wordsCaption}
-          </span>
+          {/* ✦ CAPABILITIES SHAPED TO SCALE WITH AMBITION. (Group 22) */}
+          <div className="mt-[18px] flex items-center justify-center gap-[5px] px-5 lg:mt-[max(24px,3.9vw)] lg:pb-[max(48px,6.35vw)]">
+            <Star4 className="w-[max(12px,0.794vw)]" fill="#FFF3D3" />
+            <span className="text-center font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] tracking-[-0.337px] text-[#fff3d3]">
+              {SERVICES_PAGE.wordsCaption}
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -396,9 +431,10 @@ function ServicePanel({
                 className="whitespace-nowrap text-left"
                 style={{
                   fontFamily: OVERLAY_FONT,
-                  // the card is ~90vw, so cap the headline against the
-                  // viewport too — a fixed 35px overflowed a phone-width card
-                  fontSize: `min(${overlaySize}px, 5.1vw)`,
+                  // the card is ~90vw on phones, so cap the headline against
+                  // the viewport too — 4vw keeps the copy at the same share of
+                  // the card as the 35px/813px desktop proportion
+                  fontSize: `min(${overlaySize}px, 4vw)`,
                   lineHeight: "100%",
                 }}
               >
@@ -412,7 +448,8 @@ function ServicePanel({
                 className="shrink-0 whitespace-nowrap text-left uppercase"
                 style={{
                   fontFamily: OVERLAY_FONT,
-                  fontSize: "min(13.85px, 2.6vw)",
+                  // 10px legibility floor on phones (2.6vw alone hit 9.75px)
+                  fontSize: "clamp(10px, 2.6vw, 13.85px)",
                   fontWeight: 300,
                   lineHeight: "150%",
                 }}
@@ -532,7 +569,9 @@ function TechStack() {
   const noteY = useTransform(scrollYProgress, (p) => (1 - ramp(p, 0.72, 0.95)) * 20);
 
   return (
-    <section className="pt-[max(110px,15.28vw)]">
+    // 64px floor matches the accordion/process rhythm on phones (trionn keeps
+    // one consistent section beat on mobile); desktop still rides the vw value
+    <section className="pt-[max(64px,15.28vw)]">
       <h2 className="sr-only">{`${l1} ${l2}`}</h2>
       {/* Scroll target is the heading block itself (not the padded section),
           so the char reveal spans its ENTIRE climb up the viewport */}
@@ -541,18 +580,19 @@ function TechStack() {
         aria-hidden="true"
         className="font-serif-luxury text-[max(40px,9.37vw)] leading-[0.7] text-[#741a14]"
       >
-        {/* TECHNOLOGY — left edge 18.52% (x=280) */}
-        <p className="pl-[8%] whitespace-nowrap lg:pl-[18.52%]">
+        {/* TECHNOLOGY — centred on phones (trionn's mobile treatment), left
+            edge 18.52% (x=280) from lg up */}
+        <p className="whitespace-nowrap text-center lg:pl-[18.52%] lg:text-left">
           <LightChars progress={scrollYProgress} text={l1} from={0} total={total} />
         </p>
         {/* STACK at 58.6% (x=886) with the note beside it (15:9023) */}
         <div className="relative mt-[max(8px,0.86vw)]">
-          <p className="pl-[24%] whitespace-nowrap lg:pl-[58.6%]">
+          <p className="whitespace-nowrap text-center lg:pl-[58.6%] lg:text-left">
             <LightChars progress={scrollYProgress} text={l2} from={l1.length} total={total} />
           </p>
           <motion.p
             style={{ opacity: noteOpacity, y: noteY }}
-            className="mt-6 pl-[8%] font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[1.5] text-black lg:absolute lg:bottom-0 lg:mt-0 lg:w-[20.63%] lg:pl-0 lg:left-[34.52%]"
+            className="mt-6 px-[18px] text-center font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[1.5] text-black lg:absolute lg:bottom-0 lg:left-[34.52%] lg:mt-0 lg:w-[20.63%] lg:px-0 lg:text-left"
           >
             {SERVICES_PAGE.stackNote}
           </motion.p>
@@ -577,7 +617,7 @@ function CapabilityAccordion() {
               type="button"
               onClick={() => setOpen(isOpen ? -1 : i)}
               aria-expanded={isOpen}
-              className="grid w-full cursor-pointer grid-cols-[40px_1fr_32px] items-center gap-2 py-[max(24px,2.8vw)] pl-[1.85%] pr-[2.38%] text-left lg:grid-cols-[32.28%_1fr_48px]"
+              className="grid w-full cursor-pointer grid-cols-[40px_1fr_32px] items-center gap-2 py-[max(24px,2.8vw)] pl-[max(18px,1.85%)] pr-[max(18px,2.38%)] text-left lg:grid-cols-[32.28%_1fr_48px]"
             >
               <span className="font-sans-luxury text-[max(20px,2.12vw)] font-bold leading-[0.85] text-black">
                 {c.n}
@@ -601,7 +641,7 @@ function CapabilityAccordion() {
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="overflow-hidden"
             >
-              <div className="pb-[max(28px,3.1vw)] pl-[1.85%] pr-[2.38%] lg:pl-[34.13%]">
+              <div className="pb-[max(28px,3.1vw)] pl-[max(18px,1.85%)] pr-[max(18px,2.38%)] lg:pl-[34.13%]">
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-[47%_1fr]">
                   <div>
                     <span className="font-sans-luxury text-[max(13px,1.06vw)] font-bold uppercase leading-[max(16.88px,1.116vw)] text-black">
@@ -730,9 +770,8 @@ function ProcessStar({
 
 function ProcessSection() {
   const wrapRef = useRef<HTMLDivElement>(null);
-  // Pin runway (desktop): 100vh pinned screen + 250vh of scroll that drives
-  // the show. On small screens the wrapper has no extra height, so the same
-  // scrub simply rides the section's own travel through the viewport.
+  // Pin runway: a pinned screen plus extra scroll that drives the show —
+  // 260vh on phones (all widths), 800vh on desktop.
   const { scrollYProgress } = useScroll({
     target: wrapRef,
     offset: ["start start", "end end"],
@@ -761,13 +800,16 @@ function ProcessSection() {
 
   return (
     <section className="relative pt-[max(64px,8vw)] pb-[max(96px,10vw)]">
-      {/* Phones pin too, now that the four steps are compact rows that fit
-          one screen together (the earlier attempt clipped a tall stacked
-          column). 260vh of runway gives the scrub room to bring the rows in
-          one at a time. Desktop keeps its 800vh show. */}
-      <div ref={wrapRef} className="relative min-[360px]:h-[260vh] lg:h-[800vh]">
-        <div className="flex flex-col justify-center pt-[76px] min-[360px]:sticky min-[360px]:top-0 min-[360px]:h-svh min-[360px]:overflow-hidden lg:h-screen lg:pt-0">
-          <div className="grid grid-cols-1 gap-8 pl-[8%] pr-[8%] lg:grid-cols-[16.4%_1fr] lg:gap-0 lg:pl-[2.05%] lg:pr-[6.08%]">
+      {/* EVERY phone width pins now — the old `min-[360px]:` gate left
+          narrower devices (<360px) with no runway, so the scroll-driven
+          reveal never ran and the four steps sat invisible. 260vh of runway
+          gives the scrub room to bring the rows in one at a time. Desktop
+          keeps its 800vh show. */}
+      <div ref={wrapRef} className="relative h-[260vh] lg:h-[800vh]">
+        {/* pt-[48px] (was 76) + the tightened rhythm below keep the whole
+            show inside one svh on short phones (SE-class 667px screens) */}
+        <div className="sticky top-0 flex h-svh flex-col justify-center overflow-hidden pt-[48px] lg:h-screen lg:pt-0">
+          <div className="grid grid-cols-1 gap-4 px-[18px] lg:grid-cols-[16.4%_1fr] lg:gap-0 lg:pl-[2.05%] lg:pr-[6.08%]">
             <div>
               <Reveal>
                 <Eyebrow color="#000">{SERVICES_PAGE.processLabel}</Eyebrow>
@@ -775,7 +817,7 @@ function ProcessSection() {
             </div>
             <div>
               <Reveal>
-                <h2 className="font-serif-luxury text-[max(44px,5.29vw)] font-normal leading-normal text-[#741a14]">
+                <h2 className="font-serif-luxury text-[max(34px,5.29vw)] font-normal leading-normal text-[#741a14]">
                   {SERVICES_PAGE.processHeading}
                 </h2>
                 <p className="mt-[max(6px,0.6vw)] max-w-[249px] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-black">
@@ -783,7 +825,7 @@ function ProcessSection() {
                 </p>
               </Reveal>
 
-              <div className="mt-[16px] grid grid-cols-1 gap-y-0 md:mt-[max(40px,5.09vw)] md:grid-cols-4 md:gap-y-12 md:gap-x-[2.7%]">
+              <div className="mt-[12px] grid grid-cols-1 gap-y-0 md:mt-[max(40px,5.09vw)] md:grid-cols-4 md:gap-y-12 md:gap-x-[2.7%]">
                 {SERVICES_PAGE.steps.map((s, i) => (
                   <ProcessStep key={s.step} progress={progress} index={i} step={s} />
                 ))}
@@ -792,7 +834,7 @@ function ProcessSection() {
           </div>
 
           {/* Self-drawing rule with ✦ stops + spinning tip (Line 18 + Vectors) */}
-          <div className="relative ml-[7.87%] mt-[max(48px,6.15vw)] h-[21px] w-[86.05%]">
+          <div className="relative ml-[18px] mt-[28px] h-[21px] w-[calc(100%-36px)] lg:ml-[7.87%] lg:mt-[max(48px,6.15vw)] lg:w-[86.05%]">
             <motion.div
               style={{ scaleX: sweep }}
               className="absolute top-1/2 h-px w-full origin-left bg-black/40"
