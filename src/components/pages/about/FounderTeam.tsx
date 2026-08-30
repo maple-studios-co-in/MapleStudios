@@ -435,10 +435,17 @@ export function TeamSection() {
   const clusterRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState<{ img: "a" | "b"; n: number; phase: "scan" | "play" } | null>(null);
-  // trionn's trigger verbatim: IntersectionObserver at threshold 0.3 that
-  // disconnects after firing — deal plays once per page load, never on
-  // re-entry (only a refresh brings it back)
-  const entered = useInView(clusterRef, { once: true, amount: 0.3 });
+  // trionn's trigger verbatim: IntersectionObserver that disconnects after
+  // firing — deal plays once per page load, never on re-entry (only a
+  // refresh brings it back). Phones need a HIGHER threshold: the cluster is
+  // only ~330px tall there, so at 0.3 the flight finished below the fold
+  // before the user ever saw it. Desktop stays at 0.3 — its cluster is
+  // taller than the viewport, so a high threshold could never be reached.
+  const [amount, setAmount] = useState(0.3);
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) setAmount(0.55);
+  }, []);
+  const entered = useInView(clusterRef, { once: true, amount });
 
   return (
     <section className="relative w-full pt-[max(48px,7.47vw)]">

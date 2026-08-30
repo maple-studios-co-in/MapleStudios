@@ -6,6 +6,35 @@ import Image from "next/image";
 import { CLIENT_STORIES_DATA } from "@/lib/constants";
 import { StarDivider } from "./WorkSection";
 
+/** Round prev/next controls. Rendered twice — desktop closes the left
+    column with them, phones carry them under the story — so the pair is
+    defined once here. 44px on phones meets the touch-target minimum (the
+    40px design size is a pointer-only comfort). */
+function CarouselArrows({ prev, next }: { prev: () => void; next: () => void }) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={prev}
+        aria-label="Previous story"
+        className="size-[44px] cursor-pointer transition-transform duration-300 hover:-translate-x-0.5 lg:size-[40px]"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/figma/carousel-prev.svg" alt="" className="size-full" />
+      </button>
+      <button
+        type="button"
+        onClick={next}
+        aria-label="Next story"
+        className="size-[44px] rotate-180 cursor-pointer transition-transform duration-300 hover:translate-x-0.5 lg:size-[40px]"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/figma/carousel-next.svg" alt="" className="size-full" />
+      </button>
+    </>
+  );
+}
+
 /**
  * Client stories (Figma Home 13:7968–13:8005).
  * Cream canvas, client list on the left (active item full black, rest 54%),
@@ -75,25 +104,13 @@ export default function ClientStoriesSection() {
             ))}
           </ul>
 
-          <div className="mt-[max(48px,6.5vw)] flex items-center gap-8">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Previous story"
-              className="size-[40px] cursor-pointer transition-transform duration-300 hover:-translate-x-0.5"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/figma/carousel-prev.svg" alt="" className="size-full" />
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Next story"
-              className="size-[40px] rotate-180 cursor-pointer transition-transform duration-300 hover:translate-x-0.5"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/figma/carousel-next.svg" alt="" className="size-full" />
-            </button>
+          {/* Desktop: the controls close the left column, beside the quote.
+              On phones the stack put them BETWEEN the client list and the
+              testimonial, where they read as two stranded arrows pointing at
+              nothing — there they move below the story instead (see the
+              phone copy after the right column). */}
+          <div className="mt-[max(48px,6.5vw)] hidden items-center gap-8 lg:flex">
+            <CarouselArrows prev={prev} next={next} />
           </div>
         </div>
 
@@ -147,6 +164,15 @@ export default function ClientStoriesSection() {
             </span>
             <span className="mt-[9px] h-px w-full bg-[#741a14]" />
           </a>
+
+          {/* Phone copy of the controls: carousel arrows belong UNDER the
+              story they page through, on its own rule-separated row */}
+          <div className="mt-8 flex items-center gap-6 border-t border-black/15 pt-7 lg:hidden">
+            <CarouselArrows prev={prev} next={next} />
+            <span className="ml-auto font-sans-luxury text-[12px] font-bold uppercase tracking-[0.14em] text-black/45">
+              {String(active + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
+            </span>
+          </div>
         </div>
       </div>
 

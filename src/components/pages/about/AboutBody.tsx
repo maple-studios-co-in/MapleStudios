@@ -83,7 +83,9 @@ export function AboutHero() {
           tracks the cursor window-wide, but keeping the band inert also
           keeps text selection off the marquee). */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 pb-[0.5svh]">
-        <WordMarquee words={ABOUT_PAGE.words} caption={ABOUT_PAGE.wordsCaption} tight />
+        {/* caption ABOVE the word row — trionn's about-hero order, with the
+            same blur materialise the page's other copy uses */}
+        <WordMarquee words={ABOUT_PAGE.words} caption={ABOUT_PAGE.wordsCaption} tight captionAbove />
       </div>
     </section>
   );
@@ -245,8 +247,10 @@ function ValuesSection() {
             ))}
           </div>
 
-          {/* ✦ WHAT WE BELIEVE SHAPES BETTER WORK. (22:813) */}
-          <div className="mt-[max(20px,3.3vw)] flex items-center gap-[5px]">
+          {/* ✦ WHAT WE BELIEVE SHAPES BETTER WORK. (22:813) — 44px floor so
+              phones get real air between the last card and the caption
+              (desktop keeps its 3.3vw rhythm) */}
+          <div className="mt-[max(44px,3.3vw)] flex items-center gap-[5px]">
             <Star4 className="w-[max(12px,0.794vw)]" fill="#741a14" />
             <Eyebrow>{ABOUT_PAGE.valuesCaption}</Eyebrow>
           </div>
@@ -284,7 +288,7 @@ export default function AboutBody() {
               <img src="/figma/logo-mark.svg" alt="Maple Studios" className="h-[27px] w-auto" />
             </div>
             <div className="flex flex-1 items-center px-3">
-              <span className="font-sans-luxury text-[9px] font-bold uppercase leading-[1.4] text-[#741a14]">
+              <span className="font-sans-luxury text-[10px] font-bold uppercase leading-[1.4] text-[#741a14]">
                 {ABOUT_PAGE.badge}
               </span>
             </div>

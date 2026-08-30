@@ -25,7 +25,10 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
       // unbounded vw padding (15.5vw = 297px at 1920) inflates the footer past
       // the viewport and drags the kicker up under the fixed navbar. See the
       // note above the component for the full derivation.
-      className={`relative isolate flex flex-col overflow-hidden sm:min-h-[100svh] px-[max(20px,2.12%)] pb-[min(40px,4svh)] pt-[min(96px,11svh)] sm:pb-[min(max(120px,15.5vw),18svh)] sm:pt-[min(max(128px,13.5vw),20svh)] text-[#fff3d3] ${
+      // mobile pb 84px: the giant wordmark (absolute bottom-0, ~36px visible
+      // at 13.5vw) needs its own band under the social links, same as the
+      // desktop padding reserves — 40px left them colliding
+      className={`relative isolate flex flex-col overflow-hidden sm:min-h-[100svh] px-[max(20px,2.12%)] pb-[min(84px,10svh)] pt-[min(96px,11svh)] sm:pb-[min(max(120px,15.5vw),18svh)] sm:pt-[min(max(128px,13.5vw),20svh)] text-[#fff3d3] ${
         seamless ? "bg-transparent" : "rounded-t-[8px] bg-[#741a14]"
       }`}
     >
@@ -128,14 +131,23 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
         </div>
       </div>
 
-      {/* Giant clipped wordmark */}
+      {/* Giant clipped wordmark.
+          TRIGGER MATH (why y is 24, not 60, and the margin is 0): on phones
+          the wordmark's resting visible band is only ~45px above the fold —
+          a 60px entrance offset pushed it ENTIRELY below the viewport and the
+          -10% margin excluded the bottom zone besides, so whileInView never
+          fired and the wordmark sat at opacity 0 forever. y:24 leaves ~20px
+          peeking above the fold, which is what arms the reveal. */}
       <motion.p
-        initial={{ opacity: 0, y: 60 }}
+        initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+        viewport={{ once: true }}
         transition={{ duration: 2.8, ease: "easeOut" }}
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[26%] select-none whitespace-nowrap font-serif-luxury text-[max(76px,15.54vw)] font-semibold leading-[0.95] text-[#93352f]/50"
+        // 15.3vw on phones: the wordmark spans edge-to-edge exactly like the
+        // desktop treatment (desktop's 15.54vw ≈ 100vw of set width); phones
+        // also clip less of the glyphs (16% vs 26%) so the name reads clearly.
+        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[16%] select-none whitespace-nowrap font-serif-luxury text-[15.3vw] font-semibold leading-[0.95] text-[#93352f]/50 lg:translate-y-[26%] lg:text-[max(76px,15.54vw)]"
       >
         {FOOTER_DATA.giant}
       </motion.p>
