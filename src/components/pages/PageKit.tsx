@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import GradientCycler from "@/components/common/GradientCycler";
+import ScrollCue from "@/components/common/ScrollCue";
 
 /**
  * Shared building blocks for the inner pages (Work / Services / Contact / About).
@@ -55,35 +56,7 @@ export function PageHero({
         </motion.p>
       ) : null}
 
-      {/* Scroll cue */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.8 }}
-        className="relative mt-12 size-[max(20px,1.323vw)]"
-        aria-hidden="true"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={cream ? "/figma/about/scroll-circle-maroon.svg" : "/figma/scroll-circle.svg"}
-          alt=""
-          className="absolute inset-0 size-full"
-        />
-        <motion.span
-          animate={{ y: [0, 3.5, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 flex items-center justify-center"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/figma/arrow-down-sm.svg"
-            alt=""
-            className={`w-[max(7.8px,0.516vw)] rotate-90 ${
-              cream ? "[filter:invert(13%)_sepia(72%)_saturate(3200%)_hue-rotate(350deg)]" : ""
-            }`}
-          />
-        </motion.span>
-      </motion.div>
+      <ScrollCue cream={cream} className="relative mt-12 size-[max(20px,1.323vw)]" />
     </section>
   );
 }

@@ -5,6 +5,7 @@ import { motion, useAnimate, useInView } from "motion/react";
 import { ABOUT_PAGE } from "@/lib/constants";
 import { Reveal, UnderlineLink } from "../PageKit";
 import BlurTextReveal from "@/components/common/BlurTextReveal";
+import { Star4 } from "../services/ServicesBody";
 
 /**
  * Founder + Team sections (Figma 2124:211 and the lower region of
@@ -98,6 +99,11 @@ export function FounderSection() {
 }
 
 /* ————— Team (2124:222-250) ————— */
+
+// Kill switch for the drag-to-identify card cluster (and the JOIN OUR TEAM
+// link that shipped with it). `false` hides the effect while leaving every
+// line of it in place; see the long note at its render site below.
+const SHOW_TEAM_IDENTIFY_CLUSTER = false;
 
 type CardSpec = {
   left: number; // % of cluster width
@@ -466,7 +472,26 @@ export function TeamSection() {
         />
       </div>
 
-      {/* card cluster — aspect-locked to the Figma geometry (1512x1334) */}
+      {/*
+        TEAM IDENTIFY CLUSTER — HIDDEN, not deleted (2026-09).
+
+        The whole drag-to-identify effect is kept intact and still
+        type-checked: the ten member cards and their connector hairlines,
+        the entrance flight (ORIGINS / GLIDE / LAG / SETTLE), the idle
+        FLOAT_ANIM loop, MemberCard's drag + drop-on-frame hit test, the
+        ScanOverlay pass and the mask-off MEMBER_VIDEO playback. Its
+        helpers above (CARDS, LINES, FRAME, ORIGINS, FLOAT_ANIM,
+        MEMBER_SRC, MEMBER_VIDEO, MemberCard, ScanOverlay) are all
+        untouched, as is the JSX inside the guard below.
+
+        Set SHOW_TEAM_IDENTIFY_CLUSTER back to `true` to restore it —
+        nothing else needs changing. The flag is used instead of block
+        comments because commented-out JSX stops being compiled and
+        silently rots as the rest of the file moves on. The manifesto
+        block below takes this slot in the meantime.
+      */}
+      {SHOW_TEAM_IDENTIFY_CLUSTER && (
+      <>
       <div
         ref={clusterRef}
         className="relative mt-[max(140px,37.7vw)] aspect-[1512/1334] w-full overflow-x-clip"
@@ -547,9 +572,43 @@ export function TeamSection() {
         </div>
       </div>
 
-      {/* JOIN OUR TEAM (2124:248-250) */}
+      {/* JOIN OUR TEAM (2124:248-250) — parked with the cluster */}
       <div className="mt-[max(40px,5.29vw)] flex justify-center">
         <UnderlineLink label={ABOUT_PAGE.team.cta} href="/contact" width="241px" />
+      </div>
+      </>
+      )}
+
+      {/* Manifesto under the headline — same cream/maroon register as the
+          about page, in place of the parked identify cluster. */}
+      <div className="relative mx-auto mt-[clamp(64px,9vw,120px)] w-[min(86%,720px)] pb-[clamp(48px,6vw,88px)] text-center">
+        <Reveal>
+          <div className="mb-[clamp(28px,4vw,48px)] flex items-center justify-center gap-[5px]">
+            <Star4 className="w-[max(12px,0.794vw)]" fill="#741a14" />
+          </div>
+        </Reveal>
+
+        <BlurTextReveal
+          text={ABOUT_PAGE.team.manifestoLead}
+          className="font-serif-luxury text-[clamp(22px,2.65vw,40px)] font-normal leading-[1.2] tracking-[0.04em] text-[#741a14]"
+        />
+
+        <Reveal delay={0.08}>
+          <p className="mx-auto mt-[clamp(32px,4.2vw,56px)] max-w-[40em] font-sans-luxury text-[clamp(16px,1.38vw,21px)] font-medium leading-[1.8] tracking-[0.012em] text-black">
+            {ABOUT_PAGE.team.manifestoBody} {ABOUT_PAGE.team.manifestoStandard}{" "}
+            {ABOUT_PAGE.team.manifestoClose}
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.28}>
+          <p className="mt-[clamp(40px,5.2vw,72px)] font-serif-luxury text-[clamp(26px,3.2vw,48px)] font-normal leading-[1.15] tracking-[0.04em] text-[#741a14]">
+            {ABOUT_PAGE.team.manifestoLockup}
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.36} className="mt-[clamp(28px,3.4vw,44px)] flex justify-center">
+          <UnderlineLink label={ABOUT_PAGE.team.cta} href="/contact#contact-form" width="241px" />
+        </Reveal>
       </div>
     </section>
   );

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CONTACT_PAGE } from "@/lib/constants";
 import { Reveal, Rule } from "../PageKit";
+import { scrollToNextSection } from "@/components/common/ScrollCue";
 import Fumes from "@/components/common/Fumes";
 import MapleLeafMark from "@/components/common/MapleLeafMark";
 import BookCall from "./BookCall";
+import StripExit from "@/components/common/StripExit";
 
 /** Hero: transparent over the page's fixed gradient. It is wrapped in a
     pinning StripExit on the page, so the screen holds still while maroon
@@ -47,7 +49,12 @@ export function ContactHero() {
           the hero screen (trionn's contact cue sits ~40px off the fold), on a
           plain wrapper — motion's bob owns the svg's transform, so the
           centring translate must live one node up. */}
-      <div className="absolute bottom-[max(28px,4svh)] left-1/2 -translate-x-1/2">
+      <button
+        type="button"
+        aria-label="Scroll to next section"
+        onClick={(e) => scrollToNextSection(e.currentTarget)}
+        className="absolute bottom-[max(28px,4svh)] left-1/2 -translate-x-1/2 cursor-pointer border-0 bg-transparent p-0"
+      >
         <motion.svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 20 20"
@@ -64,7 +71,7 @@ export function ContactHero() {
           fill="#741A14"
         />
         </motion.svg>
-      </div>
+      </button>
     </section>
   );
 }
@@ -272,7 +279,7 @@ export function ContactMaroon() {
     // FLAT #741A14 (opaque, so the page's fixed cycling gradient does not read
     // through here) — the form block holds one steady colour and the only
     // movement behind it is the smoke.
-    <div className="relative bg-[#741a14]">
+    <div id="contact-form" className="relative scroll-mt-[88px] bg-[#741a14]">
       <Fumes />
       <section className="relative px-[8%] pb-[max(64px,8vw)] pt-[max(64px,8vw)]">
         {/* Note */}
@@ -559,5 +566,28 @@ export function ContactQuestions() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Full contact stack. `#contact-form` skips the pinned hero so JOIN OUR TEAM
+    (and any form deep-link) lands on the inquiry form, not the hero page. */
+export function ContactPageBody() {
+  const [formOnly, setFormOnly] = useState(false);
+  useLayoutEffect(() => {
+    if (window.location.hash === "#contact-form") setFormOnly(true);
+  }, []);
+
+  return (
+    <>
+      {formOnly ? null : (
+        <StripExit color="#741a14">
+          <ContactHero />
+        </StripExit>
+      )}
+      <StripExit className={formOnly ? "relative z-20" : "relative z-20 -mt-[90vh]"}>
+        <ContactMaroon />
+      </StripExit>
+      <ContactQuestions />
+    </>
   );
 }

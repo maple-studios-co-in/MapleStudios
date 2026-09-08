@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import Image from "next/image";
 import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
 import MapleOutlineMark from "@/components/common/MapleOutlineMark";
+import ScrollCue from "@/components/common/ScrollCue";
 import { WORK_PAGE } from "@/lib/constants";
 
 /**
@@ -38,7 +38,7 @@ const THUMBS = [
     dur: 16,
     wx: [0, 5, -6, 0],
     wy: [0, 5, 2, 0],
-    image: "/work/my-worker-ai/deck-v1/slice-08.webp",
+    image: "/work/kalaa-kaari/deck-v1/slice-02.webp",
   },
   {
     left: "82%",
@@ -58,7 +58,7 @@ const THUMBS = [
     dur: 18,
     wx: [0, 6, -3, 0],
     wy: [0, -6, 5, 0],
-    image: "/work/pulse-studio/deck-v1/slice-04.webp",
+    image: "/work/pulse-studio/deck-v1/slice-01.webp",
   },
   {
     left: "88%",
@@ -143,7 +143,8 @@ function FloatingThumb({
         transition={{ duration: spec.dur, ease: "easeInOut", repeat: Infinity }}
         className="relative aspect-[810/556] w-full overflow-hidden rounded-[5px] shadow-2xl"
       >
-        <Image src={spec.image} alt="" fill sizes="160px" className="object-cover" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={spec.image} alt="" className="absolute inset-0 size-full object-cover" />
       </motion.div>
     </motion.div>
   );
@@ -194,25 +195,7 @@ export default function WorkHero() {
         {WORK_PAGE.hero.subtitle}
       </motion.p>
 
-      {/* Scroll cue */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9, duration: 0.8 }}
-        className="relative z-10 mt-12 size-[max(20px,1.323vw)]"
-        aria-hidden="true"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
-        <motion.span
-          animate={{ y: [0, 3.5, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 flex items-center justify-center"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[max(7.8px,0.516vw)] rotate-90" />
-        </motion.span>
-      </motion.div>
+      <ScrollCue delay={0.9} className="relative z-10 mt-12 size-[max(20px,1.323vw)]" />
     </section>
   );
 }
