@@ -41,7 +41,7 @@ function CarouselArrows({ prev, next }: { prev: () => void; next: () => void }) 
  * testimonial + author on the right, round prev/next controls.
  */
 export default function ClientStoriesSection() {
-  const [active, setActive] = useState(1); // GET SHOKU active in the design
+  const [active, setActive] = useState(0);
   const count = CLIENT_STORIES_DATA.stories.length;
   const story = CLIENT_STORIES_DATA.stories[active];
 
@@ -139,6 +139,7 @@ export default function ClientStoriesSection() {
                 fill
                 sizes="76px"
                 className="object-cover"
+                style={{ objectPosition: story.focal ?? "50% 15%" }}
               />
             </div>
             <div className="ml-[25px] flex flex-col">

@@ -15,6 +15,7 @@ import ServicesOrbit from "./ServicesOrbit";
 import GradientCycler from "@/components/common/GradientCycler";
 import StripExit from "@/components/common/StripExit";
 import BlurTextReveal from "@/components/common/BlurTextReveal";
+import ScrollCue from "@/components/common/ScrollCue";
 
 /* Linear 0→1 ramp between two progress marks (function-form transforms stay
    on motion's JS path — see HeroSection's WAAPI note). */
@@ -230,25 +231,7 @@ function ServicesHero() {
         </div>
       </motion.div>
 
-      {/* Scroll cue — left rail (14:8670/8671) */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.8 }}
-        className="absolute left-[2.18%] top-[38.7vw] z-10 hidden size-[max(20px,1.323vw)] lg:block"
-        aria-hidden="true"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
-        <motion.span
-          animate={{ y: [0, 3.5, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 flex items-center justify-center"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[max(7.8px,0.516vw)] rotate-90" />
-        </motion.span>
-      </motion.div>
+      <ScrollCue className="absolute left-[2.18%] top-[38.7vw] z-10 hidden size-[max(20px,1.323vw)] lg:block" />
 
       {/* Lower band — same #5d1411 as the hero above it, so the whole
           hero→marquee stretch reads as ONE seamless dark maroon scene

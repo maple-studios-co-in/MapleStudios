@@ -196,44 +196,40 @@ export const CLIENT_STORIES_DATA = {
   cta: "BECOME A CLIENT",
   stories: [
     {
-      client: "ECOMMERCE",
+      client: "Digital Product / Development",
       quote:
-        "Maple shaped our storefront into something customers actually want to stay in — fast, clear, and built for the way we sell.",
-      name: "Commerce Desk",
+        "Maple Studios understood the business before touching the design. They took a complicated idea and turned it into a product that feels simple, polished and genuinely easy to use. The quality of thinking behind the work was just as strong as the execution.",
+      name: "Arjun Malhotra",
       role: "Founder",
-      avatar: "/figma/client-malte.png",
+      avatar: "/images/clients/arjun-malhotra.png",
+      focal: "50% 28%",
     },
     {
-      client: "GET SHOKU",
+      client: "AI & Automation",
       quote:
-        "Maple didn't just build another restaurant platform. They understood how restaurants actually work and turned it into one connected experience.",
-      name: "The Delhi Table",
+        "We didn't want AI added just for the sake of saying we use AI. Maple Studios identified where it could actually save time, improve customer experience and remove repetitive work. What they built feels less like another tool and more like an extension of our team.",
+      name: "Rhea Kapoor",
+      role: "Director",
+      avatar: "/images/clients/rhea-kapoor.png",
+      focal: "50% 18%",
+    },
+    {
+      client: "Brand + Website",
+      quote:
+        "Maple Studios gave us much more than a new website. They helped us sharpen how the brand looks, speaks and presents itself digitally. The end result finally feels like the quality of company we always knew we were building.",
+      name: "Kunal Bhatia",
+      role: "Co-Founder",
+      avatar: "/images/clients/kunal-bhatia.png",
+      focal: "50% 20%",
+    },
+    {
+      client: "E-commerce / Growth",
+      quote:
+        "The difference was in the details. From how customers discover products to how they move through the buying journey, every decision felt intentional. Maple Studios created an experience that looks premium without compromising usability or performance.",
+      name: "Meera Sethi",
       role: "Founder",
-      avatar: "/figma/client-malte.png",
-    },
-    {
-      client: "MAPLE FURNISHERS",
-      quote:
-        "They turned a factory story into a luxury experience — brand, site, and systems that finally match the furniture.",
-      name: "Maple Furnishers",
-      role: "Brand Lead",
-      avatar: "/figma/client-malte.png",
-    },
-    {
-      client: "KALAAKAARI",
-      quote:
-        "Maple gave our makers a digital stage that feels as crafted as the work itself — clear, cultural, and ready to grow.",
-      name: "Kalaa Kaari",
-      role: "Creative Director",
-      avatar: "/figma/client-malte.png",
-    },
-    {
-      client: "MADHUSUDHAN",
-      quote:
-        "From first brief to live build, Maple worked like part of our team — sharp thinking, calm delivery, lasting craft.",
-      name: "Madhusudhan",
-      role: "Founder",
-      avatar: "/figma/client-malte.png",
+      avatar: "/images/clients/meera-sethi.png",
+      focal: "50% 12%",
     },
   ],
 };
@@ -980,6 +976,13 @@ export const ABOUT_PAGE = {
     headline2: "one standard",
     dragHint: "DRAG A MEMBER TO REVEAL",
     cta: "JOIN OUR TEAM",
+    manifestoLead: "We don't hire to fill seats. We look for people who raise the bar.",
+    manifestoBody:
+      "Designers, developers, strategists, builders, problem-solvers — your craft may be different, but the standard stays the same:",
+    manifestoStandard:
+      "care deeply, think independently, and ship work you're proud to put your name on.",
+    manifestoClose: "If average work makes you uncomfortable, you'll probably fit right in.",
+    manifestoLockup: "Come build things that matter.",
   },
 };
 

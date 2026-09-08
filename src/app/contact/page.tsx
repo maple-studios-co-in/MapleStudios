@@ -2,12 +2,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import GradientCycler from "@/components/common/GradientCycler";
-import StripExit from "@/components/common/StripExit";
-import {
-  ContactHero,
-  ContactMaroon,
-  ContactQuestions,
-} from "@/components/pages/contact/ContactBody";
+import { ContactPageBody } from "@/components/pages/contact/ContactBody";
 import { CONTACT_PAGE } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -34,17 +29,7 @@ export default function ContactPage() {
     >
       <GradientCycler fixed />
       <Navbar />
-      {/* The hero PINS while maroon strips grow over it — the screen holds
-          still so the effect is actually watchable — and only once the cover
-          is complete does the form slide up over it (z-20 + -mt-[90vh], the
-          same hand-off KeyFacts uses on the home page). */}
-      <StripExit color="#741a14">
-        <ContactHero />
-      </StripExit>
-      <StripExit className="relative z-20 -mt-[90vh]">
-        <ContactMaroon />
-      </StripExit>
-      <ContactQuestions />
+      <ContactPageBody />
       <Footer />
     </main>
   );

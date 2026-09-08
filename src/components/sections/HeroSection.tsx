@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform, type MotionValue } from "motion/react"
 import { ABOUT_DATA, HERO_DATA } from "@/lib/constants";
 import MapleMark from "@/components/common/MapleMark";
 import BuildTimer from "@/components/common/BuildTimer";
+import ScrollCue from "@/components/common/ScrollCue";
 
 /** One word of the pinned About statement — lights up over its own slice of
     the pin progress (function-form transform: WAAPI-safe inside sticky). */
@@ -86,7 +87,7 @@ export default function HeroSection() {
   const visionOpacity = useTransform(scrollYProgress, (p) => ramp(p, 0.84, 0.92));
 
   return (
-    <div ref={wrapRef} id="hero" className="relative h-[620vh]">
+    <div ref={wrapRef} id="hero" data-pin-scroll="0.38" className="relative h-[620vh]">
     {/* Transparent on purpose: the maroon scene (radial + cycling shades +
         breathing glow) is painted ONCE by <SceneBackdrop /> behind the hero,
         the About screen and the marquee — one continuous field, no seams. */}
@@ -231,29 +232,19 @@ export default function HeroSection() {
         {HERO_DATA.subtitle}
       </motion.p>
 
-      {/* ——— Scroll-down indicator (bottom-left, Figma 10:7505/7506) ——— */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 1 }}
-        // phones: rides the badge's band at the far left so the lower third
-        // reads as one composed row (cue left · timer centre)
-        className="absolute left-[2.18%] top-[73.4%] z-10 size-[max(20px,1.32cqw)] max-md:left-[6%] max-md:top-[72.5%]"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/figma/scroll-circle.svg" alt="" className="absolute inset-0 size-full" />
-        {/* rotation lives on the img, bob on the wrapper — motion's transform
-            would otherwise discard the rotate class and the arrow reads sideways */}
-        <motion.span
-          animate={{ y: [0, 3.5, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 flex items-center justify-center"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/figma/arrow-down-sm.svg" alt="" className="w-[max(7.8px,0.516vw)] rotate-90" />
-        </motion.span>
       </motion.div>
 
+      {/* Cue sits above Scene B (which is a full-screen overlay) so the click
+          always lands; opacity/y stay tied to the Scene A dissolve. */}
+      <motion.div
+        style={{ opacity: contentOpacity, y: contentY }}
+        className="pointer-events-none absolute inset-0 z-30"
+      >
+        <ScrollCue
+          delay={1}
+          duration={1}
+          className="pointer-events-auto absolute left-[2.18%] top-[73.4%] size-[max(20px,1.32cqw)] max-md:left-[6%] max-md:top-[72.5%]"
+        />
       </motion.div>
 
       {/* ——— Glassy wireframe M ———
@@ -287,7 +278,7 @@ export default function HeroSection() {
           mission columns and vision line transition in beneath it ——— */}
       <motion.div
         style={{ opacity: aboutOpacity, y: aboutY }}
-        className="absolute inset-0 z-10 overflow-hidden"
+        className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
       >
         {/* ——— Screen B1: the statement OWNS the full viewport while its
             words light up — Catilde 80 / 300 / lh 100% / cream (spec).
