@@ -3,13 +3,14 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import ProjectDetail from "@/components/pages/work/ProjectDetail";
-import { isLightProject, WORK_PAGE } from "@/lib/constants";
+import { isLightProject } from "@/lib/constants";
+import { getWorkProjects } from "@/lib/admin/cms/public";
+
+/* Rendered on demand, with no generateStaticParams: prerendering would pin
+   every case study to whatever the console held at build time. */
+export const dynamic = "force-dynamic";
 
 type Params = { slug: string };
-
-export function generateStaticParams(): Params[] {
-  return WORK_PAGE.projects.map((p) => ({ slug: p.id }));
-}
 
 export async function generateMetadata({
   params,
@@ -17,7 +18,7 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const project = WORK_PAGE.projects.find((p) => p.id === slug);
+  const project = (await getWorkProjects()).find((p) => p.id === slug);
   if (!project) return { title: "Project — Maple Studios" };
   return {
     title: `${project.title} — Maple Studios`,
@@ -31,10 +32,10 @@ export async function generateMetadata({
  */
 export default async function ProjectPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-  const index = WORK_PAGE.projects.findIndex((p) => p.id === slug);
+  const list = await getWorkProjects();
+  const index = list.findIndex((p) => p.id === slug);
   if (index === -1) notFound();
 
-  const list = WORK_PAGE.projects;
   const project = list[index];
   const prev = list[(index - 1 + list.length) % list.length];
   const next = list[(index + 1) % list.length];

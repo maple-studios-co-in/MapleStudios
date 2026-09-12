@@ -40,10 +40,19 @@ function CarouselArrows({ prev, next }: { prev: () => void; next: () => void }) 
  * Cream canvas, client list on the left (active item full black, rest 54%),
  * testimonial + author on the right, round prev/next controls.
  */
-export default function ClientStoriesSection() {
+/** `stories` comes from the console via the page; the shipped constant is the
+    fallback so the carousel is never empty. */
+export default function ClientStoriesSection({
+  stories = CLIENT_STORIES_DATA.stories,
+  copy = CLIENT_STORIES_DATA,
+}: {
+  stories?: (typeof CLIENT_STORIES_DATA.stories)[number][];
+  /** heading / subtitle / cta from Site Copy */
+  copy?: { heading: string; subtitle: string; cta: string };
+}) {
   const [active, setActive] = useState(0);
-  const count = CLIENT_STORIES_DATA.stories.length;
-  const story = CLIENT_STORIES_DATA.stories[active];
+  const count = stories.length;
+  const story = stories[active];
 
   const prev = () => setActive((i) => (i - 1 + count) % count);
   const next = () => setActive((i) => (i + 1) % count);
@@ -67,7 +76,7 @@ export default function ClientStoriesSection() {
           transition={{ duration: 2 }}
           className="font-serif-luxury text-[max(44px,5.29vw)] leading-none text-black"
         >
-          {CLIENT_STORIES_DATA.heading}
+          {copy.heading}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 16 }}
@@ -76,7 +85,7 @@ export default function ClientStoriesSection() {
           transition={{ duration: 2, delay: 0.3 }}
           className="max-w-[240px] font-sans-luxury text-[max(15px,1.32vw)] leading-[1.2] text-black"
         >
-          {CLIENT_STORIES_DATA.subtitle}
+          {copy.subtitle}
         </motion.p>
       </div>
 
@@ -154,7 +163,7 @@ export default function ClientStoriesSection() {
           >
             <span className="flex items-center justify-between">
               <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#741a14]">
-                {CLIENT_STORIES_DATA.cta}
+                {copy.cta}
               </span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

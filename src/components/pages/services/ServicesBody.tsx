@@ -143,7 +143,7 @@ export function WordMarquee({
 }
 
 /* ————— Hero + intro + marquee: one continuous dark maroon scene with cream text & 3D orbit ————— */
-function ServicesHero() {
+function ServicesHero({ copy }: { copy: { hero: typeof SERVICES_PAGE.hero; intro: string } }) {
   const [hoveredDiscipline, setHoveredDiscipline] = useState<number | null>(null);
 
   const DISCIPLINES_ROW1 = [
@@ -180,7 +180,7 @@ function ServicesHero() {
       >
         <Star4 className="w-[max(12px,0.794vw)]" fill="#fff3d3" />
         <span className="font-sans-luxury text-[13.2px] font-bold uppercase leading-[1] tracking-[-0.02em] text-[#fff3d3] lg:text-[max(14px,0.926vw)] lg:leading-[max(16.88px,1.116vw)] lg:tracking-[-0.337px]">
-          {SERVICES_PAGE.hero.eyebrow}
+          {copy.hero.eyebrow}
         </span>
       </motion.div>
 
@@ -191,7 +191,7 @@ function ServicesHero() {
         transition={{ duration: 0.9, delay: 0.1 }}
         className="relative z-10 mt-[20svh] font-serif-luxury text-[35.2px] font-normal leading-none tracking-[0.02em] text-[#fff3d3] lg:mt-[max(14px,2vw)] lg:text-[max(44px,5.29vw)] lg:leading-normal lg:tracking-[0.05em]"
       >
-        {SERVICES_PAGE.hero.title}
+        {copy.hero.title}
       </motion.h1>
 
       {/* Discipline list — Red Hat Bold 16, interactive 3D Orbit linkage */}
@@ -253,7 +253,7 @@ function ServicesHero() {
                 </span>
               ))}
             </span>
-            <span className="hidden lg:inline">{SERVICES_PAGE.intro}</span>
+            <span className="hidden lg:inline">{copy.intro}</span>
           </h2>
 
           {/* Twin links ride WITH the intro screen, side by side */}
@@ -472,13 +472,13 @@ function ServicePanel({
   );
 }
 
-function ServicePanels() {
+function ServicePanels({ panels }: { panels: (typeof SERVICES_PAGE.panels)[number][] }) {
   return (
     // relative z-20 -mt-[90vh]: rides up OVER the hero's finished strip screen
     // (home-page StripExit hand-off pattern — KeyFacts / ClientStories do the
     // same), so the first cream panel slides seamlessly off the cream strips.
     <section className="relative z-20 -mt-[90vh] bg-[#fff3d3] pt-[max(48px,8.93vw)]">
-      {SERVICES_PAGE.panels.map((p, i) => (
+      {panels.map((p, i) => (
         <Fragment key={p.id}>
           {/* Dwell runway: the previous panel stays pinned while this scrolls by */}
           {i > 0 ? <div aria-hidden="true" className="hidden lg:block lg:h-[80vh]" /> : null}
@@ -839,16 +839,25 @@ function ProcessSection() {
   );
 }
 
-export default function ServicesBody() {
+/** `panels` carries the console's copy merged onto the shipped art direction
+    (see lib/admin/cms/public.ts); the constant is the fallback. */
+export default function ServicesBody({
+  panels = SERVICES_PAGE.panels,
+  copy = { hero: SERVICES_PAGE.hero, intro: SERVICES_PAGE.intro },
+}: {
+  panels?: (typeof SERVICES_PAGE.panels)[number][];
+  /** hero + intro strings from Site Copy */
+  copy?: { hero: typeof SERVICES_PAGE.hero; intro: string };
+}) {
   return (
     <div className="bg-[#fff3d3] text-black">
       {/* Dark hero exits through the cream strip effect (home-page pattern):
           its last screen pins while the strips grow, then the first cream
           panel slides over the finished cover. */}
       <StripExit>
-        <ServicesHero />
+        <ServicesHero copy={copy} />
       </StripExit>
-      <ServicePanels />
+      <ServicePanels panels={panels} />
       <TechStack />
       <CapabilityAccordion />
       <ProcessSection />

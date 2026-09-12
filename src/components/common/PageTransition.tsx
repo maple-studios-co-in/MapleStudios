@@ -41,6 +41,16 @@ const PAGE_LABELS: Record<string, string> = {
   "/contact": "CONTACT",
 };
 
+/** The authoring console opts out of the whole choreography.
+    /admin is a tool, not a page of the marketing site: belts + a logo card on
+    every nav click add ~1s to each of the console's ~20 screens, and the
+    generic label for /admin/* is just "ADMIN", which reads like a splash
+    screen rather than a transition. Skipping also keeps ten full-viewport
+    layers off the compositor for the whole admin session. */
+function isAdminPath(path: string) {
+  return path === "/admin" || path.startsWith("/admin/");
+}
+
 function labelFor(href: string) {
   const path = href.split("#")[0].split("?")[0];
   if (PAGE_LABELS[path]) return PAGE_LABELS[path];
@@ -83,6 +93,9 @@ export default function PageTransition() {
       if (a.hasAttribute("download")) return;
       const path = href.split("#")[0].split("?")[0];
       if (!path || path === pathname) return;
+      // Leaving the console, entering it, or moving within it: let the router
+      // navigate normally rather than covering the screen first.
+      if (isAdminPath(path) || isAdminPath(pathname)) return;
       e.preventDefault();
       if (pending.current) return;
       pending.current = href;
@@ -133,6 +146,10 @@ export default function PageTransition() {
 
   const active = phase !== "idle";
   const covering = phase === "cover";
+
+  // Rendered after every hook has run, so the hook order stays stable when the
+  // operator moves between the marketing site and the console.
+  if (isAdminPath(pathname)) return null;
 
   return (
     <div

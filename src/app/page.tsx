@@ -8,8 +8,21 @@ import WorkSection from "@/components/sections/WorkSection";
 import ServicesVideoSection from "@/components/sections/ServicesVideoSection";
 import ClientStoriesSection from "@/components/sections/ClientStoriesSection";
 import Footer from "@/components/common/Footer";
+import { getClientStories, getHeroCopy, getSiteCopy } from "@/lib/admin/cms/public";
 
-export default function Home() {
+/* Content comes from the authoring console, so this route must not be held
+   in the full route cache — a publish/unpublish has to be visible on the
+   next request, not at the next deploy. */
+export const revalidate = 0;
+
+export default async function Home() {
+  // Testimonials from the authoring console (shipped constant is the fallback).
+  const [stories, heroCopy, copy] = await Promise.all([
+    getClientStories(),
+    getHeroCopy(),
+    getSiteCopy(),
+  ]);
+
   // overflow-x lives on <body> as `clip` (globals.css) — an overflow-x-hidden
   // wrapper here would break position:sticky for the horizontal work track
   return (
@@ -28,7 +41,7 @@ export default function Home() {
       <SceneBackdrop />
 
       {/* 1) Hero (Figma node 120-980: headline top-left, orbits, glassy M) */}
-      <HeroSection />
+      <HeroSection copy={heroCopy} />
 
       {/* 2) About & Mission — the statement headline itself transitions inside
           the hero pin (Scene B in HeroSection); this block carries the rest of
@@ -50,7 +63,7 @@ export default function Home() {
       </StripExit>
 
       {/* 6) Client stories (Figma 13-79xx) */}
-      <ClientStoriesSection />
+      <ClientStoriesSection stories={stories} copy={copy.clientStories} />
 
       {/* 7) Final CTA / footer — "Ready to build something bold?" (Figma 13-8015) */}
       <Footer />
