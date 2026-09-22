@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import PageTransition from "@/components/common/PageTransition";
+import { SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Resolves relative OG image and canonical URLs set in the console; emits no tag itself.
+  metadataBase: new URL(SITE_URL),
   title: "Maple Studios — Independent Digital Studio",
   description: "Websites, AI products, brands, and systems built for clarity, scale and impact.",
   keywords: ["digital studio", "web design", "AI products", "branding", "strategy", "technology"],

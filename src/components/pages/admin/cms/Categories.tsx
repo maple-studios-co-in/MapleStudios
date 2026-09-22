@@ -13,7 +13,8 @@ const GROUPS: { key: CategoryGroup; label: string }[] = [
   { key: "media", label: "Media" },
 ];
 
-/** Add, rename, reorder, or remove the filter taxonomies used across the site. */
+/** Add, rename, reorder, or remove the categories the Portfolio and Blog forms
+    offer, and the Media library's folder suggestions. */
 export default function Categories() {
   const { data, loading, error, create, update, remove, reorder } = useCollection<Category>("categories");
   const [confirming, setConfirming] = useState<Category | null>(null);
@@ -28,7 +29,7 @@ export default function Categories() {
     <>
       <PageHead
         title="Categories"
-        sub="Add, rename, reorder, or remove the filter categories used across the site. Renaming a category updates every portfolio project or blog post already using it."
+        sub="The categories the Portfolio and Blog forms offer, and the Media library's folder suggestions. Renaming a category updates every project, post or asset already using it."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -68,7 +69,7 @@ export default function Categories() {
       {confirming ? (
         <Confirm
           title="Remove this category?"
-          body={`"${confirming.name}" will stop appearing as a filter. Records already tagged with it keep the value until you edit them.`}
+          body={`"${confirming.name}" will no longer be offered in the forms. Records already using it keep the value until you change it.`}
           confirmLabel="Remove"
           onCancel={() => setConfirming(null)}
           onConfirm={async () => {

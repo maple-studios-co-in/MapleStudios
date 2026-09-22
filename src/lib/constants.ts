@@ -1,3 +1,6 @@
+/** Canonical origin — metadataBase, sitemap.xml and robots.txt resolve against it. */
+export const SITE_URL = "https://maplestudios.co.in";
+
 export const SITE_CONFIG = {
   name: "Maple Studios",
   tagline: "An independent digital studio crafting meaningful digital experiences",

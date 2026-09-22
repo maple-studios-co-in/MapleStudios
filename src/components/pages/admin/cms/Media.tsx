@@ -5,6 +5,7 @@ import { Copy, Trash2, Upload } from "lucide-react";
 
 import { useAdmin } from "../AdminShell";
 import { useCollection } from "./useCms";
+import type { Category } from "@/lib/admin/cms/types";
 import { Btn, Card, Confirm, Input, PageHead, Spinner, shortDate, useToast } from "./ui";
 import type { MediaAsset } from "@/lib/admin/cms/types";
 
@@ -16,6 +17,9 @@ import type { MediaAsset } from "@/lib/admin/cms/types";
 export default function Media() {
   const { key } = useAdmin();
   const { data, loading, error, reload, remove } = useCollection<MediaAsset>("media");
+  // Media categories are the suggested folders (free text still works).
+  const { data: categories } = useCollection<Category>("categories");
+  const folders = (categories ?? []).filter((c) => c.group === "media").map((c) => c.name);
   const [folder, setFolder] = useState("maple/uploads");
   const [alt, setAlt] = useState("");
   const [busy, setBusy] = useState(false);
@@ -61,7 +65,12 @@ export default function Media() {
 
       <Card className="mb-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
-          <Input value={folder} onChange={(e) => setFolder(e.target.value)} placeholder="maple/uploads" />
+          <Input list="media-folders" value={folder} onChange={(e) => setFolder(e.target.value)} placeholder="maple/uploads" />
+          <datalist id="media-folders">
+            {folders.map((f) => (
+              <option key={f} value={f} />
+            ))}
+          </datalist>
           <Input
             value={alt}
             onChange={(e) => setAlt(e.target.value)}

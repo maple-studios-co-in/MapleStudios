@@ -33,6 +33,7 @@ export default function SiteCopy() {
   const post = usePost();
 
   const [draft, setDraft] = useState("");
+  const [seededFrom, setSeededFrom] = useState<number | null>(null);
   const [summary, setSummary] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -43,9 +44,15 @@ export default function SiteCopy() {
   const doc = data?.doc ?? null;
   const liveVersion = doc?.versions.find((v) => v.v === doc.live) ?? doc?.versions[0] ?? null;
 
+  // Load the live version into the editor once it arrives and whenever it
+  // changes (a save or a restore) — not whenever the draft is empty, which
+  // refilled the box the moment the operator cleared it to paste a new one.
   useEffect(() => {
-    if (liveVersion && !draft) setDraft(liveVersion.json);
-  }, [liveVersion, draft]);
+    if (liveVersion && liveVersion.v !== seededFrom) {
+      setDraft(liveVersion.json);
+      setSeededFrom(liveVersion.v);
+    }
+  }, [liveVersion, seededFrom]);
 
   if (loading) return <Spinner />;
   if (error || !doc)

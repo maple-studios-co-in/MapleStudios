@@ -5,6 +5,8 @@ import Footer from "@/components/common/Footer";
 import ProjectDetail from "@/components/pages/work/ProjectDetail";
 import { isLightProject } from "@/lib/constants";
 import { getWorkProjects } from "@/lib/admin/cms/public";
+import SeoJsonLd from "@/components/common/SeoJsonLd";
+import { withSeo } from "@/lib/admin/cms/seo";
 
 /* Rendered on demand, with no generateStaticParams: prerendering would pin
    every case study to whatever the console held at build time. */
@@ -19,11 +21,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const project = (await getWorkProjects()).find((p) => p.id === slug);
-  if (!project) return { title: "Project — Maple Studios" };
-  return {
-    title: `${project.title} — Maple Studios`,
-    description: project.description,
-  };
+  return withSeo(
+    `/work/${slug}`,
+    project
+      ? { title: `${project.title} — Maple Studios`, description: project.description }
+      : { title: "Project — Maple Studios" }
+  );
 }
 
 /**
@@ -51,6 +54,7 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
           : "bg-[#5d1411] text-white selection:bg-[#761c17] selection:text-white"
       }`}
     >
+      <SeoJsonLd path={`/work/${slug}`} />
       <Navbar />
       <ProjectDetail project={project} prev={prev} next={next} />
       <Footer />

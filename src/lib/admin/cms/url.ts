@@ -11,6 +11,13 @@ export function safeHref(url: string | null | undefined): string {
   return SAFE_HREF.test(u) ? u : "";
 }
 
+/** One spelling per path, so "/work/", "/work?x" and "/work" all name the same
+    page when overrides and redirects are matched. */
+export function normalisePath(p: string): string {
+  const path = (p ?? "").trim().split(/[?#]/)[0];
+  return path.length > 1 ? path.replace(/\/+$/, "") || "/" : path || "/";
+}
+
 /** Absolute http(s) URLs skip next/image optimisation: the optimiser only
     serves hosts listed in next.config, and an operator can paste any host. */
 export function isRemoteUrl(src: string): boolean {
