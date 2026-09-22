@@ -14,7 +14,10 @@ import path from "path";
  * write-then-rename, same read-only-host fallback. Swap both for a database
  * client behind these signatures when one exists.
  */
-export type InquiryStatus = "new" | "read" | "archived";
+/** "replied" was added for the console's Contacts screen. Every consumer
+    lists it — /admin/inquiries (its own tab), both summary routes, and
+    backend/'s INQUIRY_STATUSES, which migrate:json validates against. */
+export type InquiryStatus = "new" | "read" | "replied" | "archived";
 
 export type Inquiry = {
   /** sortable + unique: ISO timestamp + short random suffix */

@@ -104,6 +104,7 @@ summaryRoutes.get("/summary", async (_req, res) => {
       total: facet.total[0]?.n ?? 0,
       new: statusCount("new"),
       read: statusCount("read"),
+      replied: statusCount("replied"),
       archived: statusCount("archived"),
       lastSevenDays: facet.lastSevenDays[0]?.n ?? 0,
     },

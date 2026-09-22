@@ -30,7 +30,7 @@ function notConfigured() {
 }
 
 
-const STATUSES: InquiryStatus[] = ["new", "read", "archived"];
+const STATUSES: InquiryStatus[] = ["new", "read", "replied", "archived"];
 
 export async function GET(req: Request) {
   if (!isAdminKeyConfigured()) return notConfigured();

@@ -150,7 +150,9 @@ function FloatingThumb({
   );
 }
 
-export default function WorkHero() {
+/** `copy` is the Site Copy `work.hero` block; the shipped constant is the
+    fallback so the hero never renders blank. */
+export default function WorkHero({ copy = WORK_PAGE.hero }: { copy?: typeof WORK_PAGE.hero }) {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -183,7 +185,7 @@ export default function WorkHero() {
         transition={{ duration: 0.9, delay: 0.1 }}
         className="relative z-10 mt-[max(20px,2.6vw)] font-serif-luxury text-[max(56px,6.61vw)] font-normal leading-normal text-[#fff3d3]"
       >
-        {WORK_PAGE.hero.title}
+        {copy.title}
       </motion.h1>
 
       <motion.p
@@ -192,7 +194,7 @@ export default function WorkHero() {
         transition={{ duration: 0.8, delay: 0.25 }}
         className="relative z-10 mt-4 max-w-[430px] font-sans-luxury text-[max(14px,1.19vw)] leading-normal text-white"
       >
-        {WORK_PAGE.hero.subtitle}
+        {copy.subtitle}
       </motion.p>
 
       <ScrollCue delay={0.9} className="relative z-10 mt-12 size-[max(20px,1.323vw)]" />

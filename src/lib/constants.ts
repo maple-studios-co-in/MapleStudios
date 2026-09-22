@@ -9,7 +9,8 @@ export const HERO_DATA = {
     // The figure itself is a live stopwatch (BuildTimer) counting from zero
     // on every page load — there is no static value to configure here.
     label: "HRS : MINS",
-    sublabel: "Avg. time to first live build",
+    // \n is the badge's line break (rendered whitespace-pre-line)
+    sublabel: "Avg. time to\nfirst live build",
   },
   cta: "START A PROJECT",
   subtitle: "Websites, AI products, brands, and systems built for clarity, scale and impact.",

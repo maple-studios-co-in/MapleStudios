@@ -5,6 +5,12 @@ import GradientCycler from "@/components/common/GradientCycler";
 import WorkHero from "@/components/pages/work/WorkHero";
 import WorkGrid from "@/components/pages/work/WorkGrid";
 import { WORK_PAGE } from "@/lib/constants";
+import { getSiteCopy, getWorkProjects } from "@/lib/admin/cms/public";
+
+/* Content comes from the authoring console, so this route must not be held
+   in the full route cache — a publish/unpublish has to be visible on the
+   next request, not at the next deploy. */
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Our Work — Maple Studios",
@@ -15,7 +21,11 @@ export const metadata: Metadata = {
  * Our Work — Figma frame 14:8050 (1512x6879).
  * The frame's own navbar and footer are handled by the shared components.
  */
-export default function WorkPage() {
+export default async function WorkPage() {
+  // Published projects from the authoring console (falls back to the shipped
+  // constant when the console has none).
+  const [projects, copy] = await Promise.all([getWorkProjects(), getSiteCopy()]);
+
   return (
     // One viewport-locked reddish gradient across the ENTIRE page — no beige —
     // with the auto-cycling shade variants layered on top (fixed, -z-10).
@@ -29,8 +39,8 @@ export default function WorkPage() {
       <GradientCycler fixed />
       <Navbar />
       {/* Floating thumbnails scatter away from "Our work" on scroll (trionn-style) */}
-      <WorkHero />
-      <WorkGrid />
+      <WorkHero copy={copy.work.hero} />
+      <WorkGrid projects={projects} />
       <Footer seamless />
     </main>
   );

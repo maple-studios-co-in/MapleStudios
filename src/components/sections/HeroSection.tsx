@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
 import { ABOUT_DATA, HERO_DATA } from "@/lib/constants";
+import type { HeroCopy } from "@/lib/admin/cms/public";
 import MapleMark from "@/components/common/MapleMark";
 import BuildTimer from "@/components/common/BuildTimer";
 import ScrollCue from "@/components/common/ScrollCue";
@@ -35,7 +36,19 @@ function PinnedWord({
  * Hero — Figma node 120:980 (canvas 1512 x 797).
  * All absolute positions are % of that canvas so the layout scales.
  */
-export default function HeroSection() {
+/** Hero strings resolved by the page from Homepage doc -> Site Copy ->
+    constants. The shipped constants are the fallback so this still renders
+    standalone. */
+const HERO_FALLBACK: HeroCopy = {
+  headlineLines: [HERO_DATA.headlineMain, HERO_DATA.headlineSub],
+  subtitle: HERO_DATA.subtitle,
+  cta: HERO_DATA.cta,
+  badgeLabel: HERO_DATA.badge.label,
+  badgeSublabel: HERO_DATA.badge.sublabel,
+  ctaHref: "#contact",
+};
+
+export default function HeroSection({ copy = HERO_FALLBACK }: { copy?: HeroCopy }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: wrapRef,
@@ -165,12 +178,15 @@ export default function HeroSection() {
           transition={{ duration: 0.9, delay: 0.15 }}
           className="font-serif-luxury text-[#fff3d3] text-[max(32px,5.29cqw)] font-normal leading-[1.11] tracking-[0.05em] whitespace-nowrap"
         >
-          <span className="block">{HERO_DATA.headlineMain}</span>
-          <span className="block">{HERO_DATA.headlineSub}</span>
+          {copy.headlineLines.map((line, i) => (
+            <span key={i} className="block">
+              {line}
+            </span>
+          ))}
         </motion.h1>
 
         <motion.a
-          href="#contact"
+          href={copy.ctaHref}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.45 }}
@@ -178,7 +194,7 @@ export default function HeroSection() {
         >
           <span className="flex items-center justify-between">
             <span className="font-sans-luxury text-[max(12px,0.93cqw)] font-bold uppercase tracking-[-0.024em] text-[#fff3d3]">
-              {HERO_DATA.cta}
+              {copy.cta}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -207,14 +223,12 @@ export default function HeroSection() {
             <BuildTimer className="font-sans-luxury text-[max(13px,1.15cqw)] font-bold leading-[1.4]" />
             {/* 9px floors: the old 7/8px labels were illegible on phones */}
             <span className="font-sans-luxury text-[max(9px,0.68cqw)] font-normal leading-[1.3] tracking-[0.08em]">
-              {HERO_DATA.badge.label}
+              {copy.badgeLabel}
             </span>
           </div>
           <div className="flex flex-1 items-center pl-[5%]">
-            <span className="font-sans-luxury text-[max(9px,0.73cqw)] font-medium uppercase leading-[1.5] text-white">
-              Avg. time to
-              <br />
-              first live build
+            <span className="whitespace-pre-line font-sans-luxury text-[max(9px,0.73cqw)] font-medium uppercase leading-[1.5] text-white">
+              {copy.badgeSublabel}
             </span>
           </div>
         </div>
@@ -229,7 +243,7 @@ export default function HeroSection() {
         // line — the old right-anchored ragged block looked stranded
         className="absolute left-[81.02%] top-[72.4%] z-10 w-[16.47%] min-w-[200px] -translate-y-1/2 font-sans-luxury text-[max(13px,1.19cqw)] leading-[1.35] text-white max-md:left-1/2 max-md:right-auto max-md:top-[88%] max-md:w-[82%] max-md:min-w-0 max-md:-translate-x-1/2 max-md:text-center"
       >
-        {HERO_DATA.subtitle}
+        {copy.subtitle}
       </motion.p>
 
       </motion.div>

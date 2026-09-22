@@ -40,13 +40,30 @@ function CarouselArrows({ prev, next }: { prev: () => void; next: () => void }) 
  * Cream canvas, client list on the left (active item full black, rest 54%),
  * testimonial + author on the right, round prev/next controls.
  */
-export default function ClientStoriesSection() {
+/** `stories` comes from the console via the page; the shipped constant is the
+    fallback so the carousel is never empty. */
+export default function ClientStoriesSection({
+  stories = CLIENT_STORIES_DATA.stories,
+  copy = CLIENT_STORIES_DATA,
+}: {
+  stories?: (typeof CLIENT_STORIES_DATA.stories)[number][];
+  /** heading / subtitle / cta from Site Copy */
+  copy?: { heading: string; subtitle: string; cta: string };
+}) {
   const [active, setActive] = useState(0);
-  const count = CLIENT_STORIES_DATA.stories.length;
-  const story = CLIENT_STORIES_DATA.stories[active];
+  const count = stories.length;
+  // The list, the arrows and the quote all index `stories` — the console's
+  // list — and the index is clamped, because the console can shrink it (even
+  // to nothing) under a visitor who has a story open.
+  const current = count ? Math.min(active, count - 1) : 0;
+  const story = count ? stories[current] : null;
 
-  const prev = () => setActive((i) => (i - 1 + count) % count);
-  const next = () => setActive((i) => (i + 1) % count);
+  const prev = () => {
+    if (count) setActive((current - 1 + count) % count);
+  };
+  const next = () => {
+    if (count) setActive((current + 1) % count);
+  };
 
   // keep this section free of overflow-hidden — sticky pins live in ancestors/siblings
   return (
@@ -67,7 +84,7 @@ export default function ClientStoriesSection() {
           transition={{ duration: 2 }}
           className="font-serif-luxury text-[max(44px,5.29vw)] leading-none text-black"
         >
-          {CLIENT_STORIES_DATA.heading}
+          {copy.heading}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 16 }}
@@ -76,7 +93,7 @@ export default function ClientStoriesSection() {
           transition={{ duration: 2, delay: 0.3 }}
           className="max-w-[240px] font-sans-luxury text-[max(15px,1.32vw)] leading-[1.2] text-black"
         >
-          {CLIENT_STORIES_DATA.subtitle}
+          {copy.subtitle}
         </motion.p>
       </div>
 
@@ -89,13 +106,13 @@ export default function ClientStoriesSection() {
         {/* Left: client list + carousel arrows */}
         <div className="flex flex-col">
           <ul className="flex flex-col gap-[14px]">
-            {CLIENT_STORIES_DATA.stories.map((s, i) => (
-              <li key={s.client}>
+            {stories.map((s, i) => (
+              <li key={`${s.client}-${i}`}>
                 <button
                   type="button"
                   onClick={() => setActive(i)}
                   className={`cursor-pointer font-sans-luxury text-[16px] font-bold uppercase leading-[1.06] transition-opacity duration-300 hover:opacity-100 ${
-                    i === active ? "opacity-100" : "opacity-[0.54]"
+                    i === current ? "opacity-100" : "opacity-[0.54]"
                   }`}
                 >
                   {s.client}
@@ -118,35 +135,42 @@ export default function ClientStoriesSection() {
         <div className="flex max-w-[573px] flex-col">
           <div className="min-h-[max(120px,10vw)]">
             <AnimatePresence mode="wait">
-              <motion.blockquote
-                key={active}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.35 }}
-                className="font-sans-luxury text-[max(20px,1.98vw)] font-medium leading-[1.2] text-black"
-              >
-                {story.quote}
-              </motion.blockquote>
+              {story ? (
+                <motion.blockquote
+                  key={current}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35 }}
+                  className="font-sans-luxury text-[max(20px,1.98vw)] font-medium leading-[1.2] text-black"
+                >
+                  {story.quote}
+                </motion.blockquote>
+              ) : null}
             </AnimatePresence>
           </div>
 
-          <div className="mt-[max(32px,3.5vw)] flex items-center">
-            <div className="relative h-[75px] w-[76px] overflow-hidden rounded-[6px]">
-              <Image
-                src={story.avatar}
-                alt={story.name}
-                fill
-                sizes="76px"
-                className="object-cover"
-                style={{ objectPosition: story.focal ?? "50% 15%" }}
-              />
+          {story ? (
+            <div className="mt-[max(32px,3.5vw)] flex items-center">
+              {/* a testimonial added in the console has no art-directed portrait */}
+              {story.avatar ? (
+                <div className="relative mr-[25px] h-[75px] w-[76px] overflow-hidden rounded-[6px]">
+                  <Image
+                    src={story.avatar}
+                    alt={story.name}
+                    fill
+                    sizes="76px"
+                    className="object-cover"
+                    style={{ objectPosition: story.focal ?? "50% 15%" }}
+                  />
+                </div>
+              ) : null}
+              <div className="flex flex-col">
+                <span className="font-sans-luxury text-[16px] font-bold text-black">{story.name}</span>
+                <span className="mt-1 font-sans-luxury text-[max(14px,0.926vw)] text-black">{story.role}</span>
+              </div>
             </div>
-            <div className="ml-[25px] flex flex-col">
-              <span className="font-sans-luxury text-[16px] font-bold text-black">{story.name}</span>
-              <span className="mt-1 font-sans-luxury text-[max(14px,0.926vw)] text-black">{story.role}</span>
-            </div>
-          </div>
+          ) : null}
 
           <a
             href="#contact"
@@ -154,7 +178,7 @@ export default function ClientStoriesSection() {
           >
             <span className="flex items-center justify-between">
               <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#741a14]">
-                {CLIENT_STORIES_DATA.cta}
+                {copy.cta}
               </span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

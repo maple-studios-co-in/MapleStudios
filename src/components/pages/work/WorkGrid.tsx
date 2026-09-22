@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import { WORK_PAGE } from "@/lib/constants";
+import { isRemoteUrl } from "@/lib/admin/cms/url";
 import { Reveal, UnderlineLink } from "../PageKit";
 
 /**
@@ -96,6 +97,8 @@ function ProjectEntry({
                 fill
                 sizes="(min-width: 1024px) 46vw, 92vw"
                 className="object-cover"
+                // a pasted CDN URL isn't an allowed optimiser host
+                unoptimized={isRemoteUrl(project.image)}
               />
             </motion.div>
           </motion.div>
@@ -295,14 +298,21 @@ function Connector({ flip, uid }: { flip: boolean; uid: string }) {
   );
 }
 
-export default function WorkGrid() {
+/** `projects` comes from the authoring console via the page (a Server
+    Component). It falls back to the shipped constant so this component still
+    renders on its own — and so the grid is never empty if a CMS read fails. */
+export default function WorkGrid({
+  projects = WORK_PAGE.projects,
+}: {
+  projects?: (typeof WORK_PAGE.projects)[number][];
+}) {
   return (
     // transparent — the page-level reddish gradient runs uninterrupted
     <section className="px-[6%] pb-[max(80px,10vw)] pt-[max(48px,6vw)]">
-      {WORK_PAGE.projects.map((p, i) => (
+      {projects.map((p, i) => (
         <div key={p.id}>
           <ProjectEntry project={p} index={i} />
-          {i < WORK_PAGE.projects.length - 1 ? <Connector flip={i % 2 === 1} uid={p.id} /> : null}
+          {i < projects.length - 1 ? <Connector flip={i % 2 === 1} uid={p.id} /> : null}
         </div>
       ))}
 
