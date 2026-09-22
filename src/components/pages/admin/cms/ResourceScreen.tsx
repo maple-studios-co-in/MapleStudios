@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 
 import MarkdownEditor from "./MarkdownEditor";
 import type { FieldDef, ScreenDef } from "./defs";
+import type { Category } from "@/lib/admin/cms/types";
 import { useCollection } from "./useCms";
 import {
   Badge,
@@ -56,8 +57,12 @@ export default function ResourceScreen({ def }: { def: ScreenDef }) {
     const target = index + dir;
     if (target < 0 || target >= next.length) return;
     [next[index], next[target]] = [next[target], next[index]];
-    await reorder(next.map((r) => r.id));
-    show("Order saved");
+    try {
+      await reorder(next.map((r) => r.id));
+      show("Order saved");
+    } catch (e) {
+      show(e instanceof Error ? e.message : "Could not reorder.", true);
+    }
   };
 
   const save = async (values: Record<string, unknown>) => {
@@ -352,6 +357,38 @@ function RecordForm({
   );
 }
 
+/**
+ * A select whose options are one group of the Categories collection, so a
+ * category added or renamed there is what the form offers. The record's
+ * current value stays selectable even if the category has since been removed —
+ * opening an old record must never silently change it.
+ */
+function CategorySelect({
+  field: f,
+  value,
+  onChange,
+}: {
+  field: FieldDef;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const { data, error } = useCollection<Category>("categories");
+  const current = String(value ?? "");
+  // the API returns categories in their manual order
+  const names = (data ?? []).filter((c) => c.group === f.optionsFrom).map((c) => c.name);
+  const options = current && !names.includes(current) ? [current, ...names] : names;
+  return (
+    <Field label={f.label} hint={error ? `Couldn't load categories — ${error}` : f.hint} required={f.required}>
+      <Select
+        value={current}
+        disabled={!data && !error}
+        onChange={(e) => onChange(e.target.value)}
+        options={options.map((o) => ({ value: o, label: o }))}
+      />
+    </Field>
+  );
+}
+
 function FieldControl({
   field: f,
   value,
@@ -388,6 +425,7 @@ function FieldControl({
       );
 
     case "select":
+      if (f.optionsFrom) return <CategorySelect field={f} value={value} onChange={onChange} />;
       return (
         <Field label={f.label} hint={f.hint} required={f.required}>
           <Select

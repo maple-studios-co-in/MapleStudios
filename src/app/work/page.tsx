@@ -6,16 +6,21 @@ import WorkHero from "@/components/pages/work/WorkHero";
 import WorkGrid from "@/components/pages/work/WorkGrid";
 import { WORK_PAGE } from "@/lib/constants";
 import { getSiteCopy, getWorkProjects } from "@/lib/admin/cms/public";
+import SeoJsonLd from "@/components/common/SeoJsonLd";
+import { withSeo } from "@/lib/admin/cms/seo";
 
 /* Content comes from the authoring console, so this route must not be held
    in the full route cache — a publish/unpublish has to be visible on the
    next request, not at the next deploy. */
 export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: "Our Work — Maple Studios",
-  description: WORK_PAGE.hero.subtitle,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // the page's own metadata, with any override from the console's SEO module
+  return withSeo("/work", {
+    title: "Our Work — Maple Studios",
+    description: WORK_PAGE.hero.subtitle,
+  });
+}
 
 /**
  * Our Work — Figma frame 14:8050 (1512x6879).
@@ -38,6 +43,7 @@ export default async function WorkPage() {
     >
       <GradientCycler fixed />
       <Navbar />
+      <SeoJsonLd path="/work" />
       {/* Floating thumbnails scatter away from "Our work" on scroll (trionn-style) */}
       <WorkHero copy={copy.work.hero} />
       <WorkGrid projects={projects} />

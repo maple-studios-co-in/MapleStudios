@@ -1,4 +1,5 @@
 import { INDUSTRIES, VIDEO_CATEGORIES } from "@/lib/admin/cms/seed";
+import type { CategoryGroup } from "@/lib/admin/cms/types";
 
 /**
  * Declarative definitions for the list-shaped modules.
@@ -27,6 +28,8 @@ export type FieldDef = {
   required?: boolean;
   hint?: string;
   options?: string[];
+  /** take the options from this group of the Categories collection instead */
+  optionsFrom?: CategoryGroup;
   /** field sits in a two-column row */
   half?: boolean;
   /** starts a new titled section in the form */
@@ -99,7 +102,8 @@ export const PORTFOLIO: ScreenDef = {
       name: "category",
       label: "Category",
       type: "select",
-      options: ["AI Product", "AI Ads", "Web App", "Mobile App", "3D Experience", "Automation", "Branding"],
+      optionsFrom: "portfolio",
+      hint: "Manage the list in Categories.",
       half: true,
     },
     {
@@ -306,15 +310,8 @@ export const BLOG: ScreenDef = {
       name: "category",
       label: "Category",
       type: "select",
-      options: [
-        "AI in Business",
-        "Marketing Technology",
-        "Product Design",
-        "Automation",
-        "Web & App Development",
-        "Creative AI",
-        "Interior & 3D Visualization",
-      ],
+      optionsFrom: "blog",
+      hint: "Manage the list in Categories.",
       half: true,
     },
     { name: "readingMinutes", label: "Reading minutes", type: "number", half: true },

@@ -1,15 +1,21 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
-import { audit } from "@/lib/admin/cms/audit";
+import { audit, labelOf } from "@/lib/admin/cms/audit";
+import { renameCategoryUses } from "@/lib/admin/cms/categories";
 import { denyIfUnauthorized, readJson } from "@/lib/admin/cms/guard";
 import { getContact, removeContact, updateContactStatus } from "@/lib/admin/cms/contacts";
-import { deleteRow, getRow, mutate, removeMediaFile, updateRow } from "@/lib/admin/cms/store";
-import { isCollection, type Base } from "@/lib/admin/cms/types";
+import { updatePinnedVideo } from "@/lib/admin/cms/reel";
+import { deleteRow, getRow, listRows, removeMediaFile, updateRow } from "@/lib/admin/cms/store";
+import { FIXED_SET, READ_ONLY, isCollection, type Base, type CategoryGroup } from "@/lib/admin/cms/types";
+import { normalisePath } from "@/lib/admin/cms/url";
+import { problemWith } from "@/lib/admin/cms/validate";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ resource: string; id: string }> };
+type Row = Base & Record<string, unknown>;
 
 export async function GET(req: Request, { params }: Ctx) {
   const denied = denyIfUnauthorized(req);
@@ -43,21 +49,36 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ row: updated });
   }
 
-  /* The reel hero is a single pin across the whole collection: promoting one
-     video has to demote whatever held it, or /reel renders two heroes. Doing
-     it here (not in the client) means it holds however the edit arrives. It
-     is one locked write, and only once the target exists — so a stale id
-     can't clear every pin and then 404. */
+  if (READ_ONLY.includes(resource))
+    return NextResponse.json({ error: `The ${resource} trail is written by the server.` }, { status: 405 });
+
+  const existing = await getRow<Row>(resource, id);
+  if (!existing) return NextResponse.json({ error: "Not found." }, { status: 404 });
+
+  if (FIXED_SET.includes(resource) && "slug" in patch && patch.slug !== existing.slug)
+    return NextResponse.json({ error: "The slug is fixed — the public routes depend on it." }, { status: 400 });
+
+  if (resource === "seo" || resource === "redirects") {
+    const problem = problemWith(resource, { ...existing, ...patch, id }, await listRows<Row>(resource));
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+  }
+
   const row =
     resource === "video" && patch.reelHero === true
-      ? await mutate<Base & Record<string, unknown>, Base>("video", (rows) => {
-          const i = rows.findIndex((r) => r.id === id);
-          if (i === -1) return null;
-          const pinned = { ...rows[i], ...patch, id, updatedAt: new Date().toISOString() };
-          return { rows: rows.map((r, j) => (j === i ? pinned : { ...r, reelHero: false })), result: pinned };
-        })
+      ? await updatePinnedVideo(id, patch)
       : await updateRow(resource, id, patch as never);
   if (!row) return NextResponse.json({ error: "Not found." }, { status: 404 });
+
+  // A renamed category is carried onto every record already using it.
+  const renamed =
+    resource === "categories" && typeof patch.name === "string" && patch.name !== existing.name
+      ? await renameCategoryUses(existing.group as CategoryGroup, String(existing.name), patch.name)
+      : 0;
+
+  if (resource === "seo") {
+    revalidatePath(normalisePath(String(existing.path)));
+    revalidatePath(normalisePath(String((row as Row).path)));
+  }
 
   // A publish flip is the one update worth naming precisely in the trail.
   const flipped =
@@ -71,14 +92,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
           : "unpublish"
         : "update";
 
-  const label =
-    ((row as Record<string, unknown>).title as string) ||
-    ((row as Record<string, unknown>).role as string) ||
-    ((row as Record<string, unknown>).name as string) ||
-    ((row as Record<string, unknown>).email as string) ||
-    id;
-
-  await audit(flipped, resource, `${flipped === "update" ? "Updated" : flipped === "publish" ? "Published" : "Unpublished"} ${label}`);
+  const verb = flipped === "update" ? "Updated" : flipped === "publish" ? "Published" : "Unpublished";
+  const also = renamed ? ` (and ${renamed} record${renamed === 1 ? "" : "s"} using it)` : "";
+  await audit(flipped, resource, `${verb} ${labelOf(resource, row as Row, id)}${also}`);
 
   return NextResponse.json({ row });
 }
@@ -98,7 +114,12 @@ export async function DELETE(req: Request, { params }: Ctx) {
     return NextResponse.json({ ok: true });
   }
 
-  const existing = (await getRow(resource, id)) as Record<string, unknown> | null;
+  if (READ_ONLY.includes(resource))
+    return NextResponse.json({ error: `The ${resource} trail is written by the server.` }, { status: 405 });
+  if (FIXED_SET.includes(resource))
+    return NextResponse.json({ error: `The ${resource} are a fixed set and can't be deleted.` }, { status: 405 });
+
+  const existing = await getRow<Row>(resource, id);
   if (!existing) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
   // A media row is only a pointer: /api/admin/cms/file serves the file itself
@@ -110,9 +131,9 @@ export async function DELETE(req: Request, { params }: Ctx) {
   const ok = await deleteRow(resource, id);
   if (!ok) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
-  const label =
-    (existing?.title as string) || (existing?.role as string) || (existing?.name as string) || (existing?.email as string) || id;
-  await audit("delete", resource, `Deleted ${label}`);
+  if (resource === "seo") revalidatePath(normalisePath(String(existing.path)));
+
+  await audit("delete", resource, `Deleted ${labelOf(resource, existing, id)}`);
 
   return NextResponse.json({ ok: true });
 }
