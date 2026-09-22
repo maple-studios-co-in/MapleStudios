@@ -8,7 +8,7 @@ import WorkSection from "@/components/sections/WorkSection";
 import ServicesVideoSection from "@/components/sections/ServicesVideoSection";
 import ClientStoriesSection from "@/components/sections/ClientStoriesSection";
 import Footer from "@/components/common/Footer";
-import { getClientStories, getHeroCopy, getSiteCopy } from "@/lib/admin/cms/public";
+import { getClientStories, getHeroCopy, getSiteCopy, getWorkProjects } from "@/lib/admin/cms/public";
 
 /* Content comes from the authoring console, so this route must not be held
    in the full route cache — a publish/unpublish has to be visible on the
@@ -17,11 +17,15 @@ export const revalidate = 0;
 
 export default async function Home() {
   // Testimonials from the authoring console (shipped constant is the fallback).
-  const [stories, heroCopy, copy] = await Promise.all([
+  const [stories, heroCopy, copy, work] = await Promise.all([
     getClientStories(),
     getHeroCopy(),
     getSiteCopy(),
+    getWorkProjects(),
   ]);
+  // Shipped project id → its live /work slug, so the homepage track only
+  // links to case studies that are actually published.
+  const workLinks = Object.fromEntries(work.map((p) => [p.artKey ?? p.id, p.id]));
 
   // overflow-x lives on <body> as `clip` (globals.css) — an overflow-x-hidden
   // wrapper here would break position:sticky for the horizontal work track
@@ -58,7 +62,7 @@ export default async function Home() {
           vertical hop, then exits through the pinned strip transition.
           ServicesVideoSection is the mobile-only fallback. */}
       <StripExit>
-        <WorkSection />
+        <WorkSection links={workLinks} />
         <ServicesVideoSection />
       </StripExit>
 

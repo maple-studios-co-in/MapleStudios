@@ -1,14 +1,11 @@
 import { promises as fs } from "fs";
-import os from "os";
 import path from "path";
 import { NextResponse } from "next/server";
 
+import { MEDIA_DIR } from "@/lib/admin/cms/paths";
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const MEDIA_DIR = process.env.VERCEL
-  ? path.join(os.tmpdir(), "maple-cms", "files")
-  : path.join(process.cwd(), "data", "cms", "files");
 
 const TYPES: Record<string, string> = {
   jpg: "image/jpeg",

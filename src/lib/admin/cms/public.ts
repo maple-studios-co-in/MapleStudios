@@ -9,6 +9,7 @@ import {
 import { HOMEPAGE_DEFAULT, SITE_COPY_DEFAULT } from "./seed";
 import { readAll, readDoc } from "./store";
 import type { Homepage, Portfolio, Service, SiteCopy, Testimonial } from "./types";
+import { safeHref } from "./url";
 
 /**
  * Read side of the console — what the PUBLIC pages call.
@@ -27,12 +28,14 @@ import type { Homepage, Portfolio, Service, SiteCopy, Testimonial } from "./type
  * existing client components.
  */
 
-/** Never let a CMS read break a public page. */
-async function safe<T>(read: () => Promise<T[]>): Promise<T[]> {
+/** Never let a CMS read break a public page: a failed read is null, which the
+    callers answer with the shipped constants. An EMPTY list is not a failure —
+    it means the operator hid or removed everything, and that has to stick. */
+async function safe<T>(read: () => Promise<T[]>): Promise<T[] | null> {
   try {
     return await read();
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -53,18 +56,41 @@ async function safeDoc<T>(read: () => Promise<T>, fallback: T): Promise<T> {
  * on the live site. Arrays are replaced wholesale (a 3-item list edited down
  * to 2 must become 2, not merge into 3), and a null/empty patch value is
  * treated as "not supplied".
+ *
+ * The base is also the schema: a value only replaces one of its own type, so
+ * an object typed where a string belongs is ignored instead of reaching React
+ * and 500ing every page that renders it. Pass `problems` to collect what was
+ * ignored — that is how a save is validated before it can go live.
  */
-function deepMerge<T>(base: T, patch: unknown): T {
+function overlay<T>(base: T, patch: unknown, problems?: string[], at = ""): T {
   if (patch === undefined || patch === null || patch === "") return base;
-  if (Array.isArray(base)) return (Array.isArray(patch) ? patch : base) as T;
-  if (typeof base !== "object" || base === null) return patch as T;
-  if (typeof patch !== "object" || Array.isArray(patch)) return base;
+  const reject = (why: string): T => {
+    problems?.push(`${at || "The copy"} ${why}`);
+    return base;
+  };
 
-  const out = { ...(base as Record<string, unknown>) };
+  if (Array.isArray(base)) {
+    const kind = base.length ? typeof base[0] : "string";
+    return Array.isArray(patch) && patch.every((item) => typeof item === kind)
+      ? (patch as T)
+      : reject(`must be a list of ${kind}s`);
+  }
+  if (typeof base !== "object" || base === null)
+    return typeof patch === typeof base ? (patch as T) : reject(`must be a ${typeof base}`);
+  if (typeof patch !== "object" || Array.isArray(patch)) return reject("must be an object");
+
+  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
   for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
-    if (k in out) out[k] = deepMerge(out[k], v);
+    // Own keys only. `__proto__` is a real key once JSON.parse has run, and an
+    // `in` check would let it re-prototype the object.
+    if (Object.prototype.hasOwnProperty.call(out, k))
+      out[k] = overlay(out[k], v, problems, at ? `${at}.${k}` : k);
   }
   return out as T;
+}
+
+function deepMerge<T>(base: T, patch: unknown): T {
+  return overlay(base, patch);
 }
 
 /* ————— site copy ————— */
@@ -95,6 +121,23 @@ const COPY_BASE: SiteCopyShape = {
 };
 
 /**
+ * Why a Site Copy draft can't go live as typed: a value of the wrong type at a
+ * key the site renders (it would be silently ignored). Unknown keys, like
+ * `$comment`, are fine — they are ignored by design.
+ */
+export function siteCopyProblems(json: string): string[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch (e) {
+    return [`That is not valid JSON — ${(e as Error).message}`];
+  }
+  const problems: string[] = [];
+  overlay(COPY_BASE, parsed, problems);
+  return problems;
+}
+
+/**
  * Every public-facing string, with the live Site Copy version laid over the
  * shipped defaults.
  *
@@ -117,7 +160,9 @@ export async function getSiteCopy(): Promise<SiteCopyShape> {
 /* ————— homepage ————— */
 
 /** Structured homepage fields. Takes precedence over Site Copy for the hero:
-    it is the purpose-built editor for it, Site Copy is the escape hatch. */
+    it is the purpose-built editor for it, Site Copy is the escape hatch. Its
+    hero fields default to empty, meaning "use Site Copy", so the chain below
+    holds field by field. */
 export async function getHomepage(): Promise<Homepage> {
   const doc = await safeDoc(() => readDoc<Homepage>("homepage", HOMEPAGE_DEFAULT), HOMEPAGE_DEFAULT);
   return deepMerge(HOMEPAGE_DEFAULT, doc);
@@ -128,6 +173,7 @@ export type HeroCopy = {
   headlineLines: string[];
   subtitle: string;
   cta: string;
+  ctaHref: string;
   badgeLabel: string;
   badgeSublabel: string;
 };
@@ -148,6 +194,7 @@ export async function getHeroCopy(): Promise<HeroCopy> {
     headlineLines,
     subtitle: home.hero.subhead || copy.hero.subtitle,
     cta: home.hero.primaryCtaLabel || copy.hero.cta,
+    ctaHref: safeHref(home.hero.primaryCtaHref) || "#contact",
     badgeLabel: copy.hero.badge.label,
     badgeSublabel: home.hero.eyebrow || copy.hero.badge.sublabel,
   };
@@ -155,21 +202,27 @@ export async function getHeroCopy(): Promise<HeroCopy> {
 
 /* ————— /work ————— */
 
-export type WorkProject = (typeof WORK_PAGE.projects)[number];
+export type WorkProject = (typeof WORK_PAGE.projects)[number] & {
+  /** constants key the project's art direction (deck, tabs, palette) is
+      stored under — stable across slug edits, absent for new projects */
+  artKey?: string;
+};
 
-/** Published projects in console order, shaped exactly like the constant the
-    grid already renders — so the client component needs no new data model. */
+/** Published projects in console order, shaped like the constant the grid
+    already renders — so the client component needs no new data model. */
 export async function getWorkProjects(): Promise<WorkProject[]> {
   const rows = await safe<Portfolio>(() => readAll<Portfolio>("portfolio"));
-  const live = rows.filter((p) => p.status === "published");
-  if (live.length === 0) return WORK_PAGE.projects;
+  if (!rows) return WORK_PAGE.projects;
 
-  return live.map((p) => ({
-    id: p.slug,
-    title: p.title,
-    description: p.shortDescription,
-    image: p.thumbnailUrl || p.coverUrl,
-  }));
+  return rows
+    .filter((p) => p.status === "published")
+    .map((p) => ({
+      id: p.slug,
+      title: p.title,
+      description: p.shortDescription,
+      image: p.thumbnailUrl || p.coverUrl,
+      artKey: p.artKey || p.slug,
+    }));
 }
 
 /* ————— client stories ————— */
@@ -186,7 +239,7 @@ export type Story = (typeof CLIENT_STORIES_DATA.stories)[number];
  */
 export async function getClientStories(): Promise<Story[]> {
   const rows = await safe<Testimonial>(() => readAll<Testimonial>("testimonials"));
-  if (rows.length === 0) return CLIENT_STORIES_DATA.stories;
+  if (!rows) return CLIENT_STORIES_DATA.stories;
 
   const art = new Map(CLIENT_STORIES_DATA.stories.map((s) => [s.name, s]));
 
@@ -221,7 +274,7 @@ export type Panel = (typeof SERVICES_PAGE.panels)[number];
  */
 export async function getServicePanels(): Promise<Panel[]> {
   const rows = await safe<Service>(() => readAll<Service>("services"));
-  if (rows.length === 0) return SERVICES_PAGE.panels;
+  if (!rows) return SERVICES_PAGE.panels;
 
   const bySlug = new Map(rows.map((s) => [s.slug, s]));
 
@@ -232,7 +285,7 @@ export async function getServicePanels(): Promise<Panel[]> {
       ...panel,
       title: edit.title || panel.title,
       description: edit.overview || panel.description,
-      caps: edit.weBuild.length ? edit.weBuild : panel.caps,
+      caps: edit.weBuild?.length ? edit.weBuild : panel.caps,
     };
   });
 }

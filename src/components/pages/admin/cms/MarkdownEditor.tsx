@@ -16,6 +16,7 @@ import {
   Redo,
   Undo,
 } from "lucide-react";
+import { safeHref } from "@/lib/admin/cms/url";
 
 /**
  * Rich-text editor for blog content.
@@ -173,12 +174,16 @@ export default function MarkdownEditor({ value, onChange }: Props) {
 }
 
 /** Escape first, then apply a small Markdown subset — the preview must never
-    be able to inject markup, since the draft text is operator-supplied. */
+    be able to inject markup, since the draft text is operator-supplied.
+    Quotes are escaped too: link URLs land inside a quoted href, and an
+    unescaped " there would let a URL open its own attributes. */
 function renderMarkdown(src: string): string {
   const esc = src
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
   const blocks = esc.split(/\n{2,}/).map((block) => {
     const lines = block.split("\n");
@@ -211,8 +216,12 @@ function inline(s: string): string {
     .replace(/`([^`]+)`/g, '<code style="background:#f3e8d5;padding:1px 5px;border-radius:4px">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/_([^_]+)_/g, "<em>$1</em>")
-    .replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" style="color:#741a14;text-decoration:underline" target="_blank" rel="noreferrer">$1</a>'
-    );
+    // Only navigable schemes become links: a javascript: or data: URL
+    // renders as its plain text instead.
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text: string, url: string) => {
+      const href = safeHref(url);
+      return href
+        ? `<a href="${href}" style="color:#741a14;text-decoration:underline" target="_blank" rel="noopener noreferrer">${text}</a>`
+        : text;
+    });
 }

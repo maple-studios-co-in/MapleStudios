@@ -40,7 +40,8 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   const prev = list[(index - 1 + list.length) % list.length];
   const next = list[(index + 1) % list.length];
 
-  const light = isLightProject(project.id);
+  // art direction is keyed by the shipped id, which survives a slug edit
+  const light = isLightProject(project.artKey ?? project.id);
 
   return (
     <main

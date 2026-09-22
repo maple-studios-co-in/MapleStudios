@@ -52,10 +52,18 @@ export default function ClientStoriesSection({
 }) {
   const [active, setActive] = useState(0);
   const count = stories.length;
-  const story = stories[active];
+  // The list, the arrows and the quote all index `stories` — the console's
+  // list — and the index is clamped, because the console can shrink it (even
+  // to nothing) under a visitor who has a story open.
+  const current = count ? Math.min(active, count - 1) : 0;
+  const story = count ? stories[current] : null;
 
-  const prev = () => setActive((i) => (i - 1 + count) % count);
-  const next = () => setActive((i) => (i + 1) % count);
+  const prev = () => {
+    if (count) setActive((current - 1 + count) % count);
+  };
+  const next = () => {
+    if (count) setActive((current + 1) % count);
+  };
 
   // keep this section free of overflow-hidden — sticky pins live in ancestors/siblings
   return (
@@ -98,13 +106,13 @@ export default function ClientStoriesSection({
         {/* Left: client list + carousel arrows */}
         <div className="flex flex-col">
           <ul className="flex flex-col gap-[14px]">
-            {CLIENT_STORIES_DATA.stories.map((s, i) => (
-              <li key={s.client}>
+            {stories.map((s, i) => (
+              <li key={`${s.client}-${i}`}>
                 <button
                   type="button"
                   onClick={() => setActive(i)}
                   className={`cursor-pointer font-sans-luxury text-[16px] font-bold uppercase leading-[1.06] transition-opacity duration-300 hover:opacity-100 ${
-                    i === active ? "opacity-100" : "opacity-[0.54]"
+                    i === current ? "opacity-100" : "opacity-[0.54]"
                   }`}
                 >
                   {s.client}
@@ -127,35 +135,42 @@ export default function ClientStoriesSection({
         <div className="flex max-w-[573px] flex-col">
           <div className="min-h-[max(120px,10vw)]">
             <AnimatePresence mode="wait">
-              <motion.blockquote
-                key={active}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.35 }}
-                className="font-sans-luxury text-[max(20px,1.98vw)] font-medium leading-[1.2] text-black"
-              >
-                {story.quote}
-              </motion.blockquote>
+              {story ? (
+                <motion.blockquote
+                  key={current}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.35 }}
+                  className="font-sans-luxury text-[max(20px,1.98vw)] font-medium leading-[1.2] text-black"
+                >
+                  {story.quote}
+                </motion.blockquote>
+              ) : null}
             </AnimatePresence>
           </div>
 
-          <div className="mt-[max(32px,3.5vw)] flex items-center">
-            <div className="relative h-[75px] w-[76px] overflow-hidden rounded-[6px]">
-              <Image
-                src={story.avatar}
-                alt={story.name}
-                fill
-                sizes="76px"
-                className="object-cover"
-                style={{ objectPosition: story.focal ?? "50% 15%" }}
-              />
+          {story ? (
+            <div className="mt-[max(32px,3.5vw)] flex items-center">
+              {/* a testimonial added in the console has no art-directed portrait */}
+              {story.avatar ? (
+                <div className="relative mr-[25px] h-[75px] w-[76px] overflow-hidden rounded-[6px]">
+                  <Image
+                    src={story.avatar}
+                    alt={story.name}
+                    fill
+                    sizes="76px"
+                    className="object-cover"
+                    style={{ objectPosition: story.focal ?? "50% 15%" }}
+                  />
+                </div>
+              ) : null}
+              <div className="flex flex-col">
+                <span className="font-sans-luxury text-[16px] font-bold text-black">{story.name}</span>
+                <span className="mt-1 font-sans-luxury text-[max(14px,0.926vw)] text-black">{story.role}</span>
+              </div>
             </div>
-            <div className="ml-[25px] flex flex-col">
-              <span className="font-sans-luxury text-[16px] font-bold text-black">{story.name}</span>
-              <span className="mt-1 font-sans-luxury text-[max(14px,0.926vw)] text-black">{story.role}</span>
-            </div>
-          </div>
+          ) : null}
 
           <a
             href="#contact"

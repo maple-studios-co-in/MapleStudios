@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { audit } from "@/lib/admin/cms/audit";
 import { denyIfUnauthorized, readJson } from "@/lib/admin/cms/guard";
 import { getContact, removeContact, updateContactStatus } from "@/lib/admin/cms/contacts";
-import { deleteRow, getRow, listRows, updateRow, writeAll } from "@/lib/admin/cms/store";
+import { deleteRow, getRow, mutate, removeMediaFile, updateRow } from "@/lib/admin/cms/store";
 import { isCollection, type Base } from "@/lib/admin/cms/types";
 
 export const dynamic = "force-dynamic";
@@ -45,14 +45,18 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   /* The reel hero is a single pin across the whole collection: promoting one
      video has to demote whatever held it, or /reel renders two heroes. Doing
-     it here (not in the client) means it holds however the edit arrives. */
-  if (resource === "video" && patch.reelHero === true) {
-    const rows = await listRows<Base & { reelHero?: boolean }>("video");
-    const cleared = rows.map((r) => (r.id === id ? r : { ...r, reelHero: false }));
-    await writeAll("video", cleared);
-  }
-
-  const row = await updateRow(resource, id, patch as never);
+     it here (not in the client) means it holds however the edit arrives. It
+     is one locked write, and only once the target exists — so a stale id
+     can't clear every pin and then 404. */
+  const row =
+    resource === "video" && patch.reelHero === true
+      ? await mutate<Base & Record<string, unknown>, Base>("video", (rows) => {
+          const i = rows.findIndex((r) => r.id === id);
+          if (i === -1) return null;
+          const pinned = { ...rows[i], ...patch, id, updatedAt: new Date().toISOString() };
+          return { rows: rows.map((r, j) => (j === i ? pinned : { ...r, reelHero: false })), result: pinned };
+        })
+      : await updateRow(resource, id, patch as never);
   if (!row) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
   // A publish flip is the one update worth naming precisely in the trail.
@@ -95,6 +99,14 @@ export async function DELETE(req: Request, { params }: Ctx) {
   }
 
   const existing = (await getRow(resource, id)) as Record<string, unknown> | null;
+  if (!existing) return NextResponse.json({ error: "Not found." }, { status: 404 });
+
+  // A media row is only a pointer: /api/admin/cms/file serves the file itself
+  // to anyone, so dropping the row alone would leave the asset downloadable
+  // forever. The file goes first — if that fails the row stays, and the
+  // delete can simply be retried.
+  if (resource === "media") await removeMediaFile(existing.url);
+
   const ok = await deleteRow(resource, id);
   if (!ok) return NextResponse.json({ error: "Not found." }, { status: 404 });
 

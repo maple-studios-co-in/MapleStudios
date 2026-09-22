@@ -3,23 +3,14 @@
 import { useEffect, useState } from "react";
 
 import { useDoc } from "./useCms";
-import {
-  Btn,
-  Card,
-  Field,
-  Input,
-  LinesField,
-  PageHead,
-  SectionLabel,
-  Spinner,
-  Textarea,
-  useToast,
-} from "./ui";
+import { Btn, Card, Field, Input, PageHead, SectionLabel, Spinner, Textarea, useToast } from "./ui";
 import type { Homepage } from "@/lib/admin/cms/types";
 
-/** Hero copy, marquee, and CTA banner. Section content below the fold lives in
-    its own module (Portfolio, Testimonials, …), which is why this screen is
-    short — it edits the parts that belong to no other collection. */
+/** The homepage hero — the one part of the homepage that belongs to no other
+    module. Every field here overrides Site Copy for that one string; left
+    empty, Site Copy supplies it. Only fields the live hero renders are shown:
+    the rest of the Homepage document keeps the production console's shape
+    but nothing on the site reads it yet, so editing it would change nothing. */
 export default function HomepageEditor() {
   const { data, loading, error, save } = useDoc<Homepage>("homepage");
   const [draft, setDraft] = useState<Homepage | null>(null);
@@ -52,7 +43,7 @@ export default function HomepageEditor() {
     <>
       <PageHead
         title="Homepage"
-        sub="Hero copy, marquee, and CTA banner. Section content below the fold lives in their own modules."
+        sub="Hero copy. Leave a field empty to use Site Copy. Sections below the fold live in their own modules (Portfolio, Testimonials) and in Site Copy."
         action={
           <Btn variant="primary" onClick={submit} disabled={saving}>
             {saving ? "Saving…" : "Save homepage"}
@@ -65,12 +56,7 @@ export default function HomepageEditor() {
           <SectionLabel>01 Hero</SectionLabel>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Field label="Eyebrow">
-                <Input value={draft.hero.eyebrow} onChange={(e) => hero("eyebrow", e.target.value)} />
-              </Field>
-            </div>
-            <div className="sm:col-span-2">
-              <Field label="Headline" required>
+              <Field label="Headline" hint="One line per line break. Empty = Site Copy hero.headlineMain / headlineSub.">
                 <Textarea
                   rows={2}
                   value={draft.hero.headline}
@@ -79,7 +65,7 @@ export default function HomepageEditor() {
               </Field>
             </div>
             <div className="sm:col-span-2">
-              <Field label="Subhead" required>
+              <Field label="Subhead" hint="Empty = Site Copy hero.subtitle.">
                 <Textarea
                   rows={3}
                   value={draft.hero.subhead}
@@ -87,120 +73,26 @@ export default function HomepageEditor() {
                 />
               </Field>
             </div>
-            <Field label="Primary CTA label">
+            <Field label="Primary CTA label" hint="Empty = Site Copy hero.cta.">
               <Input
                 value={draft.hero.primaryCtaLabel}
                 onChange={(e) => hero("primaryCtaLabel", e.target.value)}
               />
             </Field>
-            <Field label="Primary CTA href">
+            <Field label="Primary CTA link" hint="/path, #section or https://… — empty scrolls to the contact section.">
               <Input
                 value={draft.hero.primaryCtaHref}
                 onChange={(e) => hero("primaryCtaHref", e.target.value)}
               />
             </Field>
-            <Field label="Secondary CTA label">
-              <Input
-                value={draft.hero.secondaryCtaLabel}
-                onChange={(e) => hero("secondaryCtaLabel", e.target.value)}
-              />
-            </Field>
-            <Field label="Secondary CTA href">
-              <Input
-                value={draft.hero.secondaryCtaHref}
-                onChange={(e) => hero("secondaryCtaHref", e.target.value)}
-              />
-            </Field>
             <div className="sm:col-span-2">
-              <LinesField
-                label="Microcopy chips"
-                value={draft.hero.chips}
-                onChange={(v) => hero("chips", v)}
-              />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <SectionLabel>02 Marquee</SectionLabel>
-          <LinesField
-            label="Items"
-            value={draft.marquee.items}
-            onChange={(v) => setDraft({ ...draft, marquee: { items: v } })}
-          />
-        </Card>
-
-        <Card>
-          <SectionLabel>03 What we do</SectionLabel>
-          <div className="space-y-4">
-            <Field label="Heading">
-              <Input
-                value={draft.whatWeDo.heading}
-                onChange={(e) =>
-                  setDraft({ ...draft, whatWeDo: { ...draft.whatWeDo, heading: e.target.value } })
-                }
-              />
-            </Field>
-            <Field label="Body">
-              <Textarea
-                rows={3}
-                value={draft.whatWeDo.body}
-                onChange={(e) =>
-                  setDraft({ ...draft, whatWeDo: { ...draft.whatWeDo, body: e.target.value } })
-                }
-              />
-            </Field>
-          </div>
-        </Card>
-
-        <Card>
-          <SectionLabel>10 CTA banner</SectionLabel>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Field label="Heading">
-                <Input
-                  value={draft.ctaBanner.heading}
-                  onChange={(e) =>
-                    setDraft({ ...draft, ctaBanner: { ...draft.ctaBanner, heading: e.target.value } })
-                  }
-                />
+              <Field label="Timer caption" hint="Beside the build timer. Empty = Site Copy hero.badge.sublabel.">
+                <Input value={draft.hero.eyebrow} onChange={(e) => hero("eyebrow", e.target.value)} />
               </Field>
             </div>
-            <div className="sm:col-span-2">
-              <Field label="Body">
-                <Textarea
-                  rows={2}
-                  value={draft.ctaBanner.body}
-                  onChange={(e) =>
-                    setDraft({ ...draft, ctaBanner: { ...draft.ctaBanner, body: e.target.value } })
-                  }
-                />
-              </Field>
-            </div>
-            <Field label="Primary CTA label">
-              <Input
-                value={draft.ctaBanner.primaryCtaLabel}
-                onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    ctaBanner: { ...draft.ctaBanner, primaryCtaLabel: e.target.value },
-                  })
-                }
-              />
-            </Field>
-            <Field label="Primary CTA href">
-              <Input
-                value={draft.ctaBanner.primaryCtaHref}
-                onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    ctaBanner: { ...draft.ctaBanner, primaryCtaHref: e.target.value },
-                  })
-                }
-              />
-            </Field>
           </div>
         </Card>
+
       </div>
 
       {toast}

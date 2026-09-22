@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import { WORK_PAGE } from "@/lib/constants";
+import { isRemoteUrl } from "@/lib/admin/cms/url";
 import { Reveal, UnderlineLink } from "../PageKit";
 
 /**
@@ -96,6 +97,8 @@ function ProjectEntry({
                 fill
                 sizes="(min-width: 1024px) 46vw, 92vw"
                 className="object-cover"
+                // a pasted CDN URL isn't an allowed optimiser host
+                unoptimized={isRemoteUrl(project.image)}
               />
             </motion.div>
           </motion.div>

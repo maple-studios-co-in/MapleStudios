@@ -8,9 +8,11 @@ import { useCollection } from "./useCms";
 import { Btn, Card, Confirm, Input, PageHead, Spinner, shortDate, useToast } from "./ui";
 import type { MediaAsset } from "@/lib/admin/cms/types";
 
-/** Asset library. The production console is Cloudinary-backed; locally the
-    files sit next to the JSON store and are read back through a guarded
-    route, so the console works with no external account configured. */
+/** Asset library. The production console is Cloudinary-backed; here the
+    files sit next to the JSON store and are served by
+    /api/admin/cms/file/[id] — publicly (an <img> can't send the admin key),
+    pinned to their type with nosniff. Deleting an asset deletes its file, so
+    a removed upload stops being reachable at its URL. */
 export default function Media() {
   const { key } = useAdmin();
   const { data, loading, error, reload, remove } = useCollection<MediaAsset>("media");

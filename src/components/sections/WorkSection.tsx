@@ -130,7 +130,15 @@ function ProjectCard({
  * the FINAL PANEL of the same track — no vertical hop between them. The
  * track's x finishes, and the remaining scroll drives the stage's progress.
  */
-export default function WorkSection() {
+/** `links` maps each shipped project (by id) to its live slug on /work, from
+    the console. An unpublished project drops out of the track instead of
+    linking to a 404, and a re-slugged one follows its new URL. Without it,
+    every card shows as shipped. */
+export default function WorkSection({ links }: { links?: Record<string, string> }) {
+  const projects = links
+    ? WORK_DATA.projects.flatMap((p) => (links[p.id] ? [{ ...p, href: `/work/${links[p.id]}` }] : []))
+    : WORK_DATA.projects;
+
   const wrapRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ shift: 0, seq: 0, vw: 0 });
@@ -213,13 +221,13 @@ export default function WorkSection() {
                   viewport={{ once: false, amount: 0.3 }}
                   transition={{ type: "spring", stiffness: 20, damping: 7, mass: 0.9 }}
                 >
-                  <ProjectCard project={WORK_DATA.projects[0]} />
+                  {projects[0] ? <ProjectCard project={projects[0]} /> : null}
                 </motion.div>
               </div>
             </div>
 
             {/* Slides 2..n: cards JUMP up from below as the track carries them in */}
-            {WORK_DATA.projects.slice(1).map((p) => (
+            {projects.slice(1).map((p) => (
               <motion.div
                 key={p.id}
                 initial={{ y: 170, opacity: 0 }}
@@ -271,7 +279,7 @@ export default function WorkSection() {
               <UnderlineLink label={WORK_DATA.viewAll} href="/work" width="max(191px,12.632vw)" />
             </div>
           </div>
-          {WORK_DATA.projects.map((p) => (
+          {projects.map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { newId, readAll, writeAll } from "./store";
+import { mutate, newId } from "./store";
 import type { AuditAction, AuditEntry } from "./types";
 
 /** Keep the log bounded — it is a trail, not an archive. */
@@ -18,18 +18,14 @@ export async function audit(
   who = "admin"
 ): Promise<void> {
   try {
-    const rows = await readAll<AuditEntry>("audit");
     const now = new Date().toISOString();
-    rows.unshift({
-      id: newId(),
-      createdAt: now,
-      updatedAt: now,
-      who,
-      action,
-      resource,
-      summary,
-    });
-    await writeAll("audit", rows.slice(0, MAX_ENTRIES));
+    await mutate<AuditEntry, true>("audit", (rows) => ({
+      rows: [{ id: newId(), createdAt: now, updatedAt: now, who, action, resource, summary }, ...rows].slice(
+        0,
+        MAX_ENTRIES
+      ),
+      result: true,
+    }));
   } catch {
     /* trail is best-effort */
   }

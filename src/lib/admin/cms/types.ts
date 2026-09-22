@@ -22,6 +22,10 @@ export type Status = "draft" | "published" | "archived";
 export type Portfolio = Base & {
   title: string;
   slug: string;
+  /** the constants.ts project a seeded row came from — the key its art
+      direction (deck, tabs, palette) lives under, so it survives a slug
+      edit. Absent on projects created in the console. */
+  artKey?: string;
   client: string;
   year: string;
   industry: string;
