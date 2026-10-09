@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { EmptyState, PageHeading, relTime, useAdmin } from "./AdminShell";
+import { spreadsheetSafe } from "./cms/ui";
 
-type InquiryStatus = "new" | "read" | "archived";
+type InquiryStatus = "new" | "read" | "replied" | "archived";
 type Inquiry = {
   id: string;
   at: string;
@@ -20,13 +21,14 @@ type Inquiry = {
 const FILTERS: { id: "all" | InquiryStatus; label: string }[] = [
   { id: "new", label: "New" },
   { id: "read", label: "Read" },
+  { id: "replied", label: "Replied" },
   { id: "archived", label: "Archived" },
   { id: "all", label: "All" },
 ];
 
 /** RFC-4180-ish escaping so a message containing commas, quotes or newlines
     cannot break the exported row. */
-const csvCell = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+const csvCell = (v: string) => `"${spreadsheetSafe(v).replace(/"/g, '""')}"`;
 
 export default function AdminInquiries() {
   const { adminFetch } = useAdmin();
@@ -61,6 +63,7 @@ export default function AdminInquiries() {
       all: items.length,
       new: items.filter((i) => i.status === "new").length,
       read: items.filter((i) => i.status === "read").length,
+      replied: items.filter((i) => i.status === "replied").length,
       archived: items.filter((i) => i.status === "archived").length,
     }),
     [items]
@@ -233,7 +236,9 @@ export default function AdminInquiries() {
                         ? "bg-[#e0a12a]"
                         : i.status === "read"
                           ? "bg-[#741a14]/40"
-                          : "bg-black/15"
+                          : i.status === "replied"
+                            ? "bg-[#3f7d5a]/60"
+                            : "bg-black/15"
                     }`}
                   />
                   <span className="font-sans-luxury text-[14px] font-medium text-black">{i.name}</span>

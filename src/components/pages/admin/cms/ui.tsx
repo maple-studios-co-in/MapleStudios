@@ -219,6 +219,29 @@ export function Check({
 }
 
 /** Textarea whose value is a string[] edited one-per-line. */
+const splitList = (text: string, sep: string) =>
+  text
+    .split(sep)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+
+/**
+ * The raw text a list field is showing. It keeps what the operator is typing
+ * — a trailing comma, space or new line — and only resyncs when `value`
+ * changes from OUTSIDE (another record loaded). Each keystroke hands the
+ * parent a new array with the same items, and resyncing on that deleted the
+ * separator that had just been typed.
+ */
+function useListDraft(value: string[], sep: string, joiner: string) {
+  const [draft, setDraft] = useState(value.join(joiner));
+  useEffect(() => {
+    setDraft((d) => (sameList(splitList(d, sep), value) ? d : value.join(joiner)));
+  }, [value, sep, joiner]);
+  return [draft, setDraft] as const;
+}
+
 export function LinesField({
   label,
   value,
@@ -232,19 +255,16 @@ export function LinesField({
   rows?: number;
   hint?: string;
 }) {
+  const [draft, setDraft] = useListDraft(value, "\n", "\n");
   return (
     <Field label={label} hint={hint}>
       <Textarea
         rows={rows}
-        value={value.join("\n")}
-        onChange={(e) =>
-          onChange(
-            e.target.value
-              .split("\n")
-              .map((s) => s.trimStart())
-              .filter((s, i, all) => s.length > 0 || i < all.length - 1)
-          )
-        }
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          onChange(splitList(e.target.value, "\n"));
+        }}
       />
     </Field>
   );
@@ -260,20 +280,14 @@ export function CsvField({
   value: string[];
   onChange: (v: string[]) => void;
 }) {
-  const [draft, setDraft] = useState(value.join(", "));
-  useEffect(() => setDraft(value.join(", ")), [value]);
+  const [draft, setDraft] = useListDraft(value, ",", ", ");
   return (
     <Field label={label} hint="comma-separated">
       <Input
         value={draft}
         onChange={(e) => {
           setDraft(e.target.value);
-          onChange(
-            e.target.value
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
-          );
+          onChange(splitList(e.target.value, ","));
         }}
       />
     </Field>
@@ -496,13 +510,25 @@ export function slugify(s: string) {
     .replace(/-+/g, "-");
 }
 
+/**
+ * A cell value that opens as text, not a formula. Excel and Sheets evaluate a
+ * cell starting with = + - @ (and skip a leading tab or CR first) even when
+ * it is quoted — and contact-form fields are typed by anonymous visitors, so
+ * `=HYPERLINK(...)` in a name would become a live link that ships other
+ * leads' data off-site. A leading ' makes the spreadsheet show it verbatim.
+ */
+export function spreadsheetSafe(v: unknown): string {
+  const s = v == null ? "" : String(v);
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+}
+
 /** Download rows as a CSV file, client-side — no server round trip. */
 export function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
   if (!rows.length) return;
   const cols = Object.keys(rows[0]);
   const esc = (v: unknown) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    const s = spreadsheetSafe(v);
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const csv = [cols.join(","), ...rows.map((r) => cols.map((c) => esc(r[c])).join(","))].join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));

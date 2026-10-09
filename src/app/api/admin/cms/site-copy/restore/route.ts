@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 
 import { audit } from "@/lib/admin/cms/audit";
 import { denyIfUnauthorized, readJson } from "@/lib/admin/cms/guard";
-import { SITE_COPY_DEFAULT } from "@/lib/admin/cms/seed";
-import { readDoc, writeDoc } from "@/lib/admin/cms/store";
-import type { SiteCopy } from "@/lib/admin/cms/types";
+import { appendSiteCopyVersion } from "@/lib/admin/cms/siteCopy";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,28 +21,13 @@ export async function POST(req: Request) {
   if (denied) return denied;
 
   const { v } = await readJson<{ v?: number }>(req);
-  const doc = await readDoc<SiteCopy>(KEY, SITE_COPY_DEFAULT);
-  const source = doc.versions.find((x) => x.v === v);
-  if (!source) return NextResponse.json({ error: `No version ${v}.` }, { status: 404 });
+  const next = await appendSiteCopyVersion((doc) => {
+    const source = doc.versions.find((x) => x.v === v);
+    return source ? { json: source.json, summary: `Restored from v${source.v}`, restoredFrom: source.v } : null;
+  });
+  if (!next) return NextResponse.json({ error: `No version ${v}.` }, { status: 404 });
 
-  const nextV = Math.max(0, ...doc.versions.map((x) => x.v)) + 1;
-  const next: SiteCopy = {
-    live: nextV,
-    versions: [
-      {
-        v: nextV,
-        json: source.json,
-        summary: `Restored from v${source.v}`,
-        at: new Date().toISOString(),
-        who: "admin",
-        restoredFrom: source.v,
-      },
-      ...doc.versions,
-    ],
-  };
-
-  await writeDoc(KEY, next);
-  await audit("restore", KEY, `Restored site copy from v${source.v} (now v${nextV})`);
+  await audit("restore", KEY, `Restored site copy from v${v} (now v${next.live})`);
 
   return NextResponse.json({ doc: next });
 }

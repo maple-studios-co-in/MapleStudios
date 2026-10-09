@@ -1,6 +1,6 @@
 import mongoose, { Schema, model, type HydratedDocument, type Model } from "mongoose";
 
-export const INQUIRY_STATUSES = ["new", "read", "archived"] as const;
+export const INQUIRY_STATUSES = ["new", "read", "replied", "archived"] as const;
 export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
 
 export interface IInquiry {

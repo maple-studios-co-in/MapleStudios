@@ -1,7 +1,8 @@
+import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
-import os from "os";
 import path from "path";
 
+import { CMS_DIR, MEDIA_DIR } from "./paths";
 import { seedFor } from "./seed";
 import type { Base, CollectionName, Id } from "./types";
 
@@ -14,69 +15,121 @@ import type { Base, CollectionName, Id } from "./types";
  * read/write goes through this module so swapping in Mongo later is a
  * single-file change.
  *
- * As with bookings, serverless hosts mount the deploy read-only, so writes go
- * to the tmp dir there — per-instance and wiped on cold start, which is fine
- * for a preview and wrong for production. That is the seam where a real
- * database goes.
+ * Three rules keep it honest on a single-process server:
+ *  - Reads never write. A collection nobody has edited has no file and reads
+ *    as its seed (derived from constants.ts), so until an operator saves
+ *    something the site keeps following constants.ts and a code change there
+ *    still ships. The first mutation writes the file.
+ *  - Every read-modify-write of a file runs under that file's lock (`mutate`),
+ *    so overlapping requests can't lose each other's changes.
+ *  - Every write goes to a unique temp file that is then renamed into place,
+ *    so neither a crash nor a concurrent write can leave half a file behind.
+ * More than one server process would need a real database.
  */
-const DIR = process.env.VERCEL
-  ? path.join(os.tmpdir(), "maple-cms")
-  : path.join(process.cwd(), "data", "cms");
 
 function fileFor(name: string) {
-  return path.join(DIR, `${name}.json`);
+  return path.join(CMS_DIR, `${name}.json`);
 }
 
-async function ensureDir() {
-  await fs.mkdir(DIR, { recursive: true });
+/* ————— per-file lock ————— */
+
+const queues = new Map<string, Promise<unknown>>();
+
+/** Run `fn` once every earlier locked call for `name` has settled. */
+function withLock<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  const run = (queues.get(name) ?? Promise.resolve()).then(fn);
+  const settled = run.then(
+    () => undefined,
+    () => undefined
+  );
+  queues.set(name, settled);
+  void settled.then(() => {
+    if (queues.get(name) === settled) queues.delete(name);
+  });
+  return run;
 }
 
-/** Read a whole collection, seeding it on first touch so no screen is ever
-    empty-by-accident on a fresh clone. */
+async function writeFileAtomic(name: string, value: unknown) {
+  await fs.mkdir(CMS_DIR, { recursive: true });
+  const target = fileFor(name);
+  // Unique per write: a shared per-process temp name let two overlapping
+  // writes truncate each other's bytes and rename a corrupt file into place.
+  const tmp = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(tmp, JSON.stringify(value, null, 2), "utf8");
+    await fs.rename(tmp, target);
+  } catch (e) {
+    await fs.rm(tmp, { force: true }).catch(() => undefined);
+    throw e;
+  }
+}
+
+/* ————— collections ————— */
+
+/** Read a whole collection. One nobody has edited reads as its seed. */
 export async function readAll<T>(name: CollectionName | string): Promise<T[]> {
-  await ensureDir();
   try {
     const raw = await fs.readFile(fileFor(name), "utf8");
     const parsed = JSON.parse(raw) as unknown;
     return Array.isArray(parsed) ? (parsed as T[]) : [];
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
-    const seed = seedFor(name) as T[];
-    await writeAll(name, seed);
-    return seed;
+    // A copy: callers modify what they read, and the seed is module state
+    // shared by every request in the process.
+    return structuredClone(seedFor(name)) as T[];
   }
 }
 
-/** Replace a whole collection. Writes to a temp file then renames so a crash
-    mid-write cannot leave a half-written JSON file behind. */
-export async function writeAll<T>(name: CollectionName | string, rows: T[]) {
-  await ensureDir();
-  const target = fileFor(name);
-  const tmp = `${target}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(rows, null, 2), "utf8");
-  await fs.rename(tmp, target);
+/** Replace a whole collection. */
+export function writeAll<T>(name: CollectionName | string, rows: T[]): Promise<void> {
+  return withLock(name, () => writeFileAtomic(name, rows));
+}
+
+/**
+ * Read-modify-write one collection under its lock. `fn` gets the current rows
+ * and returns the rows to store plus a result — or null to write nothing (the
+ * target row doesn't exist, say), in which case `mutate` resolves to null.
+ */
+export function mutate<T, R>(
+  name: CollectionName | string,
+  fn: (rows: T[]) => { rows: T[]; result: R } | null
+): Promise<R | null> {
+  return withLock(name, async () => {
+    const out = fn(await readAll<T>(name));
+    if (!out) return null;
+    await writeFileAtomic(name, out.rows);
+    return out.result;
+  });
 }
 
 /* ————— singletons (homepage, site-copy, settings) ————— */
 
 export async function readDoc<T>(name: string, fallback: T): Promise<T> {
-  await ensureDir();
   try {
     const raw = await fs.readFile(fileFor(name), "utf8");
     return JSON.parse(raw) as T;
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
-    await writeDoc(name, fallback);
-    return fallback;
+    return structuredClone(fallback);
   }
 }
 
-export async function writeDoc<T>(name: string, doc: T) {
-  await ensureDir();
-  const target = fileFor(name);
-  const tmp = `${target}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(doc, null, 2), "utf8");
-  await fs.rename(tmp, target);
+export function writeDoc<T>(name: string, doc: T): Promise<void> {
+  return withLock(name, () => writeFileAtomic(name, doc));
+}
+
+/** `mutate` for a singleton document. */
+export function mutateDoc<T, R>(
+  name: string,
+  fallback: T,
+  fn: (doc: T) => { doc: T; result: R } | null
+): Promise<R | null> {
+  return withLock(name, async () => {
+    const out = fn(await readDoc(name, fallback));
+    if (!out) return null;
+    await writeFileAtomic(name, out.doc);
+    return out.result;
+  });
 }
 
 /* ————— CRUD helpers ————— */
@@ -103,52 +156,56 @@ export async function createRow<T extends Base>(
   name: CollectionName,
   data: Omit<T, keyof Base>
 ): Promise<T> {
-  const rows = await readAll<T>(name);
-  const row = { ...(data as object), id: newId(), ...stamp() } as T;
-  rows.push(row);
-  await writeAll(name, rows);
-  return row;
+  const row = await mutate<T, T>(name, (rows) => {
+    const created = { ...(data as object), id: newId(), ...stamp() } as T;
+    return { rows: [...rows, created], result: created };
+  });
+  return row as T;
 }
 
-export async function updateRow<T extends Base>(
+export function updateRow<T extends Base>(
   name: CollectionName,
   id: Id,
   patch: Partial<T>
 ): Promise<T | null> {
-  const rows = await readAll<T>(name);
-  const i = rows.findIndex((r) => r.id === id);
-  if (i === -1) return null;
-  const next = { ...rows[i], ...patch, id, updatedAt: new Date().toISOString() } as T;
-  rows[i] = next;
-  await writeAll(name, rows);
-  return next;
+  return mutate<T, T>(name, (rows) => {
+    const i = rows.findIndex((r) => r.id === id);
+    if (i === -1) return null;
+    const next = { ...rows[i], ...patch, id, updatedAt: new Date().toISOString() } as T;
+    return { rows: rows.map((r, j) => (j === i ? next : r)), result: next };
+  });
 }
 
 export async function deleteRow(name: CollectionName, id: Id): Promise<boolean> {
-  const rows = await readAll<Base>(name);
-  const next = rows.filter((r) => r.id !== id);
-  if (next.length === rows.length) return false;
-  await writeAll(name, next);
-  return true;
+  const removed = await mutate<Base, true>(name, (rows) =>
+    rows.some((r) => r.id === id) ? { rows: rows.filter((r) => r.id !== id), result: true } : null
+  );
+  return removed === true;
 }
 
 /** Apply an explicit id order, rewriting each row's `order` to its index.
     Ids not present are left after the ordered block, keeping their relative
     order — so a stale client list can never drop a row. */
 export async function reorderRows(name: CollectionName, ids: Id[]): Promise<void> {
-  const rows = await readAll<Base & { order?: number }>(name);
-  const rank = new Map(ids.map((id, i) => [id, i]));
-  rows.sort((a, b) => {
-    const ra = rank.get(a.id);
-    const rb = rank.get(b.id);
-    if (ra === undefined && rb === undefined) return (a.order ?? 0) - (b.order ?? 0);
-    if (ra === undefined) return 1;
-    if (rb === undefined) return -1;
-    return ra - rb;
+  await mutate<Base & { order?: number }, true>(name, (rows) => {
+    const rank = new Map(ids.map((id, i) => [id, i]));
+    const now = new Date().toISOString();
+    const sorted = [...rows].sort((a, b) => {
+      const ra = rank.get(a.id);
+      const rb = rank.get(b.id);
+      if (ra === undefined && rb === undefined) return (a.order ?? 0) - (b.order ?? 0);
+      if (ra === undefined) return 1;
+      if (rb === undefined) return -1;
+      return ra - rb;
+    });
+    return { rows: sorted.map((r, i) => ({ ...r, order: i, updatedAt: now })), result: true };
   });
-  rows.forEach((r, i) => {
-    r.order = i;
-    r.updatedAt = new Date().toISOString();
-  });
-  await writeAll(name, rows);
+}
+
+/** Delete an uploaded asset's file. Only a name the upload route itself mints
+    is accepted, so a tampered media row can't aim this anywhere else. */
+export async function removeMediaFile(url: unknown): Promise<void> {
+  const name = /^\/api\/admin\/cms\/file\/([a-z0-9]{6,32}\.[a-z0-9]{2,4})$/i.exec(String(url ?? ""))?.[1];
+  if (!name) return;
+  await fs.rm(path.join(MEDIA_DIR, name), { force: true });
 }

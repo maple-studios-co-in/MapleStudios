@@ -22,6 +22,10 @@ export type Status = "draft" | "published" | "archived";
 export type Portfolio = Base & {
   title: string;
   slug: string;
+  /** the constants.ts project a seeded row came from — the key its art
+      direction (deck, tabs, palette) lives under, so it survives a slug
+      edit. Absent on projects created in the console. */
+  artKey?: string;
   client: string;
   year: string;
   industry: string;
@@ -304,6 +308,15 @@ export type CollectionName = (typeof COLLECTIONS)[number];
 export function isCollection(value: string): value is CollectionName {
   return (COLLECTIONS as readonly string[]).includes(value);
 }
+
+/** Written only by the server (the audit trail): the API can read them, never
+    change them — a log the admin key can edit is not a trail. */
+export const READ_ONLY: CollectionName[] = ["audit"];
+
+/** A fixed set the public pages are built around (each service's slug backs a
+    panel and a route): rows can be edited, but not added, removed or
+    re-slugged through the API. */
+export const FIXED_SET: CollectionName[] = ["services"];
 
 /** Collections that carry a manual `order` field and support /reorder. */
 export const ORDERABLE: CollectionName[] = [

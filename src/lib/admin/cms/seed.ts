@@ -49,6 +49,7 @@ const PORTFOLIO: Portfolio[] = WORK_PAGE.projects.map((p, i) => {
     ...base("work"),
     title: p.title,
     slug: p.id,
+    artKey: p.id,
     client: p.title,
     year: "2026",
     industry: "Other",
@@ -81,10 +82,10 @@ const SERVICES: Service[] = (SERVICES_PAGE.panels as readonly Panel[]).map((pane
   ...base("svc"),
   slug: panel.id,
   title: panel.title,
-  // The panel copy is authored with hard line breaks for the split-screen
-  // layout; the editor wants one paragraph.
   tagline: (panel.statement ?? []).join(" "),
-  overview: (panel.description ?? "").replace(/\n/g, " ").trim(),
+  // Kept verbatim, hard line breaks included: /services renders this with
+  // whitespace-pre-line, and the breaks are part of the split-screen layout.
+  overview: panel.description ?? "",
   audience: [],
   weBuild: [...(panel.caps ?? [])],
   exampleUseCases: [],
@@ -160,18 +161,20 @@ export const VIDEO_CATEGORIES = [
   "Other",
 ];
 
-/* ————— homepage ← HERO_DATA ————— */
+/* ————— homepage ————— */
 
+/** The hero fields start EMPTY, meaning "use Site Copy": getHeroCopy resolves
+    each one Homepage doc → Site Copy → constants, so a value set here
+    overrides Site Copy and clearing it hands the field back. (Seeded from
+    HERO_DATA they were never empty, and Site Copy's hero could never show.)
+    The rest keeps the production console's shape. */
 export const HOMEPAGE_DEFAULT: Homepage = {
   hero: {
-    eyebrow: HERO_DATA.badge.sublabel,
-    // Newline-separated: the hero renders one line per break, so the editor
-    // controls where the headline wraps without touching code.
-    headline: `${HERO_DATA.headlineMain}
-${HERO_DATA.headlineSub}`,
-    subhead: HERO_DATA.subtitle,
-    primaryCtaLabel: HERO_DATA.cta,
-    primaryCtaHref: "/contact",
+    eyebrow: "",
+    headline: "",
+    subhead: "",
+    primaryCtaLabel: "",
+    primaryCtaHref: "",
     secondaryCtaLabel: WORK_PAGE.cta,
     secondaryCtaHref: "/work",
     chips: (SERVICES_PAGE.panels as readonly Panel[]).map((p) => p.title),

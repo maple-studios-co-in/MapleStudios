@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { listContacts } from "@/lib/admin/cms/contacts";
 import { denyIfUnauthorized } from "@/lib/admin/cms/guard";
 import { readAll } from "@/lib/admin/cms/store";
-import type { BlogPost, Contact, Portfolio, Subscriber } from "@/lib/admin/cms/types";
+import type { BlogPost, Portfolio, Subscriber } from "@/lib/admin/cms/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,7 +33,9 @@ export async function GET(req: Request) {
   if (denied) return denied;
 
   const [contacts, portfolio, blog, subscribers] = await Promise.all([
-    readAll<Contact>("contacts"),
+    // The real contact-form inbox — "contacts" is a view over it, not a
+    // collection with a file of its own (see lib/admin/cms/contacts.ts).
+    listContacts(),
     readAll<Portfolio>("portfolio"),
     readAll<BlogPost>("blog"),
     readAll<Subscriber>("newsletter"),

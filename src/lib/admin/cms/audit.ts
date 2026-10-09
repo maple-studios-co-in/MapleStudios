@@ -1,8 +1,27 @@
-import { newId, readAll, writeAll } from "./store";
+import { mutate, newId } from "./store";
 import type { AuditAction, AuditEntry } from "./types";
 
 /** Keep the log bounded — it is a trail, not an archive. */
 const MAX_ENTRIES = 500;
+
+/** The field that names a row in the trail, per collection. A testimonial is
+    its author, not its role ("Updated Founder" named no one); anything not
+    listed is its title. */
+const LABEL_FIELD: Record<string, string> = {
+  testimonials: "author",
+  careers: "role",
+  categories: "name",
+  newsletter: "email",
+  seo: "path",
+  redirects: "from",
+  media: "filename",
+};
+
+/** A human name for a row, for audit summaries. */
+export function labelOf(resource: string, row: Record<string, unknown> | null | undefined, fallback = ""): string {
+  const pick = (k: string | undefined) => (k && typeof row?.[k] === "string" ? (row[k] as string).trim() : "");
+  return pick(LABEL_FIELD[resource]) || pick("title") || pick("name") || pick("email") || fallback;
+}
 
 /**
  * Append one line to the audit trail.
@@ -18,18 +37,14 @@ export async function audit(
   who = "admin"
 ): Promise<void> {
   try {
-    const rows = await readAll<AuditEntry>("audit");
     const now = new Date().toISOString();
-    rows.unshift({
-      id: newId(),
-      createdAt: now,
-      updatedAt: now,
-      who,
-      action,
-      resource,
-      summary,
-    });
-    await writeAll("audit", rows.slice(0, MAX_ENTRIES));
+    await mutate<AuditEntry, true>("audit", (rows) => ({
+      rows: [{ id: newId(), createdAt: now, updatedAt: now, who, action, resource, summary }, ...rows].slice(
+        0,
+        MAX_ENTRIES
+      ),
+      result: true,
+    }));
   } catch {
     /* trail is best-effort */
   }

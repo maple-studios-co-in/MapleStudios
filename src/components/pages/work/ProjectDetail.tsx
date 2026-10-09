@@ -6,8 +6,11 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { deckFor, isLightProject, tabsFor, WORK_DETAIL, WORK_PAGE } from "@/lib/constants";
 import GradientCycler from "@/components/common/GradientCycler";
+import { isRemoteUrl } from "@/lib/admin/cms/url";
 
-type Project = (typeof WORK_PAGE.projects)[number];
+/** `artKey` is the shipped id the deck, tabs and palette are keyed by — a
+    console project keeps it through a slug edit (see getWorkProjects). */
+type Project = (typeof WORK_PAGE.projects)[number] & { artKey?: string };
 
 /**
  * The page runs in one of two schemes (WORK_DETAIL.lightProjects picks which).
@@ -92,10 +95,11 @@ export default function ProjectDetail({
   // the jump mutes the spy until the scroll settles on its target.
   const jumpRef = useRef<{ top: number; until: number } | null>(null);
 
-  const palette = PALETTES[isLightProject(project.id) ? "light" : "dark"];
+  const art = project.artKey ?? project.id;
+  const palette = PALETTES[isLightProject(art) ? "light" : "dark"];
   // decks are static objects, so this reference is stable across renders
-  const deck = deckFor(project.id);
-  const tabs = tabsFor(project.id);
+  const deck = deckFor(art);
+  const tabs = tabsFor(art);
   const deckTiles = deck
     ? Array.from({ length: deck.count }, (_, i) => `${deck.dir}/slice-${String(i + 1).padStart(2, "0")}.webp`)
     : [];
@@ -319,6 +323,7 @@ export default function ProjectDetail({
                   sizes="(min-width: 1024px) 60vw, 92vw"
                   className="object-cover"
                   priority={i === 0}
+                  unoptimized={isRemoteUrl(src)}
                 />
               </motion.div>
             ))}

@@ -4,11 +4,16 @@ import Footer from "@/components/common/Footer";
 import GradientCycler from "@/components/common/GradientCycler";
 import { ContactPageBody } from "@/components/pages/contact/ContactBody";
 import { CONTACT_PAGE } from "@/lib/constants";
+import SeoJsonLd from "@/components/common/SeoJsonLd";
+import { withSeo } from "@/lib/admin/cms/seo";
 
-export const metadata: Metadata = {
-  title: "Contact — Maple Studios",
-  description: CONTACT_PAGE.hero.subtitle,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // the page's own metadata, with any override from the console's SEO module
+  return withSeo("/contact", {
+    title: "Contact — Maple Studios",
+    description: CONTACT_PAGE.hero.subtitle,
+  });
+}
 
 /**
  * Contact — Figma frame 20:3 (1512x4158).
@@ -30,6 +35,7 @@ export default function ContactPage() {
       <GradientCycler fixed />
       <Navbar />
       <ContactPageBody />
+      <SeoJsonLd path="/contact" />
       <Footer />
     </main>
   );

@@ -45,6 +45,7 @@ const HERO_FALLBACK: HeroCopy = {
   cta: HERO_DATA.cta,
   badgeLabel: HERO_DATA.badge.label,
   badgeSublabel: HERO_DATA.badge.sublabel,
+  ctaHref: "#contact",
 };
 
 export default function HeroSection({ copy = HERO_FALLBACK }: { copy?: HeroCopy }) {
@@ -185,7 +186,7 @@ export default function HeroSection({ copy = HERO_FALLBACK }: { copy?: HeroCopy 
         </motion.h1>
 
         <motion.a
-          href="#contact"
+          href={copy.ctaHref}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.45 }}
@@ -226,7 +227,7 @@ export default function HeroSection({ copy = HERO_FALLBACK }: { copy?: HeroCopy 
             </span>
           </div>
           <div className="flex flex-1 items-center pl-[5%]">
-            <span className="font-sans-luxury text-[max(9px,0.73cqw)] font-medium uppercase leading-[1.5] text-white">
+            <span className="whitespace-pre-line font-sans-luxury text-[max(9px,0.73cqw)] font-medium uppercase leading-[1.5] text-white">
               {copy.badgeSublabel}
             </span>
           </div>

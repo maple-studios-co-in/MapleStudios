@@ -126,6 +126,7 @@ function Entries() {
           row={editing === "new" ? null : editing}
           onCancel={() => setEditing(null)}
           onSave={async (values) => {
+            // Throws on failure: the form shows it and stays open.
             if (editing === "new") await create(values);
             else await update(editing.id, values);
             show("Saved");
@@ -140,8 +141,12 @@ function Entries() {
           body={`${confirming.path} will fall back to the site's native metadata.`}
           onCancel={() => setConfirming(null)}
           onConfirm={async () => {
-            await remove(confirming.id);
-            show("Deleted");
+            try {
+              await remove(confirming.id);
+              show("Deleted");
+            } catch (e) {
+              show(e instanceof Error ? e.message : "Could not delete.", true);
+            }
             setConfirming(null);
           }}
         />
@@ -163,6 +168,7 @@ function EntryForm({
 }) {
   const [v, setV] = useState({ ...ENTRY_DEFAULTS, ...(row ?? {}) });
   const [problem, setProblem] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const set = <K extends keyof typeof v>(k: K, val: (typeof v)[K]) => setV({ ...v, [k]: val });
 
   return (
@@ -233,7 +239,8 @@ function EntryForm({
         <Btn onClick={onCancel}>Cancel</Btn>
         <Btn
           variant="primary"
-          onClick={() => {
+          disabled={saving}
+          onClick={async () => {
             if (!v.path.trim()) return setProblem("Path is required.");
             if (!v.path.startsWith("/")) return setProblem("Path must start with a slash.");
             // Invalid JSON-LD would be emitted into a <script> tag on the
@@ -246,10 +253,16 @@ function EntryForm({
               }
             }
             setProblem(null);
-            void onSave(v);
+            setSaving(true);
+            try {
+              await onSave(v);
+            } catch (e) {
+              setProblem(e instanceof Error ? e.message : "Could not save.");
+            }
+            setSaving(false);
           }}
         >
-          Save
+          {saving ? "Saving…" : "Save"}
         </Btn>
       </div>
     </Modal>
@@ -265,6 +278,7 @@ function Redirects() {
   const [code, setCode] = useState("301");
   const [note, setNote] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const [confirming, setConfirming] = useState<Redirect | null>(null);
   const { show, node: toast } = useToast();
 
@@ -274,15 +288,24 @@ function Redirects() {
   const add = async () => {
     if (!from.trim() || !to.trim()) return setProblem("Both paths are required.");
     if (!from.startsWith("/")) return setProblem("From must be a root-relative path.");
+    if (/^\/(api|_next|admin)(\/|$)/i.test(from.trim()))
+      return setProblem("Redirects can't start at /api, /_next or /admin.");
     if (!to.startsWith("/") && !/^https?:\/\//.test(to))
       return setProblem("Redirect target must be a root-relative path or an http(s) URL.");
     if (from.trim() === to.trim()) return setProblem("A redirect cannot point at itself.");
     setProblem(null);
-    await create({ from: from.trim(), to: to.trim(), code: Number(code) as Redirect["code"], note });
-    setFrom("");
-    setTo("");
-    setNote("");
-    show("Redirect added");
+    setAdding(true);
+    try {
+      await create({ from: from.trim(), to: to.trim(), code: Number(code) as Redirect["code"], note });
+      setFrom("");
+      setTo("");
+      setNote("");
+      show("Redirect added");
+    } catch (e) {
+      // e.g. the server refusing a duplicate or a loop
+      setProblem(e instanceof Error ? e.message : "Could not add the redirect.");
+    }
+    setAdding(false);
   };
 
   return (
@@ -317,8 +340,8 @@ function Redirects() {
           </p>
         ) : null}
         <div className="mt-3 flex justify-end">
-          <Btn variant="primary" onClick={add}>
-            <Plus size={12} /> Add redirect
+          <Btn variant="primary" onClick={add} disabled={adding}>
+            <Plus size={12} /> {adding ? "Adding…" : "Add redirect"}
           </Btn>
         </div>
       </div>
@@ -351,8 +374,12 @@ function Redirects() {
           body={`${confirming.from} → ${confirming.to} will stop redirecting.`}
           onCancel={() => setConfirming(null)}
           onConfirm={async () => {
-            await remove(confirming.id);
-            show("Deleted");
+            try {
+              await remove(confirming.id);
+              show("Deleted");
+            } catch (e) {
+              show(e instanceof Error ? e.message : "Could not delete.", true);
+            }
             setConfirming(null);
           }}
         />

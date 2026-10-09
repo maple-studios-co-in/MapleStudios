@@ -58,6 +58,7 @@ export async function GET(req: Request) {
       total: inquiries.length,
       new: inquiries.filter((i) => i.status === "new").length,
       read: inquiries.filter((i) => i.status === "read").length,
+      replied: inquiries.filter((i) => i.status === "replied").length,
       archived: inquiries.filter((i) => i.status === "archived").length,
       lastSevenDays: inquiries.filter((i) => new Date(i.at).getTime() > weekAgo).length,
     },

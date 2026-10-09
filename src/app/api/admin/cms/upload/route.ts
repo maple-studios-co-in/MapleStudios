@@ -1,21 +1,19 @@
 import { promises as fs } from "fs";
-import os from "os";
 import path from "path";
 import { NextResponse } from "next/server";
 
 import { audit } from "@/lib/admin/cms/audit";
 import { denyIfUnauthorized } from "@/lib/admin/cms/guard";
+import { MEDIA_DIR } from "@/lib/admin/cms/paths";
 import { createRow } from "@/lib/admin/cms/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** Uploads land beside the JSON store, NOT in public/ — the public folder is
-    the marketing site's, and admin uploads have no business being statically
-    served from it. They are read back through /api/admin/cms/file/[id]. */
-const MEDIA_DIR = process.env.VERCEL
-  ? path.join(os.tmpdir(), "maple-cms", "files")
-  : path.join(process.cwd(), "data", "cms", "files");
+/* Uploads land beside the JSON store (MEDIA_DIR), NOT in public/ — the public
+   folder is the marketing site's, and admin uploads have no business being
+   statically served from it. They are read back through
+   /api/admin/cms/file/[id]. */
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
