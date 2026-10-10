@@ -73,6 +73,8 @@ export function errorMessage(e: unknown, fallback = "Something went wrong."): st
 export type Api = {
   /** JSON request against `/api/v2`; resolves with the parsed body. */
   request: <T>(method: string, path: string, body?: unknown) => Promise<T>;
+  /** The same call under the name the contract uses for writes. */
+  mutate: <T>(method: string, path: string, body?: unknown) => Promise<T>;
   /** POST a CSV file's text with `content-type: text/csv`. */
   uploadCsv: <T>(path: string, text: string, params?: Params) => Promise<T>;
   /** GET a file (the CSV export) with the key attached and save it. */
@@ -119,7 +121,7 @@ export function useApi(): Api {
       URL.revokeObjectURL(url);
     };
 
-    return { request, uploadCsv, download };
+    return { request, mutate: request, uploadCsv, download };
   }, [key]);
 }
 
