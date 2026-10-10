@@ -2,6 +2,7 @@ import { createApp } from "./app.js";
 import { connectDb, disconnectDb } from "./config/db.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { startScheduler, stopScheduler } from "./lib/scheduler.js";
 
 async function main() {
   await connectDb();
@@ -10,6 +11,9 @@ async function main() {
   const server = app.listen(env.PORT, () => {
     logger.info(`api listening on :${env.PORT} (${env.NODE_ENV})`);
   });
+  // Campaign sends and scheduled posts run inside this one process (single
+  // instance under PM2). Registered ticks live next to their modules.
+  startScheduler();
 
   // Drain in-flight requests before the process dies, so a rolling deploy
   // never cuts a booking mid-write.
@@ -18,6 +22,7 @@ async function main() {
     if (shuttingDown) return;
     shuttingDown = true;
     logger.info(`${signal} received - shutting down`);
+    stopScheduler();
 
     const force = setTimeout(() => {
       logger.error("shutdown timed out - forcing exit");

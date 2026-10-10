@@ -45,8 +45,19 @@ export function createApp(): Express {
     })
   );
   app.use(compression());
-  app.use(express.json({ limit: "100kb" }));
+  // Keep the exact bytes: the Resend webhook verifies an HMAC over the raw
+  // body, and a re-serialised (and sanitised) object would not match.
+  app.use(
+    express.json({
+      limit: "100kb",
+      verify: (req, _res, buf) => {
+        (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: false, limit: "100kb" }));
+  // CSV imports arrive as the file's text — no multipart parser needed.
+  app.use(express.text({ type: "text/csv", limit: "10mb" }));
   app.use(sanitize);
 
   app.get("/healthz", (_req, res) => {

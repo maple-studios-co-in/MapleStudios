@@ -52,6 +52,18 @@ function shape(err: unknown): Shaped {
     return { status: 400, code: "BAD_REQUEST", message: "Invalid JSON body." };
   }
 
+  // body-parser errors (too large, wrong charset, aborted) carry their own
+  // 4xx status; without this they would be reported as our 500s.
+  const bp = err as { status?: number; type?: string; expose?: boolean };
+  if (typeof bp?.status === "number" && bp.status >= 400 && bp.status < 500 && typeof bp.type === "string") {
+    return {
+      status: bp.status,
+      code: bp.status === 413 ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
+      message:
+        bp.status === 413 ? "That upload is too large — the limit is 10 MB." : "The request body could not be read.",
+    };
+  }
+
   return { status: 500, code: "INTERNAL", message: "Something went wrong on our end." };
 }
 

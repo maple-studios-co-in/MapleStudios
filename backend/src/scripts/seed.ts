@@ -1,10 +1,14 @@
+import mongoose from "mongoose";
 import { connectDb, disconnectDb } from "../config/db.js";
 import { env } from "../config/env.js";
 import { logger } from "../lib/logger.js";
 import { studioDays, isWeekday, toStartsAt } from "../lib/time.js";
 import { Slot } from "../modules/slots/slot.model.js";
 import { AdminUser, hashPassword } from "../modules/auth/admin.model.js";
-import { Inquiry } from "../modules/inquiries/inquiry.model.js";
+// Importing the route table registers every module's models, so the index
+// sync below covers the growth-platform collections too (campaign messages
+// rely on their unique index for enrolment).
+import "../routes.js";
 
 /** Matches the pattern the current JSON store seeds. */
 const TIMES = ["10:00", "10:30", "11:00", "15:00", "15:30", "16:00"];
@@ -14,8 +18,9 @@ async function main() {
   await connectDb();
 
   // Indexes ship as an explicit step, never as a container side effect.
-  await Promise.all([Slot.syncIndexes(), Inquiry.syncIndexes(), AdminUser.syncIndexes()]);
-  logger.info("indexes synced");
+  const models = Object.values(mongoose.models);
+  await Promise.all(models.map((m) => m.syncIndexes()));
+  logger.info(`indexes synced for ${models.map((m) => m.modelName).join(", ")}`);
 
   let created = 0;
   for (const date of studioDays(DAYS)) {
