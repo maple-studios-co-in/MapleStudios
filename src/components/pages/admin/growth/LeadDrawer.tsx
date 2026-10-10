@@ -183,11 +183,11 @@ function toDraft(l: Lead | null): Draft {
   };
 }
 
-/** Blank optional strings are omitted rather than sent as "" — the backend
-    validates email/phone/website formats, and an empty string is not an
-    empty value to a format check. */
-function toInput(d: Draft): LeadInput {
-  const opt = (s: string) => (s.trim() ? s.trim() : undefined);
+/** On create, blank optional fields are omitted. On edit they are sent as
+    "", which the API treats as "clear this field" — omitting them would
+    leave the old value in place and make a field impossible to empty. */
+function toInput(d: Draft, editing: boolean): LeadInput {
+  const opt = (s: string) => (s.trim() ? s.trim() : editing ? "" : undefined);
   const custom: Record<string, string> = {};
   for (const c of d.custom) if (c.key.trim()) custom[c.key.trim()] = c.value;
   return {
@@ -228,7 +228,7 @@ function LeadForm({
     if (!d.firstName.trim() && !d.lastName.trim()) return setProblem("A name is required.");
     if (!d.email.trim() && !d.phone.trim()) return setProblem("An email or a phone number is required.");
     setProblem(null);
-    void onSave(toInput(d));
+    void onSave(toInput(d, Boolean(lead)));
   };
 
   return (

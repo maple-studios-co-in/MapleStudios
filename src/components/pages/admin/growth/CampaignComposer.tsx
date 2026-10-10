@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Btn, Check, Field, Input, Modal, SectionLabel, Select, Spinner } from "../cms/ui";
-import { useAction, useApi, useList, qs } from "./api";
-import { EMPTY_FILTERS, filterParams, fromLeadFilter, toLeadFilter, type Filters } from "./leadFilter";
+import { useAction, useApi, useList } from "./api";
+import { EMPTY_FILTERS, fromLeadFilter, toLeadFilter, type Filters } from "./leadFilter";
 import { describe } from "./Segments";
 import { Chips, ErrorText, IST, Kv, Muted, Notice, TogglePill, cap, fmtIst, fullName, isoToIstInput, istInputToIso, useDebounced } from "./shared";
 import {
@@ -16,7 +16,6 @@ import {
   type EmailTemplate,
   type Lead,
   type LeadStage,
-  type ListMeta,
   type Segment,
 } from "./types";
 
@@ -455,12 +454,13 @@ function useRecipientCount(d: Draft): number | null | "loading" {
       return;
     }
     setCount("loading");
-    const p =
-      k.mode === "segment"
-        ? api.request<{ count: number }>("GET", `/segments/${k.segmentId}/count`).then((r) => r.count)
-        : api
-            .request<{ items: unknown[]; meta?: ListMeta }>("GET", `/leads${qs({ ...filterParams(k.filter), limit: 1 })}`)
-            .then((r) => r.meta?.total ?? r.items.length);
+    // The API applies the same eligibility rules a start would (no email,
+    // suppressed, unsubscribed), so this is the number that will actually be
+    // enrolled — not just how many leads match the filter.
+    const audience = k.mode === "segment" ? { segmentId: k.segmentId } : { filter: k.filter };
+    const p = api
+      .request<{ matched: number; recipients: number }>("POST", "/campaigns/audience/count", { audience })
+      .then((r) => r.recipients);
     p.then((n) => alive && setCount(n)).catch(() => alive && setCount(null));
     return () => {
       alive = false;

@@ -418,7 +418,9 @@ function CampaignDetail({
           >
             {messages.items.map((m) => {
               const email = m.lead?.email ?? m.leadEmail ?? "";
-              const name = m.lead ? [m.lead.firstName, m.lead.lastName].filter(Boolean).join(" ") : m.leadName ?? "";
+              const name = m.lead
+                ? (m.lead.name ?? [m.lead.firstName, m.lead.lastName].filter(Boolean).join(" "))
+                : (m.leadName ?? "");
               return (
                 <Tr key={m.id}>
                   <Td>

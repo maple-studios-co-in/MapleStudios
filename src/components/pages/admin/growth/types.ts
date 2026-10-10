@@ -283,7 +283,8 @@ export type CampaignMessage = {
   providerMessageId?: string;
   error?: string;
   unsubscribeToken?: string;
-  lead?: { id?: string; email?: string; firstName?: string; lastName?: string };
+  /** joined by the API as { id, name, email }; older shapes kept as fallbacks */
+  lead?: { id?: string; name?: string; email?: string; firstName?: string; lastName?: string } | null;
   leadEmail?: string;
   leadName?: string;
 };

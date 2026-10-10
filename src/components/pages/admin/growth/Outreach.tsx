@@ -325,6 +325,7 @@ function TargetDrawer({
   // advance
   const [stage, setStage] = useState<OutreachStage | "">("");
   const [note, setNote] = useState("");
+  const [noteText, setNoteText] = useState("");
   const [nextAt, setNextAt] = useState("");
 
   const effectiveTemplate = templateId || t?.templateId || "";
@@ -555,11 +556,37 @@ function TargetDrawer({
             </section>
           ) : null}
 
-          {t.notes?.length ? (
-            <section className="mt-6 border-t border-[#d8c3a5]/45 pt-5">
-              <p className="mb-3 font-sans-luxury text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b8178]">
-                Notes
-              </p>
+          <section className="mt-6 border-t border-[#d8c3a5]/45 pt-5">
+            <p className="mb-3 font-sans-luxury text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b8178]">
+              Notes
+            </p>
+            <div className="mb-3 flex items-start gap-2">
+              <Textarea
+                rows={2}
+                value={noteText}
+                placeholder="Something worth remembering about this person…"
+                onChange={(e) => setNoteText(e.target.value)}
+              />
+              <Btn
+                disabled={!noteText.trim() || busy === "note"}
+                onClick={() =>
+                  void run(
+                    "note",
+                    async () => {
+                      const res = await api.request<{ item: OutreachTarget }>("POST", `/outreach/${t.id}/notes`, {
+                        text: noteText.trim(),
+                      });
+                      setItem(res.item);
+                      setNoteText("");
+                    },
+                    "Note added"
+                  )
+                }
+              >
+                Add
+              </Btn>
+            </div>
+            {t.notes?.length ? (
               <ul className="space-y-2">
                 {[...t.notes].sort((a, b) => b.at.localeCompare(a.at)).map((n, i) => (
                   <li key={`${n.at}-${i}`} className="rounded-[8px] bg-[#f3e8d5]/60 px-3 py-2">
@@ -570,8 +597,8 @@ function TargetDrawer({
                   </li>
                 ))}
               </ul>
-            </section>
-          ) : null}
+            ) : null}
+          </section>
         </>
       ) : null}
 
