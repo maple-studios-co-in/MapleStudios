@@ -4,6 +4,8 @@ import { publicInquiryRoutes, adminInquiryRoutes } from "./modules/inquiries/inq
 import { publicLeadRoutes, adminLeadRoutes } from "./modules/leads/lead.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { summaryRoutes } from "./modules/summary/summary.routes.js";
+import { publicTemplateRoutes, adminTemplateRoutes } from "./modules/templates/template.routes.js";
+import { publicCampaignRoutes, adminCampaignRoutes } from "./modules/campaigns/campaign.routes.js";
 import { publicLimiter } from "./middleware/rateLimit.js";
 
 export const api = Router();
@@ -26,7 +28,9 @@ api.use("/admin", summaryRoutes);
 // (mounted at "/admin"); add exactly two lines per module here.
 api.use("/", publicLeadRoutes);
 api.use("/admin", adminLeadRoutes);
-// [templates]
-// [campaigns]
+api.use("/", publicTemplateRoutes);
+api.use("/admin", adminTemplateRoutes);
+api.use("/", publicCampaignRoutes);
+api.use("/admin", adminCampaignRoutes);
 // [social]
 // [outreach]
