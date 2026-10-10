@@ -1,38 +1,24 @@
-import type { FilterQuery, Types } from "mongoose";
+import type { Types } from "mongoose";
 import { Lead, type ActivityType, type ILead, type LeadDoc } from "../leads/lead.model.js";
 import { Segment, type LeadFilter } from "../leads/segment.model.js";
+import { buildLeadQuery, touchContacted } from "../leads/lead.service.js";
 import { Suppression } from "./suppression.model.js";
 import type { CampaignAudience } from "./campaign.model.js";
 import { AppError } from "../../lib/AppError.js";
 
 /**
- * The campaign module's view of leads. Written against the Lead and Segment
- * models directly so campaigns do not depend on the leads service; the
- * audience and bookkeeping helpers here are the ones to reconcile with
- * lead.service.ts when the modules meet.
+ * The campaign module's view of leads: audience resolution plus the
+ * bookkeeping a send leaves behind (activities, contact stamps, suppression
+ * flags). The filter translation itself comes from the leads module, so a
+ * campaign's recipient count always matches what the Leads screen lists for
+ * the same filter.
  */
 
 /** Hard ceiling on one audience resolution; a 30-a-day campaign never needs more. */
 export const AUDIENCE_LIMIT = 5000;
 
-const present = { $exists: true, $nin: [null, ""] };
-const absent = { $in: [null, ""] };
-
-/** LeadFilter -> Mongo query. Conditions AND together; `tags` is "has any of". */
-export function leadFilterQuery(filter: LeadFilter): FilterQuery<ILead> {
-  const q: FilterQuery<ILead> = {};
-  if (filter.stage?.length) q.stage = { $in: filter.stage };
-  if (filter.tags?.length) q.tags = { $in: filter.tags };
-  if (filter.segment) q.segment = filter.segment;
-  if (filter.owner) q.owner = filter.owner;
-  if (filter.industry) q.industry = filter.industry;
-  if (filter.city) q.city = filter.city;
-  if (filter.hasEmail !== undefined) q.email = filter.hasEmail ? present : absent;
-  if (filter.hasPhone !== undefined) q.phone = filter.hasPhone ? present : absent;
-  // $text rides the compound text index declared on the Lead schema.
-  if (filter.q) q.$text = { $search: filter.q };
-  return q;
-}
+/** LeadFilter -> Mongo query, shared with the Leads screen. */
+export const leadFilterQuery = buildLeadQuery;
 
 /** Every lead the audience names, before any eligibility check. */
 export async function resolveAudience(audience: CampaignAudience): Promise<LeadDoc[]> {
@@ -97,12 +83,11 @@ export async function appendLeadActivity(entry: ActivityInput, at = new Date()):
   await appendLeadActivities([entry], at);
 }
 
-/** A campaign email went out: stamp the lead and leave the trail. */
+/** A campaign email went out: stamp the lead (a `new` lead becomes
+    `contacted`, like any other first touch) and leave the trail. */
 export async function markLeadContacted(leadId: Types.ObjectId | string, at: Date, summary: string, ref: string): Promise<void> {
-  await Lead.updateOne(
-    { _id: leadId },
-    { $set: { lastContactedAt: at }, $push: { activities: { at, type: "email_sent", summary, ref } } }
-  ).exec();
+  await touchContacted(String(leadId), at);
+  await Lead.updateOne({ _id: leadId }, { $push: { activities: { at, type: "email_sent", summary, ref } } }).exec();
 }
 
 /** The lead asked out: no campaign may write to them again. Idempotent. */

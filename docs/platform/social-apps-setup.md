@@ -45,7 +45,7 @@ Instagram's API only publishes for **Business or Creator** accounts that are
    linked account can connect and publish without App Review; review is only
    needed to publish for other people's accounts.
 5. Permissions requested: `instagram_basic`, `instagram_content_publish`,
-   `pages_show_list`, `pages_read_engagement`, `business_management`.
+   `pages_show_list`, `pages_read_engagement`.
 6. Settings → Basic → **App ID** and **App Secret** → `META_APP_ID`, `META_APP_SECRET`.
 
 Instagram cannot publish a text-only post: every Instagram post needs at
