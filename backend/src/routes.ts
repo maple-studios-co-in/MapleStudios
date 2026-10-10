@@ -3,6 +3,8 @@ import { publicSlotRoutes, adminSlotRoutes } from "./modules/slots/slot.routes.j
 import { publicInquiryRoutes, adminInquiryRoutes } from "./modules/inquiries/inquiry.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { summaryRoutes } from "./modules/summary/summary.routes.js";
+import { publicTemplateRoutes, adminTemplateRoutes } from "./modules/templates/template.routes.js";
+import { publicCampaignRoutes, adminCampaignRoutes } from "./modules/campaigns/campaign.routes.js";
 import { publicLimiter } from "./middleware/rateLimit.js";
 
 export const api = Router();
@@ -24,7 +26,9 @@ api.use("/admin", summaryRoutes);
 // Each module exports `publicXRoutes` (mounted at "/") and `adminXRoutes`
 // (mounted at "/admin"); add exactly two lines per module here.
 // [leads]
-// [templates]
-// [campaigns]
+api.use("/", publicTemplateRoutes);
+api.use("/admin", adminTemplateRoutes);
+api.use("/", publicCampaignRoutes);
+api.use("/admin", adminCampaignRoutes);
 // [social]
 // [outreach]
