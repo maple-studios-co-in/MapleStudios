@@ -47,3 +47,6 @@ yarn-error.log*
 
 # runtime booking store (seeded on first run) - never commit
 /data/
+
+# dev-server logs (committed by accident once)
+*.log

@@ -19,3 +19,12 @@ api.use("/auth", authRoutes);
 api.use("/admin", adminSlotRoutes);
 api.use("/admin", adminInquiryRoutes);
 api.use("/admin", summaryRoutes);
+
+// growth platform — docs/platform/phase-1-spec.md
+// Each module exports `publicXRoutes` (mounted at "/") and `adminXRoutes`
+// (mounted at "/admin"); add exactly two lines per module here.
+// [leads]
+// [templates]
+// [campaigns]
+// [social]
+// [outreach]
