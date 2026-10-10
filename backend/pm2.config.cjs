@@ -1,3 +1,4 @@
+/* global module, __dirname */
 // PM2 manifest for the growth-platform API. Runs beside the site on the VPS;
 // the site proxies /api/v2 to it (next.config.ts). Loaded by
 // scripts/deploy.sh with `pm2 startOrRestart backend/pm2.config.cjs`.
