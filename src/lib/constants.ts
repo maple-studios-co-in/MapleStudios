@@ -89,6 +89,21 @@ export const KEY_FACTS_DATA = {
 // "Selected work & explorations" + OUR SERVICES intro (Figma Home 12:78xx region).
 // Desktop runs these as a pinned horizontal scroll track (trionn-style):
 // [heading + project 1] → [project 2] → [project 3] → [discover] → [giant type].
+/** One card in the homepage "Selected work" track.
+ *
+ * `href` is filled in by WorkSection from the console's published slugs.
+ * `comingSoon` marks a project that is on the track but has no case study to
+ * open yet — see the note on WORK_DATA.projects. */
+export type WorkCard = {
+  id: string;
+  title: string;
+  description: string;
+  cta: string;
+  image: string;
+  href?: string;
+  comingSoon?: boolean;
+};
+
 export const WORK_DATA = {
   headingLines: ["Selected work", "& explorations"],
   viewAll: "VIEW ALL PROJECTS",
@@ -140,7 +155,30 @@ export const WORK_DATA = {
       image: "/images/card-kalaa-kaari.webp",
       href: "/work/kalaa-kaari",
     },
-  ],
+    // ——— On the track, no case study yet ———
+    // These two carry no `href`: the detail pages have not been written, so
+    // the card deliberately does not link anywhere and WorkSection renders it
+    // without an <a>. Give it a slug + href (and drop `comingSoon`) once the
+    // case study exists. Copy below is a placeholder.
+    {
+      id: "ishita-traders",
+      title: "Ishita Traders",
+      description:
+        "Reliable power, made simple to buy.\nA solar, inverter and battery business brought online with a catalogue, enquiry flow and an admin its own team can run.",
+      cta: "COMING SOON",
+      image: "/images/card-ishita-traders.webp",
+      comingSoon: true,
+    },
+    {
+      id: "wolf-mare",
+      title: "Wolf Mare",
+      description:
+        "Born wild. Built different.\nAn outdoor apparel house given a cinematic storefront — the forest collection, shot and staged as one continuous scene.",
+      cta: "COMING SOON",
+      image: "/images/card-wolf-mare.webp",
+      comingSoon: true,
+    },
+  ] as WorkCard[],
   discover: {
     text: "Discover our complete collection of digital experiences, brands, and platforms.",
     cta: "VIEW ALL PROJECTS",

@@ -78,23 +78,36 @@ function ProjectCard({
   className?: string;
 }) {
   const href = project.href ?? "/work";
+  // No case study yet: the card still shows, but nothing about it is
+  // clickable — no <a>, no hover lift, and the CTA is plain text. A link that
+  // goes nowhere is worse than no link, for a mouse and a screen reader alike.
+  const inert = project.comingSoon === true;
+
+  const art = (
+    <div className="relative aspect-[810/556] w-full overflow-hidden rounded-[6px]">
+      <Image
+        src={project.image}
+        alt={project.title}
+        fill
+        sizes="(min-width: 1024px) 45vw, 92vw"
+        className={`object-cover${inert ? "" : " transition-transform duration-700 group-hover:scale-[1.03]"}`}
+      />
+    </div>
+  );
+
   return (
     <div className={className}>
-      <Link
-        href={href}
-        className="group block overflow-hidden rounded-[6px]"
-        aria-label={project.title}
-      >
-        <div className="relative aspect-[810/556] w-full overflow-hidden rounded-[6px]">
-          <Image
-            src={project.image}
-            alt={project.title}
-            fill
-            sizes="(min-width: 1024px) 45vw, 92vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-          />
-        </div>
-      </Link>
+      {inert ? (
+        <div className="block overflow-hidden rounded-[6px]">{art}</div>
+      ) : (
+        <Link
+          href={href}
+          className="group block overflow-hidden rounded-[6px]"
+          aria-label={project.title}
+        >
+          {art}
+        </Link>
+      )}
       <div className="pt-[18px]">
         <h3 className="font-sans-luxury text-[max(19px,1.65vw)] font-bold leading-[1.08] text-black">
           {project.title}
@@ -103,20 +116,29 @@ function ProjectCard({
           <p className="max-w-[340px] whitespace-pre-line font-sans-luxury text-[max(14px,0.926vw)] leading-snug text-black">
             {project.description}
           </p>
-          <Link href={href} className="group flex w-[148px] shrink-0 flex-col">
-            <span className="flex items-center justify-between">
-              <span className="font-sans-luxury text-[12px] font-bold uppercase text-[#741a14]">
+          {inert ? (
+            <div className="flex w-[148px] shrink-0 flex-col">
+              <span className="font-sans-luxury text-[12px] font-bold uppercase text-[#741a14]/55">
                 {project.cta}
               </span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/figma/arrow-maroon.svg"
-                alt=""
-                className="w-[14px] transition-transform duration-300 group-hover:translate-x-1"
-              />
-            </span>
-            <span className="mt-[9px] h-px w-full bg-[#741a14]" />
-          </Link>
+              <span className="mt-[9px] h-px w-full bg-[#741a14]/35" />
+            </div>
+          ) : (
+            <Link href={href} className="group flex w-[148px] shrink-0 flex-col">
+              <span className="flex items-center justify-between">
+                <span className="font-sans-luxury text-[12px] font-bold uppercase text-[#741a14]">
+                  {project.cta}
+                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/figma/arrow-maroon.svg"
+                  alt=""
+                  className="w-[14px] transition-transform duration-300 group-hover:translate-x-1"
+                />
+              </span>
+              <span className="mt-[9px] h-px w-full bg-[#741a14]" />
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -135,8 +157,18 @@ function ProjectCard({
     linking to a 404, and a re-slugged one follows its new URL. Without it,
     every card shows as shipped. */
 export default function WorkSection({ links }: { links?: Record<string, string> }) {
+  // `links` keeps the track honest: a shipped card only appears once its case
+  // study is published in the console. `comingSoon` cards are the exception —
+  // they are on the track by design and have nothing to link to yet, so the
+  // filter must not drop them.
   const projects = links
-    ? WORK_DATA.projects.flatMap((p) => (links[p.id] ? [{ ...p, href: `/work/${links[p.id]}` }] : []))
+    ? WORK_DATA.projects.flatMap((p) =>
+        p.comingSoon
+          ? [p]
+          : links[p.id]
+            ? [{ ...p, href: `/work/${links[p.id]}` }]
+            : []
+      )
     : WORK_DATA.projects;
 
   const wrapRef = useRef<HTMLDivElement>(null);
