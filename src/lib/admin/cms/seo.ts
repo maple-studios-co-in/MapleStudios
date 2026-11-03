@@ -32,10 +32,19 @@ export async function noindexPaths(): Promise<Set<string>> {
 }
 
 /** `base` (the page's own metadata) with the override for `path` laid over it.
-    Only fields the operator filled in replace anything. */
+    Only fields the operator filled in replace anything.
+
+    Every page carries a self-referencing canonical unless the operator set
+    one: the layout's `metadataBase` resolves the path to the primary origin,
+    so the old domain's redirects and any tracking-parameter variants all
+    consolidate on the maplestudios.ai URL. */
 export async function withSeo(path: string, base: Metadata = {}): Promise<Metadata> {
   const e = await seoFor(path);
-  if (!e) return base;
+  const own: Metadata = {
+    ...base,
+    alternates: { ...base.alternates, canonical: normalisePath(path) },
+  };
+  if (!e) return own;
 
   const title = e.title?.trim() || undefined;
   const description = e.description?.trim() || undefined;
@@ -46,10 +55,10 @@ export async function withSeo(path: string, base: Metadata = {}): Promise<Metada
   const social = Boolean(ogTitle || ogDescription || image);
 
   return {
-    ...base,
+    ...own,
     ...(title ? { title } : {}),
     ...(description ? { description } : {}),
-    ...(canonical ? { alternates: { ...base.alternates, canonical } } : {}),
+    ...(canonical ? { alternates: { ...own.alternates, canonical } } : {}),
     ...(e.noindex ? { robots: { index: false, follow: false } } : {}),
     ...(social
       ? {
