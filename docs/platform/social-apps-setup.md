@@ -9,9 +9,9 @@ Callback URLs — register these exactly:
 
 | Platform | Callback |
 |---|---|
-| X | `https://maplestudios.co.in/api/connect/x/callback` |
-| Instagram | `https://maplestudios.co.in/api/connect/instagram/callback` |
-| LinkedIn | `https://maplestudios.co.in/api/connect/linkedin/callback` |
+| X | `https://maplestudios.ai/api/connect/x/callback` |
+| Instagram | `https://maplestudios.ai/api/connect/instagram/callback` |
+| LinkedIn | `https://maplestudios.ai/api/connect/linkedin/callback` |
 
 > The API endpoints and versions the publishers call are constants in
 > `backend/src/lib/social/*.ts`. Platforms change these; if a connect or
@@ -23,7 +23,7 @@ Callback URLs — register these exactly:
 1. developer.x.com → create a Project and an App inside it.
 2. User authentication settings → OAuth 2.0 on, type **Web App, Automated App
    or Bot** (a confidential client), callback URL above, website
-   `https://maplestudios.co.in`.
+   `https://maplestudios.ai`.
 3. Scopes used: `tweet.read tweet.write users.read offline.access`
    (offline.access gives the refresh token).
 4. Copy **Client ID** and **Client Secret** → `X_CLIENT_ID`, `X_CLIENT_SECRET`.
