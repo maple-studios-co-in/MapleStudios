@@ -88,7 +88,7 @@ export const SAMPLE_CONTEXT: MergeContext = {
   city: "Jaipur",
   industry: "Furniture",
   sender_name: "Aditya",
-  sender_email: "hello@maplestudios.co.in",
+  sender_email: "hello@maplestudios.ai",
   unsubscribe_url: "https://maplestudios.ai/unsubscribe/example",
   today: new Date().toISOString().slice(0, 10),
 };

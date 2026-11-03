@@ -478,7 +478,7 @@ export const CAREERS: ScreenDef = {
       label: "Apply email",
       type: "text",
       half: true,
-      placeholder: "careers@maplestudios.co.in",
+      placeholder: "careers@maplestudios.ai",
     },
     { name: "description", label: "Description", type: "textarea", placeholder: "What the role is about…" },
     { name: "requirements", label: "Requirements", type: "lines" },
