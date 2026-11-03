@@ -40,13 +40,13 @@ against in parallel. If the code and this file disagree, fix the code.
 | `/unsubscribe/:token` | `/api/v1/unsubscribe/:token` |
 | `/webhooks/resend` | `/api/v1/webhooks/resend` |
 
-`PUBLIC_BASE_URL` (`https://maplestudios.co.in`) is what the backend puts in
+`PUBLIC_BASE_URL` (`https://maplestudios.ai`) is what the backend puts in
 links and OAuth redirect URIs.
 
 ## Environment (backend/.env)
 
 ```
-PUBLIC_BASE_URL=https://maplestudios.co.in
+PUBLIC_BASE_URL=https://maplestudios.ai
 APP_ENCRYPTION_KEY=<64 hex chars>          # AES-256-GCM for OAuth tokens
 SCHEDULER_ENABLED=true                     # false in tests, automatically
 MAIL_FROM_NAME=Maple Studios

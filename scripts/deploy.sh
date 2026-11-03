@@ -68,4 +68,4 @@ for p in / /work /services /about /contact; do
 done
 [ "$FAIL" = "0" ] || { echo "!! HEALTH CHECK FAILED — roll back with: bash ~/rollback-maplestudios.sh"; exit 1; }
 
-echo "==> LIVE: $(git rev-parse --short HEAD) — https://maplestudios.co.in  (api: $([ "$API_READY" = 1 ] && echo up || echo 'not started'))"
+echo "==> LIVE: $(git rev-parse --short HEAD) — https://maplestudios.ai  (api: $([ "$API_READY" = 1 ] && echo up || echo 'not started'))"
