@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import LivePreview from "./LivePreview";
 import { useDoc } from "./useCms";
 import { Btn, Card, Field, Input, PageHead, SectionLabel, Spinner, Textarea, useToast } from "./ui";
 import type { Homepage } from "@/lib/admin/cms/types";
@@ -15,6 +16,7 @@ export default function HomepageEditor() {
   const { data, loading, error, save } = useDoc<Homepage>("homepage");
   const [draft, setDraft] = useState<Homepage | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(0);
   const { show, node: toast } = useToast();
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function HomepageEditor() {
     try {
       await save(draft);
       show("Homepage saved");
+      setSaved((n) => n + 1);
     } catch (e) {
       show(e instanceof Error ? e.message : "Could not save.", true);
     }
@@ -50,6 +53,8 @@ export default function HomepageEditor() {
           </Btn>
         }
       />
+
+      <LivePreview targets={[{ label: "Homepage", path: "/" }]} refreshKey={saved} />
 
       <div className="space-y-4">
         <Card>
