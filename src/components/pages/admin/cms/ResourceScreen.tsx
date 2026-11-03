@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 
+import LivePreview from "./LivePreview";
 import MarkdownEditor from "./MarkdownEditor";
 import type { FieldDef, ScreenDef } from "./defs";
 import type { Category } from "@/lib/admin/cms/types";
@@ -45,6 +46,9 @@ export default function ResourceScreen({ def }: { def: ScreenDef }) {
   const [confirming, setConfirming] = useState<Row | null>(null);
   const [filter, setFilter] = useState("");
   const { show, node: toast } = useToast();
+  // bumped after every successful write so the live frame re-renders the page
+  const [published, setPublished] = useState(0);
+  const touched = () => setPublished((n) => n + 1);
 
   const rows = useMemo(() => {
     if (!data) return [];
@@ -60,6 +64,7 @@ export default function ResourceScreen({ def }: { def: ScreenDef }) {
     try {
       await reorder(next.map((r) => r.id));
       show("Order saved");
+      touched();
     } catch (e) {
       show(e instanceof Error ? e.message : "Could not reorder.", true);
     }
@@ -75,6 +80,7 @@ export default function ResourceScreen({ def }: { def: ScreenDef }) {
         show("Saved");
       }
       setEditing(null);
+      touched();
     } catch (e) {
       show(e instanceof Error ? e.message : "Could not save.", true);
     }
@@ -92,9 +98,23 @@ export default function ResourceScreen({ def }: { def: ScreenDef }) {
         await update(row.id, { published: next });
         show(next ? "Published" : "Unpublished");
       }
+      touched();
     } catch (e) {
       show(e instanceof Error ? e.message : "Could not update.", true);
     }
+  };
+
+  /** The row's public URL, or null while it is not live. */
+  const rowHref = (row: Row): string | null => {
+    const link = def.rowLink;
+    if (!link) return null;
+    const slug = row[link.slugKey];
+    if (typeof slug !== "string" || !slug) return null;
+    if (link.publishedOnly) {
+      const live = def.publishField === "status" ? row.status === "published" : def.publishField === "published" ? row.published === true : true;
+      if (!live) return null;
+    }
+    return `${link.prefix}${slug}`;
   };
 
   const head = [
@@ -115,6 +135,8 @@ export default function ResourceScreen({ def }: { def: ScreenDef }) {
           </Btn>
         }
       />
+
+      {def.preview ? <LivePreview targets={def.preview} refreshKey={published} /> : null}
 
       {def.filter ? (
         <div className="mb-4 max-w-[280px]">
@@ -178,6 +200,18 @@ export default function ResourceScreen({ def }: { def: ScreenDef }) {
                           ? "Unpublish"
                           : "Publish"}
                     </Btn>
+                  ) : null}
+                  {rowHref(row) ? (
+                    <a
+                      aria-label="View on site"
+                      title="View on site"
+                      href={rowHref(row) ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full p-1.5 text-[#8b8178] transition-colors hover:bg-[#741a14]/10 hover:text-[#741a14]"
+                    >
+                      <ExternalLink size={14} />
+                    </a>
                   ) : null}
                   <button
                     aria-label="Edit"

@@ -1,4 +1,5 @@
 import { INDUSTRIES, VIDEO_CATEGORIES } from "@/lib/admin/cms/seed";
+import type { PreviewTarget } from "./LivePreview";
 import type { CategoryGroup } from "@/lib/admin/cms/types";
 
 /**
@@ -64,6 +65,12 @@ export type ScreenDef = {
   /** the column used as the row's headline in confirmations */
   titleKey: string;
   wideForm?: boolean;
+  /** public pages/sections this collection renders on, shown as a live frame */
+  preview?: PreviewTarget[];
+  /** a row's own public URL: prefix + the row's slug field. Plain data, not a
+      function — the defs cross from a Server Component into this client
+      screen, and functions cannot. `publishedOnly` hides it for drafts. */
+  rowLink?: { prefix: string; slugKey: string; publishedOnly?: boolean };
 };
 
 const STATUS = ["draft", "published", "archived"];
@@ -71,6 +78,11 @@ const STATUS = ["draft", "published", "archived"];
 export const PORTFOLIO: ScreenDef = {
   resource: "portfolio",
   title: "Portfolio",
+  preview: [
+    { label: "Work page", path: "/work" },
+    { label: "Homepage — Selected work", path: "/#work" },
+  ],
+  rowLink: { prefix: "/work/", slugKey: "slug", publishedOnly: true },
   sub: "Case studies and selected work.",
   newLabel: "New project",
   empty: "No projects yet.",
@@ -347,6 +359,7 @@ export const BLOG: ScreenDef = {
 export const TESTIMONIALS: ScreenDef = {
   resource: "testimonials",
   title: "Testimonials",
+  preview: [{ label: "Homepage — Client stories", path: "/#stories" }],
   sub: "Voice of the client.",
   newLabel: "New testimonial",
   empty: "No testimonials yet.",
