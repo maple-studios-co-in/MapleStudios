@@ -884,7 +884,7 @@ export const CONTACT_PAGE = {
     successTitle: "You're booked.",
     successBody: "A confirmation is on its way — we'll meet you on the call.",
     empty: "No open slots in the next two weeks — send the form instead and we'll find a time.",
-    note: "Prefer email? Write to contact@maplestudios.co.in — we reply within a day.",
+    note: "Prefer email? Write to contact@maplestudios.ai — we reply within a day.",
   },
   columns: [
     {
@@ -898,7 +898,7 @@ export const CONTACT_PAGE = {
       body: "Our mission is to make technology feel human by designing digital products that are intuitive, purposeful, and meaningful to people.",
     },
   ],
-  email: "contact@maplestudios.co.in",
+  email: "contact@maplestudios.ai",
   emailNote: "Or, reach out via contact form.",
   faqHeading: "Questions",
   // Verbatim from FAQs.pdf (2026-08-22). Shape: question + prose answer, with
@@ -1035,7 +1035,7 @@ export const FOOTER_DATA = {
   cta: "START A COLLABORATION",
   copyright: "@Maple studios 2026",
   enquiryLabel: "BUSINESS ENQUIRY",
-  email: "contact@maplestudios.co.in",
+  email: "contact@maplestudios.ai",
   phone: "+91 9211079534",
   socialLabel: "SOCIAL",
   socials: [

@@ -108,7 +108,7 @@ export default function Settings() {
           <SectionLabel>Invite a teammate</SectionLabel>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_180px_auto]">
             <Field label="Email" required>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@maplestudios.co.in" />
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@maplestudios.ai" />
             </Field>
             <Field label="Role" required>
               <Select

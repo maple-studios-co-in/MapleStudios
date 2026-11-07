@@ -60,7 +60,7 @@ export default function Footer({ seamless = false }: { seamless?: boolean }) {
         </motion.h2>
 
         <motion.a
-          href="mailto:contact@maplestudios.co.in"
+          href="mailto:contact@maplestudios.ai"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

@@ -639,7 +639,7 @@ function TestSend({
       <SectionLabel>Send a test</SectionLabel>
       <div className="flex flex-wrap items-end gap-2">
         <Field label="To" className="min-w-[220px] flex-1">
-          <Input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="you@maplestudios.co.in" />
+          <Input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="you@maplestudios.ai" />
         </Field>
         <Field label="Lead id (optional)" className="w-[180px]">
           <Input value={leadId} onChange={(e) => setLeadId(e.target.value)} placeholder="renders with their data" />

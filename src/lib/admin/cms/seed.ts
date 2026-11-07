@@ -224,7 +224,7 @@ export const SITE_COPY_DEFAULT: SiteCopy = {
 export const SETTINGS_DEFAULT: Settings = {
   profile: {
     name: "Studio admin",
-    email: "contact@maplestudios.co.in",
+    email: "contact@maplestudios.ai",
     role: "admin",
     memberSince: new Date().toISOString().slice(0, 10),
   },
