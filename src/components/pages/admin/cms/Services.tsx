@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import LivePreview from "./LivePreview";
 import { useCollection } from "./useCms";
 import {
   Btn,
@@ -28,6 +29,7 @@ export default function Services() {
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState<Service | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(0);
   const { show, node: toast } = useToast();
 
   const rows = data ?? [];
@@ -51,6 +53,7 @@ export default function Services() {
     try {
       await update(draft.id, draft);
       show("Service saved");
+      setSaved((n) => n + 1);
     } catch (e) {
       show(e instanceof Error ? e.message : "Could not save.", true);
     }
@@ -60,6 +63,7 @@ export default function Services() {
   return (
     <>
       <PageHead title="Services" sub={`Edit the ${rows.length} services. The slugs are fixed.`} />
+      <LivePreview targets={[{ label: "Services page", path: "/services" }]} refreshKey={saved} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
         <Card pad={false} className="h-fit overflow-hidden">

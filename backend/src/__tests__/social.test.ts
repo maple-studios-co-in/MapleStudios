@@ -418,18 +418,22 @@ describe("social: posts", () => {
 
   it("filters the calendar by studio-timezone day range, platform and status", async () => {
     const zone = env.STUDIO_TIMEZONE;
-    const at = (iso: string) => DateTime.fromISO(iso, { zone }).toJSDate();
-    const nov = await duePost({ platforms: ["x"], scheduledAt: at("2026-11-05T10:00") });
-    // 00:30 on 1 Dec in the studio is still 30 Nov in UTC — it must not leak into November.
-    const dec = await duePost({ platforms: ["linkedin"], scheduledAt: at("2026-12-01T00:30") });
+    // Two whole months after the current one, so today's draft (which sits on
+    // the day it was written) can never fall inside the ranges under test.
+    const month1 = DateTime.now().setZone(zone).startOf("month").plus({ months: 1 });
+    const month2 = month1.plus({ months: 1 });
+    const ymd = (d: DateTime) => d.toISODate() as string;
+    const first = await duePost({ platforms: ["x"], scheduledAt: month1.plus({ days: 4, hours: 10 }).toJSDate() });
+    // 00:30 on the 1st in the studio is still the previous day in UTC — it must not leak into the month before.
+    const second = await duePost({ platforms: ["linkedin"], scheduledAt: month2.plus({ minutes: 30 }).toJSDate() });
     const draft = await SocialPost.create({ text: "Draft", mediaUrls: [], platforms: ["x"], status: "draft", results: [] });
 
     const ids = async (qs: string) =>
       ((await request(app).get(`${admin}/posts?${qs}`).set(auth)).body.items as Array<{ id: string }>).map((p) => p.id);
 
-    expect(await ids("from=2026-11-01&to=2026-11-30")).toEqual([String(nov._id)]);
-    expect(await ids("from=2026-12-01&to=2026-12-31")).toEqual([String(dec._id)]);
-    expect(await ids("from=2026-11-01&to=2026-12-31&platform=linkedin")).toEqual([String(dec._id)]);
+    expect(await ids(`from=${ymd(month1)}&to=${ymd(month1.endOf("month"))}`)).toEqual([String(first._id)]);
+    expect(await ids(`from=${ymd(month2)}&to=${ymd(month2.endOf("month"))}`)).toEqual([String(second._id)]);
+    expect(await ids(`from=${ymd(month1)}&to=${ymd(month2.endOf("month"))}&platform=linkedin`)).toEqual([String(second._id)]);
     expect(await ids("status=draft")).toEqual([String(draft._id)]);
     // Drafts sit on the day they were written.
     const today = studioToday();

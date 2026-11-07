@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Eye, RotateCcw, Save } from "lucide-react";
 
+import LivePreview from "./LivePreview";
 import { useEndpoint, usePost } from "./useCms";
 import {
   Badge,
@@ -34,6 +35,7 @@ export default function SiteCopy() {
 
   const [draft, setDraft] = useState("");
   const [seededFrom, setSeededFrom] = useState<number | null>(null);
+  const [saved, setSaved] = useState(0);
   const [summary, setSummary] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -74,6 +76,7 @@ export default function SiteCopy() {
       setData(res);
       setSummary("");
       show(`Saved v${res.doc.live}`);
+      setSaved((n) => n + 1);
     } catch (e) {
       show(e instanceof Error ? e.message : "Could not save.", true);
     }
@@ -102,6 +105,16 @@ export default function SiteCopy() {
             </Btn>
           </>
         }
+      />
+
+      <LivePreview
+        targets={[
+          { label: "Homepage", path: "/" },
+          { label: "Work page", path: "/work" },
+          { label: "Services page", path: "/services" },
+        ]}
+        refreshKey={saved}
+        defaultOpen={false}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1fr]">
@@ -230,6 +243,7 @@ export default function SiteCopy() {
               setData(res);
               setDraft(res.doc.versions.find((v) => v.v === res.doc.live)?.json ?? draft);
               show(`Restored as v${res.doc.live}`);
+              setSaved((n) => n + 1);
             } catch (e) {
               show(e instanceof Error ? e.message : "Could not restore.", true);
               void reload();
