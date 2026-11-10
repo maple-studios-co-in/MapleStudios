@@ -9,14 +9,14 @@ import type { ListMeta } from "./types";
 /**
  * Data access for the growth screens.
  *
- * The browser talks to `/api/v2/*`, which next.config rewrites to the
- * backend's `/api/v1/*`, so everything is same-origin and the only credential
+ * The browser talks to `/api/v2/admin/*`, which next.config rewrites to the
+ * backend's `/api/v1/admin/*`, so everything is same-origin and the only credential
  * is the console's own `x-admin-key` — the same key <AdminShell> already
  * validated. The hooks are deliberately as small as cms/useCms.ts: plain
  * list/detail traffic, no cache layer, zero added dependencies.
  */
 
-const BASE = "/api/v2";
+const BASE = "/api/v2/admin";
 
 export type ParamValue = string | number | boolean | string[] | undefined | null;
 export type Params = Record<string, ParamValue>;
@@ -71,7 +71,7 @@ export function errorMessage(e: unknown, fallback = "Something went wrong."): st
 }
 
 export type Api = {
-  /** JSON request against `/api/v2`; resolves with the parsed body. */
+  /** JSON request against `/api/v2/admin`; resolves with the parsed body. */
   request: <T>(method: string, path: string, body?: unknown) => Promise<T>;
   /** The same call under the name the contract uses for writes. */
   mutate: <T>(method: string, path: string, body?: unknown) => Promise<T>;
