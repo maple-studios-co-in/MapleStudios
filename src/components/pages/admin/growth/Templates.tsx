@@ -47,7 +47,7 @@ export default function Templates() {
   const api = useApi();
   const { run } = useAction(show);
   const [channel, setChannel] = useState<"" | TemplateChannel>("");
-  const list = useList<EmailTemplate>("/templates", { channel: channel || undefined, limit: 200 });
+  const list = useList<EmailTemplate>("/templates", { channel: channel || undefined, limit: 100 });
   const [editing, setEditing] = useState<EmailTemplate | "new" | null>(null);
   const [confirming, setConfirming] = useState<EmailTemplate | null>(null);
 

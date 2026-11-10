@@ -313,7 +313,7 @@ function TargetDrawer({
   const api = useApi();
   const { item: t, loading, error, setItem } = useItem<OutreachTarget>(`/outreach/${id}`);
   const { busy, run } = useAction(show);
-  const templates = useList<EmailTemplate>("/templates", { channel: "linkedin", limit: 200 });
+  const templates = useList<EmailTemplate>("/templates", { channel: "linkedin", limit: 100 });
   const [confirming, setConfirming] = useState(false);
   const [editing, setEditing] = useState(false);
 

@@ -163,7 +163,7 @@ export default function CampaignComposer({
   };
 
   const segments = useList<Segment>("/segments");
-  const templates = useList<EmailTemplate>("/templates", { channel: "email", limit: 200 });
+  const templates = useList<EmailTemplate>("/templates", { channel: "email", limit: 100 });
   const count = useRecipientCount(d);
 
   const next = () => {

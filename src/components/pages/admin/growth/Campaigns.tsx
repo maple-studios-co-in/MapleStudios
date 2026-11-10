@@ -159,7 +159,7 @@ function CampaignDetail({
     page,
     limit: 50,
   });
-  const templates = useList<EmailTemplate>("/templates", { limit: 200 });
+  const templates = useList<EmailTemplate>("/templates", { limit: 100 });
   const segments = useList<Segment>("/segments");
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState<"delete" | "cancel" | null>(null);
