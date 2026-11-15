@@ -28,7 +28,7 @@ function lead(overrides: Partial<ILead> = {}) {
 
 async function create(body: Record<string, unknown>) {
   const res = await request(app).post(api).set(auth).send(body);
-  expect(res.status).toBe(201);
+  expect(res.status, JSON.stringify(res.body)).toBe(201);
   return res.body.item as { id: string; [k: string]: unknown };
 }
 
