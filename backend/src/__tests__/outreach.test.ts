@@ -112,6 +112,22 @@ describe("outreach: targets", () => {
     expect(paged.body.meta).toEqual({ total: 3, page: 2, limit: 1, pages: 3 });
   });
 
+  it("pages the board deterministically when targets share an update timestamp", async () => {
+    const at = new Date("2026-01-01T00:00:00Z");
+    await OutreachTarget.insertMany(Array.from({ length: 205 }, (_, i) => ({
+      name: `Target ${i}`, linkedinUrl: profile(`page-${i}`),
+      stage: "identified", createdAt: at, updatedAt: at,
+    })));
+    const first = await request(app).get(`${api}?limit=100&page=1`).set(auth);
+    const second = await request(app).get(`${api}?limit=100&page=2`).set(auth);
+    const third = await request(app).get(`${api}?limit=100&page=3`).set(auth);
+    expect([first.status, second.status, third.status]).toEqual([200, 200, 200]);
+    expect(first.body.items[0].name).toBe("Target 204");
+    expect(third.body.items).toHaveLength(5);
+    const ids = [...first.body.items, ...second.body.items, ...third.body.items].map((t: {id: string}) => t.id);
+    expect(new Set(ids).size).toBe(205);
+  });
+
   it("reads, updates and deletes a target", async () => {
     const item = await create({ name: "Ravi Kumar", linkedinUrl: profile("ravi") });
     expect((await request(app).get(`${api}/${item.id}`).set(auth)).body.item.id).toBe(item.id);

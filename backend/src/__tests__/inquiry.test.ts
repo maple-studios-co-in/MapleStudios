@@ -18,7 +18,7 @@ describe("POST /api/v1/inquiries", () => {
   it("stores an inquiry and normalises the email", async () => {
     const res = await request(app).post("/api/v1/inquiries").send(valid);
 
-    expect(res.status).toBe(201);
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(res.body.ok).toBe(true);
 
     const saved = await Inquiry.findById(res.body.id).exec();
