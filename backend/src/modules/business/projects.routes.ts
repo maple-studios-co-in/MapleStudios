@@ -66,14 +66,12 @@ projectRoutes.get("/clients", requireBusinessManager, async (req, res) => {
   });
 });
 projectRoutes.post("/clients", requireBusinessManager, async (req, res) =>
-  res
-    .status(201)
-    .json({
-      item: await Client.create({
-        ...clientInput.parse(req.body),
-        updatedBy: actor(req),
-      }),
+  res.status(201).json({
+    item: await Client.create({
+      ...clientInput.parse(req.body),
+      updatedBy: actor(req),
     }),
+  }),
 );
 projectRoutes.get("/clients/:id", requireBusinessManager, async (req, res) => {
   const item = await Client.findById(id.parse(req.params.id));
@@ -126,13 +124,11 @@ projectRoutes.post("/projects", requireBusinessManager, async (req, res) => {
     throw AppError.badRequest("Due date must follow the start date.");
   await clientAvailable(input.clientId);
   await validateAssignments(input.assigneeIds);
-  res
-    .status(201)
-    .json({
-      item: await wireProject(
-        await Project.create({ ...input, updatedBy: actor(req) }),
-      ),
-    });
+  res.status(201).json({
+    item: await wireProject(
+      await Project.create({ ...input, updatedBy: actor(req) }),
+    ),
+  });
 });
 projectRoutes.get("/projects/:id", async (req, res) => {
   const p = await projectFor(req, String(req.params.id));
@@ -190,16 +186,14 @@ projectRoutes.post(
         "Assign this deliverable to a project teammate.",
       );
     if (input.assigneeId) await validateAssignments([input.assigneeId]);
-    res
-      .status(201)
-      .json({
-        item: await Deliverable.create({
-          ...input,
-          projectId: String(p._id),
-          updatedBy: actor(req),
-          history: [{ action: "created", actor: actor(req), at: new Date() }],
-        }),
-      });
+    res.status(201).json({
+      item: await Deliverable.create({
+        ...input,
+        projectId: String(p._id),
+        updatedBy: actor(req),
+        history: [{ action: "created", actor: actor(req), at: new Date() }],
+      }),
+    });
   },
 );
 projectRoutes.patch("/deliverables/:id", async (req, res) => {

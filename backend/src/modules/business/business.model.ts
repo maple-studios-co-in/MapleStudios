@@ -5,7 +5,7 @@ import mongoose, {
   type Model,
 } from "mongoose";
 export const businessOptions = {
-  timestamps: true,
+  timestamps: true as const,
   toJSON: {
     versionKey: false,
     transform: (_doc: unknown, ret: Record<string, unknown>) => {
