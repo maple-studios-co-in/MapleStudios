@@ -67,14 +67,12 @@ documentRoutes.put("/templates", requireBusinessOwner, async (req, res) => {
   if (!templateId) {
     if (rev !== 0)
       throw AppError.badRequest("A new template starts at revision zero.");
-    return res
-      .status(201)
-      .json({
-        item: await BusinessTemplate.create({
-          ...input,
-          updatedBy: req.admin!.email,
-        }),
-      });
+    return res.status(201).json({
+      item: await BusinessTemplate.create({
+        ...input,
+        updatedBy: req.admin!.email,
+      }),
+    });
   }
   const current = await BusinessTemplate.findById(templateId);
   if (!current) throw AppError.notFound();
@@ -190,19 +188,66 @@ documentRoutes.patch("/drafts/:id", async (req, res) => {
 });
 documentRoutes.post("/drafts/:id/regenerate", async (req, res) => {
   const current = await findDraft(req.params.id);
-  const {revision: rev, ...options} = draftInput.omit({projectId:true,kind:true}).extend({revision}).strict().parse(req.body);
-  if(current.versions.length >= 100) throw AppError.conflict("Create a new draft; the version history is full.");
+  const { revision: rev, ...options } = draftInput
+    .omit({ projectId: true, kind: true })
+    .extend({ revision })
+    .strict()
+    .parse(req.body);
+  if (current.versions.length >= 100)
+    throw AppError.conflict("Create a new draft; the version history is full.");
   const old = current.snapshot as DraftSnapshot;
-  const generated = await generateDraft(req, draftInput.parse({
-    projectId:current.projectId,kind:current.kind,templateId:old.templateId,
-    invoice:old.invoice ? {reference:old.invoice.reference,issueDate:old.invoice.issueDate,dueDate:old.invoice.dueDate,poNumber:old.invoice.poNumber,placeOfSupply:old.invoice.placeOfSupply,taxMode:old.invoice.taxMode,notes:old.invoice.notes,lines:old.invoice.lines.map(l=>({description:l.description,sac:l.sac,quantityHundredths:l.quantityHundredths,unitPrice:l.unitPrice,discount:l.discount,taxRateBps:l.taxRateBps}))} : undefined,
-    ...options,
-  }));
-  const {createdBy: _createdBy, ...changes} = generated;
+  const generated = await generateDraft(
+    req,
+    draftInput.parse({
+      projectId: current.projectId,
+      kind: current.kind,
+      templateId: old.templateId,
+      invoice: old.invoice
+        ? {
+            reference: old.invoice.reference,
+            issueDate: old.invoice.issueDate,
+            dueDate: old.invoice.dueDate,
+            poNumber: old.invoice.poNumber,
+            placeOfSupply: old.invoice.placeOfSupply,
+            taxMode: old.invoice.taxMode,
+            notes: old.invoice.notes,
+            lines: old.invoice.lines.map((l) => ({
+              description: l.description,
+              sac: l.sac,
+              quantityHundredths: l.quantityHundredths,
+              unitPrice: l.unitPrice,
+              discount: l.discount,
+              taxRateBps: l.taxRateBps,
+            })),
+          }
+        : undefined,
+      ...options,
+    }),
+  );
+  const { createdBy: _createdBy, ...changes } = generated;
   void _createdBy;
-  const item = await BusinessDraft.findOneAndUpdate({_id:current._id,revision:rev},{$set:changes,$inc:{revision:1},$push:{versions:{revision:current.revision,title:current.title,subject:current.subject,body:current.body,snapshot:old,updatedBy:current.updatedBy,updatedAt:current.updatedAt}}},{new:true}).select("-versions");
-  if(!item) throw AppError.conflict("Draft changed. Refresh before regenerating.");
-  res.json({item});
+  const item = await BusinessDraft.findOneAndUpdate(
+    { _id: current._id, revision: rev },
+    {
+      $set: changes,
+      $inc: { revision: 1 },
+      $push: {
+        versions: {
+          revision: current.revision,
+          title: current.title,
+          subject: current.subject,
+          body: current.body,
+          snapshot: old,
+          updatedBy: current.updatedBy,
+          updatedAt: current.updatedAt,
+        },
+      },
+    },
+    { new: true },
+  ).select("-versions");
+  if (!item)
+    throw AppError.conflict("Draft changed. Refresh before regenerating.");
+  res.json({ item });
 });
 documentRoutes.get("/drafts/:id/versions", async (req, res) => {
   const d = await findDraft(req.params.id);
@@ -228,7 +273,8 @@ documentRoutes.get("/drafts/:id/export", async (req, res) => {
     throw AppError.badRequest(
       "Fill these placeholders before exporting: " + item.missing.join(", "),
     );
-  if (format === "txt" && !["onboarding", "update"].includes(item.kind)) throw AppError.badRequest("Use Word or PDF for this document.");
+  if (format === "txt" && !["onboarding", "update"].includes(item.kind))
+    throw AppError.badRequest("Use Word or PDF for this document.");
   const d = item.toObject() as unknown as ExportDraft;
   res.setHeader("cache-control", "private, no-store");
   res.setHeader("x-content-type-options", "nosniff");

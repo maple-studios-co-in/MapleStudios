@@ -62,6 +62,7 @@ type NavItem = { href: string; label: string; icon: typeof Gauge; exact?: boolea
 /** Grouped rail. "Studio" is the original operations console — those four
     screens and their routes are unchanged; the CMS groups are additive. */
 const NAV: { group: string; items: NavItem[] }[] = [
+  {group:"Business",items:[{href:"/admin/clients",label:"Clients",icon:Handshake},{href:"/admin/projects",label:"Projects",icon:Briefcase},{href:"/admin/drafts",label:"Client drafts",icon:FileText},{href:"/admin/company",label:"Company & templates",icon:SettingsIcon}]},
   {group:"Team",items:[{href:"/admin/team",label:"Team & attendance",icon:Users},{href:"/admin/payroll",label:"Payroll",icon:FileText}]},
   {
     group: "Studio",
@@ -242,13 +243,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </Link>
 
           <nav className="flex-1 px-2.5 pb-4">
-            {NAV.filter(section=>account?.role !== "member" || ["Team","Site"].includes(section.group)).map((section) => (
+            {NAV.filter(section=>account?.role !== "member" || ["Business","Team","Site"].includes(section.group)).map((section) => (
               <div key={section.group} className="mb-4">
                 <p className="px-3 pb-1.5 font-sans-luxury text-[9px] font-bold uppercase tracking-[0.2em] text-[#fff8ed]/28">
                   {section.group}
                 </p>
                 <ul>
-                  {section.items.filter(item=>account?.role === "owner" || !["/admin/payroll","/admin/audit"].includes(item.href) && (account?.role !== "member" || ["/admin/team","/admin/settings"].includes(item.href))).map((item) => {
+                  {section.items.filter(item=>account?.role === "owner" || !["/admin/payroll","/admin/audit"].includes(item.href) && (account?.role !== "member" || ["/admin/team","/admin/settings","/admin/projects"].includes(item.href))).map((item) => {
                     const active = item.exact
                       ? pathname === item.href
                       : pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -328,7 +329,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
           <main className="mx-auto max-w-[1240px] px-5 pb-24 pt-7 sm:px-8">
             {error ? <p role="alert" className="mb-4 text-red-800">{error}</p> : null}
-            {account?.role === "member" && !["/admin/team","/admin/settings"].includes(pathname) ? <p>Your team workspace is ready. <Link href="/admin/team" className="underline">Open team & attendance</Link></p> : children}
+            {account?.role === "member" && !(["/admin/team","/admin/settings","/admin/projects"].includes(pathname)||pathname.startsWith("/admin/projects/")) ? <p>Your team workspace is ready. <Link href="/admin/team" className="underline">Open team & attendance</Link></p> : children}
           </main>
         </div>
       </div>
