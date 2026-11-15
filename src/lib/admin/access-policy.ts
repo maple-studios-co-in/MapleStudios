@@ -12,7 +12,14 @@ export function permitsStudio(role: StudioRole, path: string): boolean {
 export function sameOriginMutation(req: Request): boolean {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return true;
   const origin = req.headers.get("origin");
-  return origin === new URL(req.url).origin;
+  try {
+    // Proxy requests may carry an internal URL. Use the configured public
+    // origin rather than trusting client-controlled forwarding headers.
+    const expected = new URL(process.env.MAPLE_PUBLIC_ORIGIN || req.url);
+    return ["http:", "https:"].includes(expected.protocol) && origin === expected.origin;
+  } catch {
+    return false;
+  }
 }
 export function sessionToken(cookie: string | null): string | undefined {
   return cookie
