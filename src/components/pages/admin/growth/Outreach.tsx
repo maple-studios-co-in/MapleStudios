@@ -12,6 +12,7 @@ import {
   ErrorText,
   Kv,
   Muted,
+  Pager,
   copyText,
   fmtIst,
   growthTone,
@@ -53,8 +54,9 @@ export default function Outreach() {
   const { show, node: toast } = useToast();
   const { busy, run } = useAction(show);
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const dq = useDebounced(q, 300);
-  const list = useList<OutreachTarget>("/outreach", { q: dq || undefined, limit: 500 });
+  const list = useList<OutreachTarget>("/outreach", { q: dq || undefined, page, limit: 100 });
   const due = useList<OutreachTarget>("/outreach/due");
   const [open, setOpen] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -107,9 +109,10 @@ export default function Outreach() {
           </p>
           <Muted>next action on or before now, oldest first</Muted>
         </div>
+        <ErrorText>{due.error}</ErrorText>
         {due.loading ? (
           <Muted>Loading…</Muted>
-        ) : due.items.length === 0 ? (
+        ) : !due.error && due.items.length === 0 ? (
           <p className="font-sans-luxury text-[12.5px] text-[#8b8178]">Nothing due — set a next action on a target to see it here.</p>
         ) : (
           <ul className="divide-y divide-[#d8c3a5]/40">
@@ -135,18 +138,18 @@ export default function Outreach() {
 
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <div className="w-full max-w-[320px]">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, company…" aria-label="Search targets" />
+          <Input value={q} maxLength={120} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search name, company…" aria-label="Search targets" />
         </div>
-        <Muted>{list.meta ? `${list.meta.total} target${list.meta.total === 1 ? "" : "s"}` : ""}</Muted>
+        <Muted>{list.meta ? `Showing ${list.items.length} of ${list.meta.total} targets · stage counts on this page` : ""}</Muted>
       </div>
 
       <ErrorText>{list.error}</ErrorText>
 
       {list.loading ? (
         <Spinner />
-      ) : list.items.length === 0 ? (
+      ) : list.error ? null : list.items.length === 0 ? (
         <EmptyState>
-          {dq ? "No targets match." : "No outreach targets yet — add one here or from a lead's drawer."}
+          {list.meta && list.meta.total > 0 ? "This page is empty. Return to the first page to see the remaining targets." : dq ? "No targets match." : "No outreach targets yet — add one here or from a lead's drawer."}
         </EmptyState>
       ) : (
         <div className="-mx-5 overflow-x-auto px-5 pb-3 sm:-mx-8 sm:px-8">
@@ -205,6 +208,12 @@ export default function Outreach() {
             })}
           </div>
         </div>
+      )}
+
+      {list.meta && page > list.meta.pages ? (
+        <Btn onClick={() => setPage(1)}>Back to first page</Btn>
+      ) : (
+        <Pager meta={list.meta} page={page} onPage={setPage} />
       )}
 
       {open ? (

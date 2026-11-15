@@ -66,7 +66,7 @@ export async function listTargets({ stage, q, due, page, limit }: ListTargetsQue
 
   const [items, total] = await Promise.all([
     OutreachTarget.find(filter)
-      .sort(due ? { nextActionAt: 1 } : { updatedAt: -1 })
+      .sort(due ? { nextActionAt: 1, _id: 1 } : { updatedAt: -1, _id: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .exec(),
