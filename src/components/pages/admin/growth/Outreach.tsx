@@ -149,7 +149,7 @@ export default function Outreach() {
         <Spinner />
       ) : list.error ? null : list.items.length === 0 ? (
         <EmptyState>
-          {dq ? "No targets match." : "No outreach targets yet — add one here or from a lead's drawer."}
+          {list.meta && list.meta.total > 0 ? "This page is empty. Return to the first page to see the remaining targets." : dq ? "No targets match." : "No outreach targets yet — add one here or from a lead's drawer."}
         </EmptyState>
       ) : (
         <div className="-mx-5 overflow-x-auto px-5 pb-3 sm:-mx-8 sm:px-8">
