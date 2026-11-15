@@ -17,7 +17,7 @@ const KEY = "site-copy";
  * a restore happened, and undo the restore itself.
  */
 export async function POST(req: Request) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { v } = await readJson<{ v?: number }>(req);

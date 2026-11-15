@@ -31,7 +31,7 @@ type Row = Base & Record<string, unknown>;
 const orderOf = (r: Row) => (typeof r.order === "number" ? r.order : Number.MAX_SAFE_INTEGER);
 
 export async function GET(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { resource } = await params;
@@ -55,7 +55,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 export async function POST(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { resource } = await params;

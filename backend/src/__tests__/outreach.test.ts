@@ -1,3 +1,5 @@
+import { beforeEach } from "vitest";
+import { AdminUser } from "../modules/auth/admin.model.js";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
@@ -8,7 +10,7 @@ import { OutreachTarget } from "../modules/outreach/outreach.model.js";
 
 const app = createApp();
 const auth = {
-  authorization: `Bearer ${signAccessToken({ sub: "test-admin", email: "owner@maplestudios.co.in", role: "owner", ver: 1 })}`,
+  authorization: `Bearer ${signAccessToken({ sub: "000000000000000000000001", email: "owner@maplestudios.co.in", role: "owner", ver: 1 })}`,
 };
 const api = "/api/v1/admin/outreach";
 
@@ -254,3 +256,5 @@ describe("outreach: render", () => {
     expect(missing.status).toBe(404);
   });
 });
+
+beforeEach(async () => { await AdminUser.create({_id:"000000000000000000000001",email:"owner@maplestudios.co.in",name:"Owner",role:"owner",passwordHash:"unused-fixture",tokenVersion:1}); });

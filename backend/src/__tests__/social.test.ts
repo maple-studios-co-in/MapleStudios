@@ -1,3 +1,5 @@
+import { beforeEach } from "vitest";
+import { AdminUser } from "../modules/auth/admin.model.js";
 import crypto from "node:crypto";
 import request from "supertest";
 import { DateTime } from "luxon";
@@ -40,7 +42,7 @@ import { runSocialTick } from "../modules/social/social.service.js";
 
 const app = createApp();
 const auth = {
-  authorization: `Bearer ${signAccessToken({ sub: "test-admin", email: "owner@maplestudios.co.in", role: "owner", ver: 1 })}`,
+  authorization: `Bearer ${signAccessToken({ sub: "000000000000000000000001", email: "owner@maplestudios.co.in", role: "owner", ver: 1 })}`,
 };
 const admin = "/api/v1/admin/social";
 const consoleUrl = (q: string) => `${env.PUBLIC_BASE_URL}/admin/social?${q}`;
@@ -751,3 +753,5 @@ describe("social: real publishers (scripted HTTP)", () => {
     ).rejects.toMatchObject({ kind: "reconnect" });
   });
 });
+
+beforeEach(async () => { await AdminUser.create({_id:"000000000000000000000001",email:"owner@maplestudios.co.in",name:"Owner",role:"owner",passwordHash:"unused-fixture",tokenVersion:1}); });

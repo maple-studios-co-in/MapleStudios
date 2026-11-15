@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
@@ -13,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx src/scripts/seed.ts",
-    "migrate:json": "tsx src/scripts/migrate.ts"
+    "migrate:json": "tsx src/scripts/migrate.ts",
+    "bootstrap:team": "tsx src/scripts/bootstrap-team.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

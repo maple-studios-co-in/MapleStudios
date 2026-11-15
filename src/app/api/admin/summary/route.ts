@@ -1,5 +1,6 @@
+import { denyIfUnauthorized } from "@/lib/admin/cms/guard";
 import { NextResponse } from "next/server";
-import { isAdminKeyConfigured, isAdminKeyValid, listAllSlots } from "@/lib/bookings";
+import { listAllSlots } from "@/lib/bookings";
 import { listInquiries } from "@/lib/inquiries";
 import { SERVICES_PAGE, WORK_PAGE } from "@/lib/constants";
 
@@ -10,17 +11,8 @@ export const dynamic = "force-dynamic";
  * so the dashboard does not fan out to three endpoints on load.
  */
 export async function GET(req: Request) {
-  if (!isAdminKeyConfigured())
-    return NextResponse.json(
-      {
-        error:
-          "This deployment has no MAPLE_ADMIN_KEY set, so the admin API is disabled. Set it in the hosting environment and redeploy.",
-        code: "admin_key_unconfigured",
-      },
-      { status: 503 }
-    );
-  if (!isAdminKeyValid(req.headers.get("x-admin-key")))
-    return NextResponse.json({ error: "Invalid admin key." }, { status: 401 });
+  const denied = await denyIfUnauthorized(req);
+  if (denied) return denied;
 
   const [inquiries, slots] = await Promise.all([listInquiries(), listAllSlots()]);
   const weekAgo = Date.now() - 7 * 86400_000;

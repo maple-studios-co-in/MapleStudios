@@ -12,6 +12,6 @@ export const refreshSchema = z.object({
 export const createAdminSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   name: z.string().trim().min(1).max(120),
-  password: z.string().min(10, "Use at least 10 characters."),
-  role: z.enum(["owner", "admin"]).default("admin"),
+  password: z.string().min(12, "Use at least 12 characters.").max(200),
+  role: z.enum(["owner", "admin", "member"]).default("member"),
 });

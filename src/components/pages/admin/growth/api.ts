@@ -1,4 +1,5 @@
 "use client";
+import { sessionFetch } from "@/lib/admin/session-client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
@@ -6,14 +7,8 @@ import type { Dispatch, SetStateAction } from "react";
 import { useAdmin } from "../AdminShell";
 import type { ListMeta } from "./types";
 
-/**
- * Data access for the growth screens.
- *
- * The browser talks to `/api/v2/admin/*`, which next.config rewrites to the
- * backend's `/api/v1/admin/*`, so everything is same-origin and the only credential
- * is the console's own `x-admin-key` — the same key <AdminShell> already
- * validated. The hooks are deliberately as small as cms/useCms.ts: plain
- * list/detail traffic, no cache layer, zero added dependencies.
+/** Same-origin requests use the HttpOnly session through the Next API proxy.
+ * Session renewal is handled by sessionFetch; no access token is exposed to JavaScript.
  */
 
 const BASE = "/api/v2/admin";
@@ -88,7 +83,7 @@ export function useApi(): Api {
     const request = async <T,>(method: string, path: string, body?: unknown): Promise<T> => {
       const headers: Record<string, string> = { "x-admin-key": key };
       if (body !== undefined) headers["content-type"] = "application/json";
-      const res = await fetch(`${BASE}${path}`, {
+      const res = await sessionFetch(`${BASE}${path}`, {
         method,
         cache: "no-store",
         headers,
@@ -98,7 +93,7 @@ export function useApi(): Api {
     };
 
     const uploadCsv = async <T,>(path: string, text: string, params?: Params): Promise<T> => {
-      const res = await fetch(`${BASE}${path}${qs(params)}`, {
+      const res = await sessionFetch(`${BASE}${path}${qs(params)}`, {
         method: "POST",
         cache: "no-store",
         headers: { "x-admin-key": key, "content-type": "text/csv" },
@@ -108,7 +103,7 @@ export function useApi(): Api {
     };
 
     const download = async (path: string, filename: string, params?: Params) => {
-      const res = await fetch(`${BASE}${path}${qs(params)}`, {
+      const res = await sessionFetch(`${BASE}${path}${qs(params)}`, {
         cache: "no-store",
         headers: { "x-admin-key": key },
       });

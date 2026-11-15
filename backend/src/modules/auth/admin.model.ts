@@ -1,7 +1,12 @@
-import mongoose, { Schema, model, type HydratedDocument, type Model } from "mongoose";
+import mongoose, {
+  Schema,
+  model,
+  type HydratedDocument,
+  type Model,
+} from "mongoose";
 import bcrypt from "bcryptjs";
 
-export type AdminRole = "owner" | "admin";
+export type AdminRole = "owner" | "admin" | "member";
 
 export interface IAdmin {
   email: string;
@@ -10,6 +15,7 @@ export interface IAdmin {
   role: AdminRole;
   /** Bumped to invalidate every issued refresh token for this account. */
   tokenVersion: number;
+  active: boolean;
   lastLoginAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -22,16 +28,28 @@ export function adminWire(a: IAdmin & { _id: unknown }) {
     email: a.email,
     name: a.name,
     role: a.role,
+    active: a.active !== false,
     lastLoginAt: a.lastLoginAt ? new Date(a.lastLoginAt).toISOString() : null,
   };
 }
 
 const AdminSchema = new Schema<IAdmin>(
   {
-    email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
     name: { type: String, required: true, trim: true, maxlength: 120 },
     passwordHash: { type: String, required: true, select: false },
-    role: { type: String, enum: ["owner", "admin"], default: "admin" },
+    role: {
+      type: String,
+      enum: ["owner", "admin", "member"],
+      default: "member",
+    },
+    active: { type: Boolean, default: true },
     tokenVersion: { type: Number, default: 0 },
     lastLoginAt: { type: Date },
   },
@@ -39,9 +57,10 @@ const AdminSchema = new Schema<IAdmin>(
     timestamps: true,
     toJSON: {
       versionKey: false,
-      transform: (_doc, ret) => adminWire(ret as unknown as IAdmin & { _id: unknown }),
+      transform: (_doc, ret) =>
+        adminWire(ret as unknown as IAdmin & { _id: unknown }),
     },
-  }
+  },
 );
 
 export type AdminDoc = HydratedDocument<IAdmin>;
@@ -53,4 +72,5 @@ export const AdminUser: Model<IAdmin> =
   model<IAdmin>("AdminUser", AdminSchema);
 
 export const hashPassword = (plain: string) => bcrypt.hash(plain, 12);
-export const verifyPassword = (plain: string, hash: string) => bcrypt.compare(plain, hash);
+export const verifyPassword = (plain: string, hash: string) =>
+  bcrypt.compare(plain, hash);

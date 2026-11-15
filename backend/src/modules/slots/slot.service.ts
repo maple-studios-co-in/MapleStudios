@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Slot } from "./slot.model.js";
 import { AppError } from "../../lib/AppError.js";
 import { toStartsAt } from "../../lib/time.js";
@@ -27,7 +28,9 @@ export async function listOpenSlots() {
 
 /** Everything, booked and open - the admin calendar. */
 export async function listAllSlots() {
-  return Slot.find().sort({ startsAt: 1 }).limit(1000).exec();
+  return Slot.find({ startsAt: { $gt: new Date() } })
+    .sort({ startsAt: 1 })
+    .exec();
 }
 
 /**
@@ -49,6 +52,7 @@ export async function claimSlot(input: ClaimInput) {
     {
       $set: {
         booking: {
+          claimId: randomUUID(),
           name: input.name,
           email: input.email,
           ...(input.note ? { note: input.note } : {}),
@@ -56,7 +60,7 @@ export async function claimSlot(input: ClaimInput) {
         },
       },
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).exec();
 
   if (claimed) return claimed;
@@ -64,7 +68,8 @@ export async function claimSlot(input: ClaimInput) {
   // Nothing matched. One extra read, purely to explain why.
   const existing = await Slot.findOne({ date, time }).exec();
   if (!existing) throw AppError.notFound("That slot is no longer listed.");
-  if (existing.booking) throw AppError.conflict("That slot was just taken - please pick another.");
+  if (existing.booking)
+    throw AppError.conflict("That slot was just taken - please pick another.");
   throw AppError.gone("That slot is in the past.");
 }
 
@@ -72,16 +77,58 @@ export async function claimSlot(input: ClaimInput) {
 export async function addSlot(date: string, time: string) {
   const existing = await Slot.findOne({ date, time }).exec();
   if (existing) throw AppError.conflict("That slot already exists.");
-  return Slot.create({ date, time, startsAt: toStartsAt(date, time), booking: null });
+  return Slot.create({
+    date,
+    time,
+    startsAt: toStartsAt(date, time),
+    booking: null,
+  });
 }
 
 /** Close a slot. Refuses to discard a booked call unless explicitly forced. */
-export async function removeSlot(id: string, force = false): Promise<void> {
+export async function removeSlot(
+  id: string,
+  force = false,
+  freeOnly = false,
+  expectedBooking?: string,
+): Promise<void> {
   const { date, time } = splitId(id);
-  const slot = await Slot.findOne({ date, time }).exec();
-  if (!slot) throw AppError.notFound("That slot no longer exists.");
-  if (slot.booking && !force) {
-    throw AppError.conflict("That slot is booked - cancel the call before removing it.");
+  if (freeOnly) {
+    if (!expectedBooking)
+      throw AppError.badRequest(
+        "Refresh the calendar before cancelling this booking.",
+      );
+    const bookingFilter = /^[a-f0-9-]{36}$/i.test(expectedBooking)
+      ? { "booking.claimId": expectedBooking }
+      : {
+          "booking.claimId": { $exists: false },
+          "booking.at": new Date(expectedBooking),
+        };
+    if (
+      !/^[a-f0-9-]{36}$/i.test(expectedBooking) &&
+      !Number.isFinite(new Date(expectedBooking).getTime())
+    )
+      throw AppError.badRequest("Invalid booking reference.");
+    const freed = await Slot.findOneAndUpdate(
+      { date, time, ...bookingFilter },
+      { $set: { booking: null } },
+    ).exec();
+    if (!freed)
+      throw AppError.conflict(
+        "This booking has changed. Refresh before cancelling.",
+      );
+    return;
   }
-  await slot.deleteOne();
+  // The booking check and deletion must be one operation: a claim may race a removal.
+  const removed = await Slot.findOneAndDelete({
+    date,
+    time,
+    ...(!force ? { booking: null } : {}),
+  }).exec();
+  if (removed) return;
+  if (await Slot.exists({ date, time }))
+    throw AppError.conflict(
+      "That slot is booked - cancel the call before removing it.",
+    );
+  throw AppError.notFound("That slot no longer exists.");
 }

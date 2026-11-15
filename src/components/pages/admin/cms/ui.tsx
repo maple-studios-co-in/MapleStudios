@@ -176,15 +176,16 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 export function Select({
   options,
+  children,
   ...rest
-}: React.SelectHTMLAttributes<HTMLSelectElement> & { options: { value: string; label: string }[] }) {
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { options?: { value: string; label: string }[] }) {
   return (
     <select {...rest} className={`${INPUT} cursor-pointer ${rest.className ?? ""}`}>
-      {options.map((o) => (
+      {options ? options.map((o) => (
         <option key={o.value} value={o.value}>
           {o.label}
         </option>
-      ))}
+      )) : children}
     </select>
   );
 }

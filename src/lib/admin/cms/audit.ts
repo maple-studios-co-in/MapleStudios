@@ -1,3 +1,4 @@
+import { growthRequest } from "../../growth-server";
 import { mutate, newId } from "./store";
 import type { AuditAction, AuditEntry } from "./types";
 
@@ -34,12 +35,17 @@ export async function audit(
   action: AuditAction,
   resource: string,
   summary: string,
-  who = "admin"
+  who?: string
 ): Promise<void> {
   try {
+    if (!who) {
+      const {admin} = await growthRequest<{admin:{email:string}}>("/auth/me");
+      who = admin.email;
+    }
+    const actor = who;
     const now = new Date().toISOString();
     await mutate<AuditEntry, true>("audit", (rows) => ({
-      rows: [{ id: newId(), createdAt: now, updatedAt: now, who, action, resource, summary }, ...rows].slice(
+      rows: [{ id: newId(), createdAt: now, updatedAt: now, who: actor, action, resource, summary }, ...rows].slice(
         0,
         MAX_ENTRIES
       ),

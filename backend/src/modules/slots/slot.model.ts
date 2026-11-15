@@ -1,6 +1,12 @@
-import mongoose, { Schema, model, type HydratedDocument, type Model } from "mongoose";
+import mongoose, {
+  Schema,
+  model,
+  type HydratedDocument,
+  type Model,
+} from "mongoose";
 
 export interface SlotBooking {
+  claimId?: string;
   name: string;
   email: string;
   note?: string;
@@ -26,6 +32,7 @@ export function slotWire(s: ISlot) {
     time: s.time,
     booking: s.booking
       ? {
+          claimId: s.booking.claimId,
           name: s.booking.name,
           email: s.booking.email,
           ...(s.booking.note ? { note: s.booking.note } : {}),
@@ -37,12 +44,19 @@ export function slotWire(s: ISlot) {
 
 const BookingSchema = new Schema<SlotBooking>(
   {
+    claimId: { type: String },
     name: { type: String, required: true, trim: true, maxlength: 120 },
-    email: { type: String, required: true, trim: true, lowercase: true, maxlength: 200 },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      maxlength: 200,
+    },
     note: { type: String, trim: true, maxlength: 2000 },
     at: { type: Date, required: true, default: () => new Date() },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const SlotSchema = new Schema<ISlot>(
@@ -58,7 +72,7 @@ const SlotSchema = new Schema<ISlot>(
       versionKey: false,
       transform: (_doc, ret) => slotWire(ret as unknown as ISlot),
     },
-  }
+  },
 );
 
 // One slot per date+time. This index is what makes a duplicate POST a 409

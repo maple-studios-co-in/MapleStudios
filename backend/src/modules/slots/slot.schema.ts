@@ -15,7 +15,11 @@ export const createBookingSchema = z
     date: dateStr.optional(),
     time: timeStr.optional(),
     name: z.string().trim().min(1, "Please enter your name.").max(120),
-    email: z.string().trim().toLowerCase().email("That email address does not look right."),
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .email("That email address does not look right."),
     note: z.string().trim().max(2000).optional(),
   })
   .refine((v) => Boolean(v.slotId) || (Boolean(v.date) && Boolean(v.time)), {
@@ -33,6 +37,11 @@ export const slotIdParam = z.object({
 });
 
 export const removeSlotQuery = z.object({
+  expectedBooking: z.string().max(64).optional(),
+  free: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => v === "true"),
   force: z
     .enum(["true", "false"])
     .optional()
