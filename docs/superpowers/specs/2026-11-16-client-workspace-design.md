@@ -26,7 +26,7 @@ A project detail screen has Overview, Deliverables and Client drafts. The projec
 
 ## Deliverables and approvals
 
-Deliverables contain title, description, assignee (from the project's team), due date, status and a submission URL/reference plus notes. Workflow: planned → in progress → in review → approved / changes requested. Members can update and submit their own assigned deliverables; managers can update all.
+Deliverables contain title, description, assignee (from the project's team), due date, status and a submission URL/reference plus notes. Workflow: planned → in progress → in review → approved / changes requested. Members can update progress, submission references and notes on their own assigned deliverables. Scope, deadlines, assignees and client decision records are manager-only. Managers can update all deliverables.
 
 Submitting records a version of the submitted content. Owner/Admin record a client decision only against that exact current submission version, with decision, client approver name, decision date and evidence reference (email thread, approved document URL or reference). The UI calls this **Record client approval**, not Send/Approve as client. A stale approval attempt returns a conflict. Changing approved content clears its current approval and requires resubmission while retaining historical decisions. The original evidence remains readable in project history. No automated deemed acceptance or inference from silence.
 
