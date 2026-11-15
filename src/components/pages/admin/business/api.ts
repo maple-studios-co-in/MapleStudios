@@ -87,6 +87,13 @@ export type Company = {
   representative: string;
   representativeTitle: string;
   paymentInstructions: string;
+  bankBeneficiary: string;
+  bankName: string;
+  bankAccount: string;
+  bankIfsc: string;
+  upiId: string;
+  upiPayee: string;
+  paymentQr: string;
 };
 export type Template = {
   id: string;

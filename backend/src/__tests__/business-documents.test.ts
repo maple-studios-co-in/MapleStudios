@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { beforeEach, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../app.js";
@@ -383,4 +384,85 @@ it("explicitly clears a custom template when regenerating a standard email", asy
   expect(r.body.item.body).toContain("Welcome to Maple Studios");
   expect(r.body.item.body).not.toContain("CUSTOM WORDING");
   expect(r.body.item.snapshot.templateId).toBeUndefined();
+});
+
+it("saves owner payment settings and snapshots them into private invoice exports", async () => {
+  const qr =
+    "data:image/png;base64," +
+    fs
+      .readFileSync(
+        new URL("../../../public/brand/maple-mark.png", import.meta.url),
+      )
+      .toString("base64");
+  const settings = {
+    bankBeneficiary: "Example Studio",
+    bankName: "Example Bank",
+    bankAccount: "001234567890",
+    bankIfsc: "ABCD0123456",
+    upiId: "example@bank",
+    upiPayee: "Example Studio",
+    paymentQr: qr,
+  };
+  const saved = await request(app)
+    .patch(base + "/company")
+    .set(auth())
+    .send({ revision: 0, ...settings });
+  expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+  expect(saved.body.item.bankAccount).toBe("001234567890");
+  expect(saved.body.item.paymentQr).toMatch(/^data:image\/png;base64,/);
+  expect(
+    (
+      await request(app)
+        .patch(base + "/company")
+        .set(auth("admin"))
+        .send({ revision: 1, bankAccount: "99999999" })
+    ).status,
+  ).toBe(403);
+  const { item } = await draft("invoice", { invoice });
+  const changed = await request(app)
+    .patch(base + "/company")
+    .set(auth())
+    .send({ revision: 1, bankAccount: "009999999999", paymentQr: "" });
+  expect(changed.status).toBe(200);
+  const html = await request(app)
+    .get(`${base}/drafts/${item.id}/export?format=html`)
+    .set(auth());
+  expect(html.text).toContain("001234567890");
+  expect(html.text).not.toContain("009999999999");
+  expect(html.text).toContain("example@bank");
+  expect(html.text).toContain('alt="Payment QR code"');
+  expect(html.headers["cache-control"]).toContain("no-store");
+  expect(
+    (
+      await request(app)
+        .get(base + "/company")
+        .set(auth())
+    ).body.item.paymentQr,
+  ).toBe("");
+});
+it("rejects malformed payment fields and non-PNG or corrupt QR payloads atomically", async () => {
+  for (const patch of [
+    { bankIfsc: "wrong" },
+    { bankAccount: "123<abc" },
+    { upiId: "https://example.com" },
+    { paymentQr: "https://example.com/qr.png" },
+    { paymentQr: "data:image/svg+xml;base64,PHN2Zz4=" },
+    { paymentQr: "data:image/png;base64,aGVsbG8=" },
+  ]) {
+    expect(
+      (
+        await request(app)
+          .patch(base + "/company")
+          .set(auth())
+          .send({ revision: 0, ...patch })
+      ).status,
+    ).toBe(400);
+  }
+  const profile = (
+    await request(app)
+      .get(base + "/company")
+      .set(auth())
+  ).body.item;
+  expect(profile.revision).toBe(0);
+  expect(profile.bankAccount).toBe("");
 });
