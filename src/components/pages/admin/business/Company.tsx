@@ -24,7 +24,14 @@ const fields = {
   gstin: "GSTIN (optional)",
   representative: "Representative name",
   representativeTitle: "Representative title",
-  paymentInstructions: "Payment instructions",
+};
+const paymentFields = {
+  bankBeneficiary: "Account holder / beneficiary",
+  bankName: "Bank name",
+  bankAccount: "Account number",
+  bankIfsc: "IFSC",
+  upiId: "UPI ID",
+  upiPayee: "UPI payee name",
 };
 const placeholders = [
   "company.name",
@@ -59,6 +66,7 @@ export default function Company() {
     [error, setError] = useState(""),
     [formError, setFormError] = useState(""),
     [busy, setBusy] = useState(false),
+    [uploading, setUploading] = useState(false),
     [notice, setNotice] = useState("");
   useEffect(() => {
     let alive = true;
@@ -79,6 +87,49 @@ export default function Company() {
       alive = false;
     };
   }, []);
+  async function uploadQr(file: File) {
+    setError("");
+    setNotice("");
+    setUploading(true);
+    let url = "";
+    try {
+      if (
+        !["image/png", "image/jpeg"].includes(file.type) ||
+        file.size > 2 * 1024 * 1024
+      )
+        throw new Error("Choose a PNG or JPEG QR image up to 2 MB.");
+      url = URL.createObjectURL(file);
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      if (image.width > 8000 || image.height > 8000)
+        throw new Error("Crop the image to the QR code before uploading.");
+      const scale = Math.min(1, 512 / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context)
+        throw new Error("Image preview unavailable. Try another browser.");
+      context.fillStyle = "white";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const paymentQr = canvas.toDataURL("image/png");
+      if (paymentQr.length > 70000)
+        throw new Error(
+          "Crop to just the QR code and try again; the resized image must be under 50 KB.",
+        );
+      setProfile((p) => (p ? { ...p, paymentQr } : p));
+      setNotice(
+        "QR image ready. Check the recipient by scanning it, then save company details.",
+      );
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      if (url) URL.revokeObjectURL(url);
+      setUploading(false);
+    }
+  }
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -136,7 +187,7 @@ export default function Company() {
                 <Field key={key} label={label}>
                   {["address", "paymentInstructions"].includes(key) ? (
                     <Textarea
-                      disabled={!owner}
+                      disabled={!owner || busy || uploading}
                       value={profile[key as keyof typeof fields]}
                       onChange={(e) =>
                         setProfile({ ...profile, [key]: e.target.value })
@@ -144,7 +195,7 @@ export default function Company() {
                     />
                   ) : (
                     <Input
-                      disabled={!owner}
+                      disabled={!owner || busy || uploading}
                       required={key === "name"}
                       type={
                         key === "email"
@@ -162,8 +213,115 @@ export default function Company() {
                 </Field>
               ))}
             </div>
+            <section
+              className="space-y-4 border-t border-[#d8c3a5] pt-5"
+              aria-labelledby="payment-settings-title"
+            >
+              <h2
+                id="payment-settings-title"
+                className="font-serif-luxury text-2xl"
+              >
+                Bank & UPI payments
+              </h2>
+              <p className="text-sm">
+                Add the payment methods you want clients to use. These details
+                appear on new invoice drafts. Existing drafts keep their saved
+                payment details.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {Object.entries(paymentFields).map(([key, label]) => (
+                  <Field key={key} label={label}>
+                    <Input
+                      disabled={!owner || busy || uploading}
+                      value={profile[key as keyof typeof paymentFields] || ""}
+                      maxLength={
+                        key === "bankAccount"
+                          ? 34
+                          : key === "bankIfsc"
+                            ? 11
+                            : key === "upiId"
+                              ? 100
+                              : 160
+                      }
+                      inputMode={key === "bankAccount" ? "numeric" : "text"}
+                      autoComplete="off"
+                      onChange={(e) =>
+                        setProfile({
+                          ...profile,
+                          [key]:
+                            key === "bankIfsc"
+                              ? e.target.value.toUpperCase()
+                              : e.target.value,
+                        })
+                      }
+                    />
+                  </Field>
+                ))}
+              </div>
+              <Field label="Payment QR image (optional)">
+                <input
+                  aria-label="Payment QR image (optional)"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  disabled={!owner || busy || uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (file) void uploadQr(file);
+                  }}
+                  className="block w-full text-sm file:mr-3 file:rounded file:border file:border-[#d8c3a5] file:bg-white file:px-3 file:py-2"
+                />
+              </Field>
+              <p className="text-sm">
+                Upload your bank or UPI app’s QR as PNG or JPEG, up to 2 MB.
+                Crop to the QR with its white border. Scan the saved preview to
+                confirm the recipient; uploading does not verify bank ownership
+                or track payments.
+              </p>
+              {uploading && <p role="status">Preparing QR preview…</p>}
+              {profile.paymentQr && (
+                <div className="space-y-3">
+                  {/* Private inline image; deliberately bypass external image optimization. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={profile.paymentQr}
+                    alt="Payment QR preview"
+                    className="max-h-52 max-w-52 rounded border border-[#d8c3a5] bg-white p-2"
+                  />
+                  {owner && (
+                    <Btn
+                      type="button"
+                      disabled={busy || uploading}
+                      onClick={() => {
+                        setProfile({ ...profile, paymentQr: "" });
+                        setNotice(
+                          "QR removed from the form. Save company details to apply.",
+                        );
+                      }}
+                    >
+                      Remove QR image
+                    </Btn>
+                  )}
+                </div>
+              )}
+              <Field label="Payment instructions / terms">
+                <Textarea
+                  disabled={!owner || busy || uploading}
+                  maxLength={1500}
+                  rows={3}
+                  value={profile.paymentInstructions}
+                  onChange={(e) =>
+                    setProfile({
+                      ...profile,
+                      paymentInstructions: e.target.value,
+                    })
+                  }
+                  placeholder="Payment deadline, invoice reference instructions or other notes"
+                />
+              </Field>
+            </section>
             {owner && (
-              <Btn type="submit" variant="primary" disabled={busy}>
+              <Btn type="submit" variant="primary" disabled={busy || uploading}>
                 Save company details
               </Btn>
             )}
@@ -236,7 +394,7 @@ export default function Company() {
             <Field label="Template name">
               <Input
                 required
-                disabled={!owner}
+                disabled={!owner || busy || uploading}
                 value={edit.name}
                 maxLength={160}
                 onChange={(e) => setEdit({ ...edit, name: e.target.value })}
@@ -245,7 +403,7 @@ export default function Company() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="Type">
                 <Select
-                  disabled={!owner}
+                  disabled={!owner || busy || uploading}
                   value={edit.kind}
                   options={labels(["onboarding", "update", "confidentiality"])}
                   onChange={(e) => setEdit({ ...edit, kind: e.target.value })}
@@ -253,7 +411,7 @@ export default function Company() {
               </Field>
               <Field label="Availability">
                 <Select
-                  disabled={!owner}
+                  disabled={!owner || busy || uploading}
                   value={edit.status}
                   options={[
                     { value: "draft", label: "Draft — Owner review" },
@@ -268,7 +426,7 @@ export default function Company() {
             </div>
             <Field label="Subject">
               <Input
-                disabled={!owner}
+                disabled={!owner || busy || uploading}
                 maxLength={300}
                 value={edit.subject}
                 onChange={(e) => setEdit({ ...edit, subject: e.target.value })}
@@ -277,7 +435,7 @@ export default function Company() {
             <Field label="Template text">
               <Textarea
                 required
-                disabled={!owner}
+                disabled={!owner || busy || uploading}
                 rows={16}
                 maxLength={40000}
                 value={edit.body}

@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import { paymentImage } from "./payment-image.js";
+import type { CompanyProfile } from "./documents.schema.js";
 import {
   Document,
   Paragraph,
@@ -48,12 +50,27 @@ const money = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
     n / 100,
   );
+const paymentRows = (c: CompanyProfile) =>
+  [
+    ["Account holder", c.bankBeneficiary],
+    ["Bank", c.bankName],
+    ["Account number", c.bankAccount],
+    ["IFSC", c.bankIfsc],
+    ["UPI ID", c.upiId],
+    ["UPI payee", c.upiPayee],
+  ].filter((row): row is [string, string] => Boolean(row[1]));
+function qrImage(c: CompanyProfile) {
+  if (!c.paymentQr) return undefined;
+  return paymentImage(c.paymentQr);
+}
 export function renderHtml(d: ExportDraft) {
   const s = d.snapshot,
     c = s.company,
     inv = s.invoice,
     mark = logo();
   const h = escapeHtml;
+  const payments = paymentRows(c),
+    qr = inv ? qrImage(c) : undefined;
   const footer = [c.website, c.email, c.phone]
     .filter(Boolean)
     .map(h)
@@ -77,9 +94,9 @@ export function renderHtml(d: ExportDraft) {
       )
       .join(
         "",
-      )}</tbody></table><h3>Payment instructions</h3><p>${h(c.paymentInstructions || "Payment instructions not set.").replace(/\n/g, "<br>")}</p><p>${h(inv.notes).replace(/\n/g, "<br>")}</p></section>`;
+      )}</tbody></table><section class="payment"><h3>Payment details</h3>${payments.length ? `<table class="details"><tbody>${payments.map(([label, value]) => `<tr><th>${h(label)}</th><td>${h(value)}</td></tr>`).join("")}</tbody></table>` : ""}${qr ? `<figure><img src="${qr.url}" alt="Payment QR code" style="width:160px;max-height:200px;object-fit:contain"><figcaption>Scan to pay · Verify the recipient and amount in your payment app.</figcaption></figure>` : ""}<p>${h(c.paymentInstructions || (!payments.length && !qr ? "Payment instructions not set." : "")).replace(/\n/g, "<br>")}</p></section><p>${h(inv.notes).replace(/\n/g, "<br>")}</p></section>`;
   }
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${h(d.title)} — Draft</title><meta name="referrer" content="no-referrer"><style>@page{size:Letter;margin:18mm}*{box-sizing:border-box}body{font:11pt Arial,sans-serif;color:#171717;margin:0 auto;max-width:780px;padding:24px;line-height:1.5;overflow-wrap:anywhere}.page{width:100%;border-collapse:collapse}.page>thead{display:table-header-group}.page>tfoot{display:table-footer-group}.page>thead td{padding-bottom:20px}.page>tfoot td{padding-top:18px;font-size:9pt;color:#555}.brand{display:flex;gap:16px;align-items:center}.brand img{width:62px;height:auto}.brand strong{font-size:17pt}.brand p{margin:0;font-size:9pt}.draft{color:#741a14;font-weight:bold;letter-spacing:2px;font-size:9pt}h1{font:24pt Georgia,serif;margin:12px 0;color:#000}h3{color:#000;font-size:11pt;margin-top:20px}.body p{white-space:pre-wrap;margin:0 0 12px;orphans:3;widows:3}.lines{width:100%;border-collapse:collapse;font-size:9pt;margin:18px 0}.lines th{text-align:left;background:#f1ebe2;padding:8px}.lines td{border-bottom:1px solid #ddd;padding:8px;vertical-align:top}.lines th:first-child{width:34%}.lines tr{break-inside:avoid}.totals{max-width:330px;margin-left:auto}.totals p{display:flex;justify-content:space-between;gap:16px;margin:6px 0}.invoice-brand{padding:22px;background:linear-gradient(115deg,#741a14 0%,#a44d40 60%,#d6a18b 100%);color:#fff8ed;border-radius:10px}.invoice-brand img{filter:brightness(0) invert(1)}.parties,.details,.totals{border-collapse:collapse;width:100%;font-size:10pt;margin:18px 0}.parties{table-layout:fixed}.parties th,.details th,.totals th{text-align:left;background:#f6ece5;color:#522019;font-weight:600}.parties td,.parties th,.details td,.details th,.totals td,.totals th,.lines td,.lines th{border:1px solid #d7bfb1;padding:10px;vertical-align:top}.parties p{margin:7px 0;white-space:pre-wrap}.lines th{background:#741a14;color:white}.lines tbody tr:nth-child(even){background:#fcf7f2}.lines td:not(:first-child){text-align:right}.totals{width:330px;margin-left:auto;break-inside:avoid}.totals td{text-align:right}.totals .grand-total th,.totals .grand-total td{background:#741a14;color:white;font-weight:bold;font-size:12pt}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{max-width:none;padding:0}.parties{break-inside:avoid}.lines thead{display:table-header-group}h1,h3{break-after:avoid}}</style></head><body><table class="page"><thead><tr><td><div class="brand${inv ? " invoice-brand" : ""}">${mark ? `<img src="data:image/png;base64,${mark.toString("base64")}" alt="Maple Studios logo">` : ""}<div><strong>${h(c.name)}</strong><p>${h(c.address)}</p></div></div></td></tr></thead><tfoot><tr><td>${footer}<br>Draft for review · Revision ${d.revision}</td></tr></tfoot><tbody><tr><td><p class="draft">DRAFT FOR REVIEW</p><h1>${h(d.title)}</h1><p>${h(s.client.name)} · ${h(s.project.title)}<br>${h(s.documentDate)}${s.reference ? ` · ${h(s.reference)}` : ""}</p>${d.subject ? `<p><strong>Subject:</strong> ${h(d.subject)}</p>` : ""}<div class="body">${d.body
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${h(d.title)} — Draft</title><meta name="referrer" content="no-referrer"><style>@page{size:Letter;margin:18mm}*{box-sizing:border-box}body{font:11pt Arial,sans-serif;color:#171717;margin:0 auto;max-width:780px;padding:24px;line-height:1.5;overflow-wrap:anywhere}.page{width:100%;border-collapse:collapse}.page>thead{display:table-header-group}.page>tfoot{display:table-footer-group}.page>thead td{padding-bottom:20px}.page>tfoot td{padding-top:18px;font-size:9pt;color:#555}.brand{display:flex;gap:16px;align-items:center}.brand img{width:62px;height:auto}.brand strong{font-size:17pt}.brand p{margin:0;font-size:9pt}.draft{color:#741a14;font-weight:bold;letter-spacing:2px;font-size:9pt}h1{font:24pt Georgia,serif;margin:12px 0;color:#000}h3{color:#000;font-size:11pt;margin-top:20px}.body p{white-space:pre-wrap;margin:0 0 12px;orphans:3;widows:3}.lines{width:100%;border-collapse:collapse;font-size:9pt;margin:18px 0}.lines th{text-align:left;background:#f1ebe2;padding:8px}.lines td{border-bottom:1px solid #ddd;padding:8px;vertical-align:top}.lines th:first-child{width:34%}.lines tr{break-inside:avoid}.totals{max-width:330px;margin-left:auto}.totals p{display:flex;justify-content:space-between;gap:16px;margin:6px 0}.payment{break-inside:avoid}.payment figure{margin:16px 0}.payment figcaption{font-size:9pt;color:#555}.invoice-brand{padding:22px;background:linear-gradient(115deg,#741a14 0%,#a44d40 60%,#d6a18b 100%);color:#fff8ed;border-radius:10px}.invoice-brand img{filter:brightness(0) invert(1)}.parties,.details,.totals{border-collapse:collapse;width:100%;font-size:10pt;margin:18px 0}.parties{table-layout:fixed}.parties th,.details th,.totals th{text-align:left;background:#f6ece5;color:#522019;font-weight:600}.parties td,.parties th,.details td,.details th,.totals td,.totals th,.lines td,.lines th{border:1px solid #d7bfb1;padding:10px;vertical-align:top}.parties p{margin:7px 0;white-space:pre-wrap}.lines th{background:#741a14;color:white}.lines tbody tr:nth-child(even){background:#fcf7f2}.lines td:not(:first-child){text-align:right}.totals{width:330px;margin-left:auto;break-inside:avoid}.totals td{text-align:right}.totals .grand-total th,.totals .grand-total td{background:#741a14;color:white;font-weight:bold;font-size:12pt}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{max-width:none;padding:0}.parties{break-inside:avoid}.lines thead{display:table-header-group}h1,h3{break-after:avoid}}</style></head><body><table class="page"><thead><tr><td><div class="brand${inv ? " invoice-brand" : ""}">${mark ? `<img src="data:image/png;base64,${mark.toString("base64")}" alt="Maple Studios logo">` : ""}<div><strong>${h(c.name)}</strong><p>${h(c.address)}</p></div></div></td></tr></thead><tfoot><tr><td>${footer}<br>Draft for review · Revision ${d.revision}</td></tr></tfoot><tbody><tr><td><p class="draft">DRAFT FOR REVIEW</p><h1>${h(d.title)}</h1><p>${h(s.client.name)} · ${h(s.project.title)}<br>${h(s.documentDate)}${s.reference ? ` · ${h(s.reference)}` : ""}</p>${d.subject ? `<p><strong>Subject:</strong> ${h(d.subject)}</p>` : ""}<div class="body">${d.body
     .split(/\n\n+/)
     .map((p) => `<p>${h(p)}</p>`)
     .join("")}</div>${financial}</td></tr></tbody></table></body></html>`;
@@ -133,23 +150,21 @@ export async function renderDocx(d: ExportDraft) {
                   },
                   children: [
                     new Paragraph({
-                      children: value
-                        .split("\n")
-                        .map(
-                          (line, n) =>
-                            new TextRun({
-                              text: line,
-                              ...(n ? { break: 1 } : {}),
-                              size: 20,
-                              bold:
-                                col === 0 ||
-                                (emphasizeLast && index === rows.length - 1),
-                              color:
-                                emphasizeLast && index === rows.length - 1
-                                  ? "FFFFFF"
-                                  : "171717",
-                            }),
-                        ),
+                      children: value.split("\n").map(
+                        (line, n) =>
+                          new TextRun({
+                            text: line,
+                            ...(n ? { break: 1 } : {}),
+                            size: 20,
+                            bold:
+                              col === 0 ||
+                              (emphasizeLast && index === rows.length - 1),
+                            color:
+                              emphasizeLast && index === rows.length - 1
+                                ? "FFFFFF"
+                                : "171717",
+                          }),
+                      ),
                     }),
                   ],
                 }),
@@ -257,9 +272,40 @@ export async function renderDocx(d: ExportDraft) {
         text: "Payment instructions",
         heading: HeadingLevel.HEADING_1,
       }),
-      p(c.paymentInstructions || "Payment instructions not set."),
+      ...(paymentRows(c).length ? [pairTable(paymentRows(c)), p("")] : []),
+      p(
+        c.paymentInstructions ||
+          (!paymentRows(c).length && !c.paymentQr
+            ? "Payment instructions not set."
+            : ""),
+      ),
       p(inv.notes),
     );
+    const qr = qrImage(c);
+    if (qr) {
+      const scale = Math.min(160 / qr.width, 200 / qr.height);
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new ImageRun({
+              type: "png",
+              data: qr.data,
+              transformation: {
+                width: Math.round(qr.width * scale),
+                height: Math.round(qr.height * scale),
+              },
+              altText: {
+                title: "Payment QR code",
+                description: "Scan to pay; verify recipient and amount",
+                name: "Payment QR code",
+              },
+            }),
+          ],
+          keepNext: true,
+        }),
+        p("Scan to pay · Verify the recipient and amount in your payment app."),
+      );
+    }
   }
   const document = new Document({
     creator: c.name,
