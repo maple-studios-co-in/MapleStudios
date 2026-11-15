@@ -1,3 +1,4 @@
+import { projectRoutes } from "./modules/business/projects.routes.js";
 import { teamRoutes } from "./modules/team/team.routes.js";
 import { Router } from "express";
 import { publicSlotRoutes, adminSlotRoutes } from "./modules/slots/slot.routes.js";
@@ -20,6 +21,7 @@ api.use("/", publicSlotRoutes);
 api.use("/", publicInquiryRoutes);
 api.use("/auth", authRoutes);
 api.use("/team", teamRoutes);
+api.use("/business", projectRoutes);
 
 // admin - each router applies requireAdmin itself, so mounting order can
 // never accidentally expose one of them.
