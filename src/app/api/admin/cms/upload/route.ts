@@ -30,7 +30,7 @@ const ALLOWED: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const form = await req.formData().catch(() => null);

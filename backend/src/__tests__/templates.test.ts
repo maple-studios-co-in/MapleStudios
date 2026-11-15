@@ -1,3 +1,5 @@
+import { beforeEach } from "vitest";
+import { AdminUser } from "../modules/auth/admin.model.js";
 import request from "supertest";
 import { Types } from "mongoose";
 import { describe, it, expect, afterEach } from "vitest";
@@ -10,9 +12,8 @@ import { Lead } from "../modules/leads/lead.model.js";
 
 const app = createApp();
 
-// A real access token: requireAdmin verifies the signature only, so no
-// AdminUser row is needed.
-const token = signAccessToken({ sub: new Types.ObjectId().toString(), email: "owner@test.local", role: "owner", ver: 0 });
+// Protected routes verify both the signature and the persisted account.
+const token = signAccessToken({ sub: "000000000000000000000002", email: "owner@test.local", role: "owner", ver: 0 });
 const auth = (r: request.Test) => r.set("authorization", `Bearer ${token}`);
 
 const emailTemplate = {
@@ -202,3 +203,5 @@ describe("templates", () => {
     expect(allowed.status).toBe(200);
   });
 });
+
+beforeEach(async () => { await AdminUser.create({_id:"000000000000000000000002",email:"owner@test.local",name:"Owner",role:"owner",passwordHash:"unused-fixture",tokenVersion:0}); });

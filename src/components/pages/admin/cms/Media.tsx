@@ -1,4 +1,5 @@
 "use client";
+import { sessionFetch } from "@/lib/admin/session-client";
 
 import { useRef, useState } from "react";
 import { Copy, Trash2, Upload } from "lucide-react";
@@ -37,7 +38,7 @@ export default function Media() {
 
       // FormData must set its own multipart boundary, so this one call cannot
       // go through adminFetch — that helper pins a JSON content-type.
-      const res = await fetch("/api/admin/cms/upload", {
+      const res = await sessionFetch("/api/admin/cms/upload", {
         method: "POST",
         headers: { "x-admin-key": key },
         body,

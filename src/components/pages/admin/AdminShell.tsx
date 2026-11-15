@@ -35,26 +35,15 @@ import {
   Wrench,
 } from "lucide-react";
 
+import { sessionFetch } from "@/lib/admin/session-client";
+import type { StudioRole } from "@/lib/admin/access-policy";
 import LogoMark from "@/components/common/LogoMark";
 
-/**
- * Chrome + auth for every /admin screen.
- *
- * The whole dashboard is gated on ONE key sent as `x-admin-key`
- * (MAPLE_ADMIN_KEY, default "maple-admin" for local demos) and remembered in
- * sessionStorage. Screens just call `adminFetch`.
- *
- * The gate is convenience, not security — every /api/admin/* route validates
- * the key server-side on every request, which is what actually protects the
- * data. Rendering the shell unauthenticated exposes nothing.
- *
- * Layout is a fixed dark rail + cream canvas: the console now carries ~20
- * screens, which a horizontal tab strip cannot hold without wrapping or
- * scrolling past the fold.
- */
+/** Individual sessions are held in HttpOnly cookies; each API checks current access. */
 type AdminCtx = {
   /** the validated key, "" until sign-in */
   key: string;
+  account: {id:string;email:string;name:string;role:StudioRole} | null;
   /** fetch against an /api/admin/* route with the key attached */
   adminFetch: (input: string, init?: RequestInit) => Promise<Response>;
   signOut: () => void;
@@ -73,6 +62,7 @@ type NavItem = { href: string; label: string; icon: typeof Gauge; exact?: boolea
 /** Grouped rail. "Studio" is the original operations console — those four
     screens and their routes are unchanged; the CMS groups are additive. */
 const NAV: { group: string; items: NavItem[] }[] = [
+  {group:"Team",items:[{href:"/admin/team",label:"Team & attendance",icon:Users},{href:"/admin/payroll",label:"Payroll",icon:FileText}]},
   {
     group: "Studio",
     items: [
@@ -127,99 +117,51 @@ const NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
-const STORAGE_KEY = "maple-admin-key";
+
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [key, setKey] = useState("");
+  const key = "";
+  const [account,setAccount]=useState<AdminCtx["account"]>(null);
+  const [email,setEmail]=useState("");
+  const [signingIn,setSigningIn]=useState(false);
   const [draft, setDraft] = useState("");
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
 
-  /** Validate a key by hitting a cheap guarded endpoint.
-      A 503 means the DEPLOYMENT has no MAPLE_ADMIN_KEY (production fails
-      closed) — a different problem from a mistyped key, so it gets its own
-      message rather than sending the operator round the wrong loop. */
-  const verify = useCallback(async (candidate: string) => {
-    const res = await fetch("/api/admin/summary", {
-      headers: { "x-admin-key": candidate },
-      cache: "no-store",
-    });
-    if (res.ok) return { ok: true as const };
-    if (res.status === 503) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      return {
-        ok: false as const,
-        message: body.error ?? "The admin API is disabled on this deployment.",
-      };
-    }
-    return { ok: false as const };
-  }, []);
-
-  // restore a session key if there is one
   useEffect(() => {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (!saved) {
-      setChecking(false);
-      return;
-    }
-    let alive = true;
-    void verify(saved).then((result) => {
-      if (!alive) return;
-      if (result.ok) {
-        setKey(saved);
-        setAuthed(true);
-      } else {
-        sessionStorage.removeItem(STORAGE_KEY);
-        if (result.message) setError(result.message);
-      }
-      setChecking(false);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [verify]);
-
-  // close the mobile rail whenever the route changes
-  useEffect(() => setNavOpen(false), [pathname]);
-
-  const signIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const candidate = draft.trim();
-    if (!candidate) return setError("Enter the admin key.");
-    const result = await verify(candidate);
-    if (result.ok) {
-      sessionStorage.setItem(STORAGE_KEY, candidate);
-      setKey(candidate);
-      setAuthed(true);
-      setDraft("");
-    } else {
-      setError(result.message ?? "That key wasn't accepted.");
-    }
-  };
-
-  const signOut = useCallback(() => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    setKey("");
-    setAuthed(false);
+    let alive=true;
+    sessionStorage.removeItem("maple-admin-key");
+    void sessionFetch("/api/admin/session").then(async response=>{
+      if(!alive) return;
+      if(response.ok) { const data=await response.json(); setAccount(data.admin); setAuthed(true); }
+    }).catch(()=>{if(alive)setError("Unable to check your session. Please retry.");}).finally(()=>{if(alive)setChecking(false);});
+    return ()=>{alive=false;};
   }, []);
-
-  const adminFetch = useCallback(
-    (input: string, init: RequestInit = {}) =>
-      fetch(input, {
-        ...init,
-        cache: "no-store",
-        headers: {
-          ...(init.headers ?? {}),
-          "x-admin-key": key,
-          "content-type": "application/json",
-        },
-      }),
-    [key]
-  );
+  useEffect(()=>setNavOpen(false),[pathname]);
+  const signIn=async(e:React.FormEvent)=>{
+    e.preventDefault(); if(signingIn) return;
+    setSigningIn(true);setError(null);
+    try {
+      const response=await fetch("/api/admin/session",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password:draft})});
+      const data=await response.json();
+      if(!response.ok) throw new Error(data.error || "Sign-in failed.");
+      setAccount(data.admin);setAuthed(true);setDraft("");
+    } catch(error) { setError(error instanceof Error?error.message:"Sign-in failed. Please retry."); }
+    finally {setSigningIn(false);}
+  };
+  const signOut=useCallback(async()=>{
+    const response=await sessionFetch("/api/admin/session",{method:"DELETE"});
+    if(!response.ok) {setError("Could not sign out. Please retry.");return;}
+    setAccount(null);setAuthed(false);
+  },[]);
+  const adminFetch=useCallback(async(input:string,init:RequestInit={})=>{
+    const response=await sessionFetch(input,{...init,headers:{"content-type":"application/json",...init.headers}});
+    if(response.status===401){setAccount(null);setAuthed(false);}
+    return response;
+  },[]);
 
   if (checking) {
     return (
@@ -248,17 +190,20 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             Sign in to Maple
           </h1>
           <p className="mt-2 font-sans-luxury text-[13px] leading-[1.5] text-[#8b8178]">
-            Enter the admin key to manage content, inquiries, calls and availability.
+            Use your individual Maple Studios account.
           </p>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="username" aria-label="Work email" placeholder="you@maplestudios.ai" className="mt-6 w-full rounded border border-[#d8c3a5] bg-white px-4 py-3 text-[#11100e]" />
           <input
+            required
+            autoComplete="current-password"
             type="password"
             value={draft}
             onChange={(e) => {
               setDraft(e.target.value);
               if (error) setError(null);
             }}
-            placeholder="Admin key"
-            aria-label="Admin key"
+            placeholder="Password"
+            aria-label="Password"
             autoFocus
             className="mt-6 w-full rounded-[7px] border border-[#d8c3a5] bg-white/70 px-4 py-3 font-sans-luxury text-[14px] text-[#11100e] outline-none focus:border-[#741a14]"
           />
@@ -268,10 +213,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </p>
           ) : null}
           <button
+            disabled={signingIn}
             type="submit"
             className="mt-5 w-full cursor-pointer rounded-full bg-[#741a14] px-4 py-3 font-sans-luxury text-[12px] font-bold uppercase tracking-[0.18em] text-[#fff8ed] transition-opacity hover:opacity-90"
           >
-            Sign in
+            {signingIn ? "Signing in…" : "Sign in"}
           </button>
         </motion.form>
       </div>
@@ -279,7 +225,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <Ctx.Provider value={{ key, adminFetch, signOut }}>
+    <Ctx.Provider value={{ key, account, adminFetch, signOut }}>
       <div className="min-h-screen bg-[#f3e8d5] text-[#11100e]">
         {/* ——— fixed rail ——— */}
         <aside
@@ -296,13 +242,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </Link>
 
           <nav className="flex-1 px-2.5 pb-4">
-            {NAV.map((section) => (
+            {NAV.filter(section=>account?.role !== "member" || ["Team","Site"].includes(section.group)).map((section) => (
               <div key={section.group} className="mb-4">
                 <p className="px-3 pb-1.5 font-sans-luxury text-[9px] font-bold uppercase tracking-[0.2em] text-[#fff8ed]/28">
                   {section.group}
                 </p>
                 <ul>
-                  {section.items.map((item) => {
+                  {section.items.filter(item=>account?.role === "owner" || !["/admin/payroll","/admin/audit"].includes(item.href) && (account?.role !== "member" || ["/admin/team","/admin/settings"].includes(item.href))).map((item) => {
                     const active = item.exact
                       ? pathname === item.href
                       : pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -360,7 +306,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 Menu
               </button>
               <span className="font-sans-luxury text-[10px] font-bold uppercase tracking-[0.22em] text-[#8b8178]">
-                Authoring console
+                {account?.name} · {account?.role}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -380,7 +326,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </div>
           </header>
 
-          <main className="mx-auto max-w-[1240px] px-5 pb-24 pt-7 sm:px-8">{children}</main>
+          <main className="mx-auto max-w-[1240px] px-5 pb-24 pt-7 sm:px-8">
+            {error ? <p role="alert" className="mb-4 text-red-800">{error}</p> : null}
+            {account?.role === "member" && !["/admin/team","/admin/settings"].includes(pathname) ? <p>Your team workspace is ready. <Link href="/admin/team" className="underline">Open team & attendance</Link></p> : children}
+          </main>
         </div>
       </div>
     </Ctx.Provider>

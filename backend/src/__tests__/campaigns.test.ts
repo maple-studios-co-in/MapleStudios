@@ -1,3 +1,5 @@
+import { beforeEach } from "vitest";
+import { AdminUser } from "../modules/auth/admin.model.js";
 import crypto from "node:crypto";
 import request from "supertest";
 import { Types } from "mongoose";
@@ -15,7 +17,7 @@ import { Suppression } from "../modules/campaigns/suppression.model.js";
 import { runCampaignTick, setResendWebhookSecret } from "../modules/campaigns/campaign.service.js";
 
 const app = createApp();
-const token = signAccessToken({ sub: new Types.ObjectId().toString(), email: "owner@test.local", role: "owner", ver: 0 });
+const token = signAccessToken({ sub: "000000000000000000000002", email: "owner@test.local", role: "owner", ver: 0 });
 const auth = (r: request.Test) => r.set("authorization", `Bearer ${token}`);
 
 // --- clock ----------------------------------------------------------------
@@ -557,3 +559,5 @@ describe("campaigns: suppressions", () => {
     expect((await auth(request(app).delete(`/api/v1/admin/suppressions/${added.body.item.id}`))).status).toBe(404);
   });
 });
+
+beforeEach(async () => { await AdminUser.create({_id:"000000000000000000000002",email:"owner@test.local",name:"Owner",role:"owner",passwordHash:"unused-fixture",tokenVersion:0}); });

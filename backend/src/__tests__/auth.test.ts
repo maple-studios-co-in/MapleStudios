@@ -61,3 +61,35 @@ describe("auth", () => {
     expect(res.body.activity).toEqual([]);
   });
 });
+
+it("rejects refresh tokens at protected endpoints", async () => {
+  const session = await request(app).post("/api/v1/auth/login").send(creds);
+  const result = await request(app).get("/api/v1/admin/summary").auth(session.body.refreshToken,{type:"bearer"});
+  expect(result.status).toBe(401);
+});
+it("revokes existing access immediately", async () => {
+  const session = await request(app).post("/api/v1/auth/login").send(creds);
+  await AdminUser.updateOne({email:creds.email},{$inc:{tokenVersion:1}});
+  expect((await request(app).get("/api/v1/auth/me").auth(session.body.token,{type:"bearer"})).status).toBe(401);
+});
+it("disabled accounts cannot log in or use previously issued sessions", async () => {
+  const session = await request(app).post("/api/v1/auth/login").send(creds);
+  await AdminUser.collection.updateOne({email:creds.email},{$set:{active:false}});
+  expect((await request(app).post("/api/v1/auth/login").send(creds)).status).toBe(401);
+  expect((await request(app).get("/api/v1/auth/me").auth(session.body.token,{type:"bearer"})).status).toBe(401);
+});
+it("members can identify themselves but cannot access studio or account administration", async () => {
+  await AdminUser.collection.updateOne({email:creds.email},{$set:{role:"member"}});
+  const session = await request(app).post("/api/v1/auth/login").send(creds);
+  expect((await request(app).get("/api/v1/auth/me").auth(session.body.token,{type:"bearer"})).status).toBe(200);
+  expect((await request(app).get("/api/v1/admin/inquiries").auth(session.body.token,{type:"bearer"})).status).toBe(403);
+  expect((await request(app).get("/api/v1/auth/admins").auth(session.body.token,{type:"bearer"})).status).toBe(403);
+});
+it("owner can disable another account but cannot disable themselves", async () => {
+  const session = await request(app).post("/api/v1/auth/login").send(creds);
+  const other = await AdminUser.create({email:"other@example.com",name:"Other",role:"admin",passwordHash:await hashPassword(creds.password)});
+  const result = await request(app).patch(`/api/v1/auth/admins/${other.id}`).auth(session.body.token,{type:"bearer"}).send({active:false});
+  expect(result.status).toBe(200);
+  expect(result.body.admin.active).toBe(false);
+  expect((await request(app).patch(`/api/v1/auth/admins/${session.body.admin.id}`).auth(session.body.token,{type:"bearer"}).send({active:false})).status).toBe(409);
+});

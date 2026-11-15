@@ -29,7 +29,7 @@ function lastTwelveMonths() {
  * whole collections down to the browser just to count them.
  */
 export async function GET(req: Request) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const [contacts, portfolio, blog, subscribers] = await Promise.all([

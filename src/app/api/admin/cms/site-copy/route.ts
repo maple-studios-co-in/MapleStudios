@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 const KEY = "site-copy";
 
 export async function GET(req: Request) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const doc = await readDoc<SiteCopy>(KEY, SITE_COPY_DEFAULT);
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
  * that after the fact.
  */
 export async function POST(req: Request) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { json, summary } = await readJson<{ json?: string; summary?: string }>(req);

@@ -20,7 +20,7 @@ const DOCS: Record<string, unknown> = {
 type Ctx = { params: Promise<{ key: string }> };
 
 export async function GET(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { key } = await params;
@@ -31,7 +31,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 export async function PUT(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { key } = await params;

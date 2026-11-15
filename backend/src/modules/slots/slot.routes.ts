@@ -17,7 +17,11 @@ export const publicSlotRoutes = Router();
 publicSlotRoutes.get("/slots", async (_req, res) => {
   const open = await slots.listOpenSlots();
   // The widget only needs the identity of each open slot.
-  const list = open.map((s) => ({ id: `${s.date} ${s.time}`, date: s.date, time: s.time }));
+  const list = open.map((s) => ({
+    id: `${s.date} ${s.time}`,
+    date: s.date,
+    time: s.time,
+  }));
   res.json({ slots: list });
 });
 
@@ -29,9 +33,13 @@ publicSlotRoutes.post(
     const input = body(req, createBookingSchema);
     const slot = await slots.claimSlot(input);
     res.status(201).json({
-      booked: { id: `${slot.date} ${slot.time}`, date: slot.date, time: slot.time },
+      booked: {
+        id: `${slot.date} ${slot.time}`,
+        date: slot.date,
+        time: slot.time,
+      },
     });
-  }
+  },
 );
 
 /** Admin: the availability calendar. */
@@ -43,19 +51,23 @@ adminSlotRoutes.get("/slots", async (_req, res) => {
   res.json({ slots: all.map((s) => slotWire(s)) });
 });
 
-adminSlotRoutes.post("/slots", validate({ body: createSlotSchema }), async (req, res) => {
-  const { date, time } = body(req, createSlotSchema);
-  const slot = await slots.addSlot(date, time);
-  res.status(201).json({ slot: slotWire(slot) });
-});
+adminSlotRoutes.post(
+  "/slots",
+  validate({ body: createSlotSchema }),
+  async (req, res) => {
+    const { date, time } = body(req, createSlotSchema);
+    const slot = await slots.addSlot(date, time);
+    res.status(201).json({ slot: slotWire(slot) });
+  },
+);
 
 adminSlotRoutes.delete(
   "/slots/:id",
   validate({ params: slotIdParam, query: removeSlotQuery }),
   async (req, res) => {
     const { id } = params(req, slotIdParam);
-    const { force } = query(req, removeSlotQuery);
-    await slots.removeSlot(id, force);
+    const { force, free, expectedBooking } = query(req, removeSlotQuery);
+    await slots.removeSlot(id, force, free, expectedBooking);
     res.json({ ok: true });
-  }
+  },
 );

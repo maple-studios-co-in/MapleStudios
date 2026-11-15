@@ -12,7 +12,7 @@ type Ctx = { params: Promise<{ resource: string }> };
 
 /** POST { ids: [...] } — persist a manual display order. */
 export async function POST(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { resource } = await params;

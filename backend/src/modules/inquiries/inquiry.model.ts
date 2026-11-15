@@ -4,6 +4,7 @@ export const INQUIRY_STATUSES = ["new", "read", "replied", "archived"] as const;
 export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
 
 export interface IInquiry {
+  legacyId?: string;
   name: string;
   email: string;
   company?: string;
@@ -35,6 +36,7 @@ export function inquiryWire(i: IInquiry & { _id: unknown }) {
 
 const InquirySchema = new Schema<IInquiry>(
   {
+    legacyId: { type: String, unique: true, sparse: true },
     name: { type: String, required: true, trim: true, maxlength: 120 },
     email: { type: String, required: true, trim: true, lowercase: true, maxlength: 200 },
     company: { type: String, trim: true, maxlength: 160 },

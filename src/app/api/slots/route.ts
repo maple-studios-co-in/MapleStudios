@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { listOpenSlots } from "@/lib/bookings";
-
+import { growthRequest, GrowthError } from "@/lib/growth-server";
 export const dynamic = "force-dynamic";
-
-/** Visitor-facing availability: upcoming, unclaimed 30-minute slots. */
 export async function GET() {
-  const slots = await listOpenSlots();
-  return NextResponse.json({ slots });
+  try {
+    const result = await growthRequest("/slots", {}, false);
+    return NextResponse.json(result, {status:200});
+  } catch (error) {
+    return NextResponse.json({error: error instanceof GrowthError ? error.message : "The service is temporarily unavailable. Please try again."}, {status:error instanceof GrowthError ? error.status : 503});
+  }
 }

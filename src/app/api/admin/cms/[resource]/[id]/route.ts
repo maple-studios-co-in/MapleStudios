@@ -18,7 +18,7 @@ type Ctx = { params: Promise<{ resource: string; id: string }> };
 type Row = Base & Record<string, unknown>;
 
 export async function GET(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { resource, id } = await params;
@@ -30,7 +30,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { resource, id } = await params;
@@ -100,7 +100,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
-  const denied = denyIfUnauthorized(req);
+  const denied = await denyIfUnauthorized(req);
   if (denied) return denied;
 
   const { resource, id } = await params;

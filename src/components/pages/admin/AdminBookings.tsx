@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { EmptyState, PageHeading, StatCard, relTime, useAdmin } from "./AdminShell";
 
-type SlotBooking = { name: string; email: string; note?: string; at: string };
+type SlotBooking = { claimId?: string; name: string; email: string; note?: string; at: string };
 type Slot = { id: string; date: string; time: string; booking: SlotBooking | null };
 
 /**
@@ -59,7 +59,7 @@ export default function AdminBookings() {
       return;
     setBusyId(slot.id);
     try {
-      const res = await adminFetch(`/api/admin/slots?id=${encodeURIComponent(slot.id)}&free=1`, {
+      const res = await adminFetch(`/api/admin/slots?id=${encodeURIComponent(slot.id)}&free=1&expectedBooking=${encodeURIComponent(slot.booking!.claimId || slot.booking!.at)}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error(((await res.json()) as { error: string }).error);

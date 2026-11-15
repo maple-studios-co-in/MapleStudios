@@ -1,5 +1,7 @@
 "use client";
 
+import { submitInquiry } from "@/lib/submit-inquiry";
+
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CONTACT_PAGE } from "@/lib/constants";
@@ -209,6 +211,8 @@ export function ContactMaroon() {
   const [budget, setBudget] = useState("");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   /** Every required field, checked in one place so the submit handler and the
@@ -225,8 +229,9 @@ export function ContactMaroon() {
     return next;
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting || sent) return;
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length > 0) {
@@ -236,34 +241,16 @@ export function ContactMaroon() {
         ?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
-    const lines = [
-      ...CONTACT_PAGE.fields.map((f) => `${f.label}: ${values[f.id] ?? ""}`),
-      `Service: ${service}`,
-      `Estimated budget: ${budget}`,
-      "",
-      message,
-    ];
-    setSent(true);
-    // Record the inquiry for /admin BEFORE handing the visitor to their mail
-    // client. `keepalive` is the load-bearing bit: assigning window.location
-    // starts a navigation that would otherwise cancel an in-flight fetch.
-    // Fire-and-forget on purpose — a failure here must never block sending.
-    void fetch("/api/inquiries", {
-      method: "POST",
-      keepalive: true,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        name: values.name ?? "",
-        email: values.email ?? "",
-        company: values.company ?? "",
-        service,
-        budget,
-        message,
-      }),
-    }).catch(() => {});
-    window.location.href = `mailto:${CONTACT_PAGE.email}?subject=${encodeURIComponent(
-      "New project inquiry"
-    )}&body=${encodeURIComponent(lines.join("\n"))}`;
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await submitInquiry({ name:values.name ?? "", email:values.email ?? "", company:values.company ?? "", service,budget,message });
+      setSent(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "We could not save your enquiry. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /** Clear a field's error as soon as the visitor fixes it. */
@@ -401,11 +388,12 @@ export function ContactMaroon() {
           <FormRow index={6} className="md:col-span-2 flex flex-col items-center gap-3">
             <button
               type="submit"
+              disabled={submitting || sent}
               className="group flex w-[220px] cursor-pointer flex-col"
             >
               <span className="flex items-center justify-between">
                 <span className="font-sans-luxury text-[max(14px,0.926vw)] font-bold uppercase text-[#fff3d3]">
-                  {CONTACT_PAGE.submit}
+                  {submitting ? "Sending…" : sent ? "Enquiry received" : CONTACT_PAGE.submit}
                 </span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -416,9 +404,10 @@ export function ContactMaroon() {
               </span>
               <span className="mt-[9px] h-px w-full bg-[#fff3d3]" />
             </button>
+            {submitError ? <p role="alert" className="text-sm text-[#ffcf9a]">{submitError}</p> : null}
             {sent ? (
               <span className="font-sans-luxury text-[13px] text-[#fff3d3]/80">
-                Thanks — opening your mail app.
+                Thanks — your enquiry has been saved. We’ll be in touch.
               </span>
             ) : null}
           </FormRow>

@@ -1,51 +1,25 @@
+import { denyIfUnauthorized } from "@/lib/admin/cms/guard";
 import { NextResponse } from "next/server";
 import {
   addSlot,
-  isAdminKeyConfigured,
-  isAdminKeyValid,
   listAllSlots,
   removeSlot,
 } from "@/lib/bookings";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Admin calendar API — guarded by the `x-admin-key` header, checked against
- * MAPLE_ADMIN_KEY (falls back to "maple-admin" for local demos; set the env
- * var before exposing this anywhere).
- */
-function unauthorized() {
-  return NextResponse.json({ error: "Invalid admin key." }, { status: 401 });
-}
-
-/**
- * 503, not 401: the operator's key is not wrong, the deployment simply has no
- * MAPLE_ADMIN_KEY set. Production fails closed (see isAdminKeyConfigured), so
- * say exactly that rather than sending them round the "wrong password" loop.
- */
-function notConfigured() {
-  return NextResponse.json(
-    {
-      error:
-        "This deployment has no MAPLE_ADMIN_KEY set, so the admin API is disabled. Set it in the hosting environment and redeploy.",
-      code: "admin_key_unconfigured",
-    },
-    { status: 503 }
-  );
-}
-
-
+/** Studio access is verified against the current individual account. */
 export async function GET(req: Request) {
-  if (!isAdminKeyConfigured()) return notConfigured();
-  if (!isAdminKeyValid(req.headers.get("x-admin-key"))) return unauthorized();
+  const denied = await denyIfUnauthorized(req);
+  if (denied) return denied;
   const slots = await listAllSlots();
   return NextResponse.json({ slots });
 }
 
 /** Add one availability slot: { date: "YYYY-MM-DD", time: "HH:mm" }. */
 export async function POST(req: Request) {
-  if (!isAdminKeyConfigured()) return notConfigured();
-  if (!isAdminKeyValid(req.headers.get("x-admin-key"))) return unauthorized();
+  const denied = await denyIfUnauthorized(req);
+  if (denied) return denied;
   let body: { date?: string; time?: string };
   try {
     body = await req.json();
@@ -63,13 +37,13 @@ export async function POST(req: Request) {
 
 /** Remove a slot (?id=...), cancel-and-free a booked one with &free=1. */
 export async function DELETE(req: Request) {
-  if (!isAdminKeyConfigured()) return notConfigured();
-  if (!isAdminKeyValid(req.headers.get("x-admin-key"))) return unauthorized();
+  const denied = await denyIfUnauthorized(req);
+  if (denied) return denied;
   const url = new URL(req.url);
   const id = url.searchParams.get("id") ?? "";
   const free = url.searchParams.get("free") === "1";
   if (!id) return NextResponse.json({ error: "id is required." }, { status: 400 });
-  const result = await removeSlot(id, free ? { freeOnly: true } : { force: true });
+  const result = await removeSlot(id, free ? { freeOnly: true, expectedBooking:url.searchParams.get("expectedBooking") || undefined } : {});
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409 });
   return NextResponse.json({ ok: true });
 }

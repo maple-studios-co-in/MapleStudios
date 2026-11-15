@@ -14,9 +14,9 @@ import { PageHeading, useAdmin } from "./AdminShell";
  *   maroon    = booked (name + email shown)        → ✕ frees it again
  *
  * Auth used to be duplicated in here; it now lives in <AdminShell>, which
- * owns the key prompt and hands every screen the same `adminFetch`.
+ * owns the individual sign-in and hands every screen the same `adminFetch`.
  */
-type SlotBooking = { name: string; email: string; note?: string; at: string };
+type SlotBooking = { claimId?: string; name: string; email: string; note?: string; at: string };
 type Slot = { id: string; date: string; time: string; booking: SlotBooking | null };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -76,7 +76,7 @@ export default function AdminSlots() {
       } else if (existing.booking) {
         if (!window.confirm(`Free ${existing.booking.name}'s ${time} booking? They will NOT be emailed automatically.`))
           return;
-        const res = await adminFetch(`/api/admin/slots?id=${encodeURIComponent(id)}&free=1`, {
+        const res = await adminFetch(`/api/admin/slots?id=${encodeURIComponent(id)}&free=1&expectedBooking=${encodeURIComponent(existing.booking!.claimId || existing.booking!.at)}`, {
           method: "DELETE",
         });
         if (!res.ok) throw new Error((await res.json()).error);
