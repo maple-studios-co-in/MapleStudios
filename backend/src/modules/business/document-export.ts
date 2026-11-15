@@ -88,7 +88,16 @@ export async function renderDocx(d: ExportDraft) {
     c = s.company,
     mark = logo();
   const p = (text: string) =>
-    new Paragraph({ text, spacing: { after: 160 }, widowControl: true });
+    new Paragraph({
+      children: text
+        .split("\n")
+        .map(
+          (line, index) =>
+            new TextRun({ text: line, ...(index ? { break: 1 } : {}) }),
+        ),
+      spacing: { after: 160 },
+      widowControl: true,
+    });
   const paragraphs: (Paragraph | Table)[] = [
     new Paragraph({ text: "DRAFT FOR REVIEW", spacing: { after: 160 } }),
     new Paragraph({ text: d.title, heading: HeadingLevel.TITLE }),
@@ -119,8 +128,12 @@ export async function renderDocx(d: ExportDraft) {
         tableHeader: header,
         cantSplit: true,
         children: values.map(
-          (text) =>
+          (text, index) =>
             new TableCell({
+              width: {
+                size: [3600, 650, 1500, 1200, 1690, 1600][index]!,
+                type: WidthType.DXA,
+              },
               children: [
                 new Paragraph({
                   children: [new TextRun({ text, bold: header, size: 18 })],
@@ -132,7 +145,8 @@ export async function renderDocx(d: ExportDraft) {
       });
     paragraphs.push(
       new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
+        width: { size: 10240, type: WidthType.DXA },
+        columnWidths: [3600, 650, 1500, 1200, 1690, 1600],
         rows: [
           row(
             ["Description / SAC", "Qty", "Rate", "Discount", "Tax", "Total"],

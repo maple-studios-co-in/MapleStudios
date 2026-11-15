@@ -100,7 +100,11 @@ export default function Drafts({ projectId }: { projectId?: string }) {
       } = form;
       const options = {
         ...rest,
-        ...(templateId ? { templateId } : {}),
+        ...(templateId
+          ? { templateId }
+          : regenerate
+            ? { templateId: null }
+            : {}),
         ...(kind === "update" ? { periodStart, periodEnd } : {}),
         ...(kind === "invoice" ? { invoice: cleanInvoice(invoice) } : {}),
       };

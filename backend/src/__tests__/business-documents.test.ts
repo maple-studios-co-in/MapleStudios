@@ -319,13 +319,68 @@ it("rejects unknown projects and prevents editing snapshot identity", async () =
   ).toBe(400);
 });
 it("regenerates from current facts while preserving the reviewed version and rejects stale regeneration", async () => {
-  const {item, projectId} = await draft();
-  await request(app).patch(`${base}/projects/${projectId}`).set(auth()).send({revision:0,title:"New project title"});
-  const r = await request(app).post(`${base}/drafts/${item.id}/regenerate`).set(auth()).send({revision:0,notes:"New inputs"});
+  const { item, projectId } = await draft();
+  await request(app)
+    .patch(`${base}/projects/${projectId}`)
+    .set(auth())
+    .send({ revision: 0, title: "New project title" });
+  const r = await request(app)
+    .post(`${base}/drafts/${item.id}/regenerate`)
+    .set(auth())
+    .send({ revision: 0, notes: "New inputs" });
   expect(r.status).toBe(200);
   expect(r.body.item.revision).toBe(1);
   expect(r.body.item.body).toContain("New project title");
-  const history = await request(app).get(`${base}/drafts/${item.id}/versions`).set(auth());
+  const history = await request(app)
+    .get(`${base}/drafts/${item.id}/versions`)
+    .set(auth());
   expect(history.body.items[1].snapshot.project.title).toBe("Website");
-  expect((await request(app).post(`${base}/drafts/${item.id}/regenerate`).set(auth()).send({revision:0})).status).toBe(409);
+  expect(
+    (
+      await request(app)
+        .post(`${base}/drafts/${item.id}/regenerate`)
+        .set(auth())
+        .send({ revision: 0 })
+    ).status,
+  ).toBe(409);
+});
+it("keeps invoice reference consistent when editing and retains the old reference in history", async () => {
+  const { item } = await draft("invoice", { invoice });
+  const r = await request(app)
+    .patch(`${base}/drafts/${item.id}`)
+    .set(auth())
+    .send({ revision: 0, invoice: { ...invoice, reference: "REVISED-REF" } });
+  expect(r.status).toBe(200);
+  expect(r.body.item.snapshot.reference).toBe("REVISED-REF");
+  const html = await request(app)
+    .get(`${base}/drafts/${item.id}/export?format=html`)
+    .set(auth());
+  expect(html.text).toContain("REVISED-REF");
+  expect(html.text).not.toContain("DRAFT-EXAMPLE");
+  const versions = await request(app)
+    .get(`${base}/drafts/${item.id}/versions`)
+    .set(auth());
+  expect(versions.body.items[1].snapshot.reference).toBe("DRAFT-EXAMPLE");
+});
+it("explicitly clears a custom template when regenerating a standard email", async () => {
+  const t = await request(app)
+    .put(base + "/templates")
+    .set(auth())
+    .send({
+      name: "Custom",
+      kind: "onboarding",
+      subject: "Custom subject",
+      body: "CUSTOM WORDING",
+      status: "published",
+      revision: 0,
+    });
+  const { item } = await draft("onboarding", { templateId: t.body.item.id });
+  const r = await request(app)
+    .post(`${base}/drafts/${item.id}/regenerate`)
+    .set(auth())
+    .send({ revision: 0, templateId: null });
+  expect(r.status).toBe(200);
+  expect(r.body.item.body).toContain("Welcome to Maple Studios");
+  expect(r.body.item.body).not.toContain("CUSTOM WORDING");
+  expect(r.body.item.snapshot.templateId).toBeUndefined();
 });

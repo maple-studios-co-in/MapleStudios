@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Btn, Field, Input, Select, Textarea } from "../cms/ui";
 import { Invoice, today } from "./api";
 export const newInvoice = (): Invoice => ({
@@ -38,7 +38,13 @@ function Decimal({
   label: string;
 }) {
   const [text, setText] = useState((value / 100).toFixed(2));
-  useEffect(() => setText((value / 100).toFixed(2)), [value]);
+  const emitted = useRef(value);
+  useEffect(() => {
+    if (value !== emitted.current) {
+      setText((value / 100).toFixed(2));
+      emitted.current = value;
+    }
+  }, [value]);
   return (
     <Input
       aria-label={label}
@@ -47,8 +53,21 @@ function Decimal({
       min={min}
       step="0.01"
       value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={(e) => onChange(scaled(e.target.value))}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setText(raw);
+        const valid = /^\d+(?:\.\d{0,2})?$/.test(raw);
+        e.target.setCustomValidity(
+          valid || !raw
+            ? ""
+            : "Use a positive number with up to two decimal places.",
+        );
+        if (valid) {
+          const next = scaled(raw);
+          emitted.current = next;
+          onChange(next);
+        }
+      }}
     />
   );
 }

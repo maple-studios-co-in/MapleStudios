@@ -155,7 +155,11 @@ documentRoutes.patch("/drafts/:id", async (req, res) => {
     );
   const snapshot = current.snapshot as DraftSnapshot;
   const updatedSnapshot = invoice
-    ? { ...snapshot, invoice: calculateInvoice(invoice) }
+    ? {
+        ...snapshot,
+        reference: invoice.reference,
+        invoice: calculateInvoice(invoice),
+      }
     : snapshot;
   const previous = {
     revision: current.revision,
@@ -190,7 +194,7 @@ documentRoutes.post("/drafts/:id/regenerate", async (req, res) => {
   const current = await findDraft(req.params.id);
   const { revision: rev, ...options } = draftInput
     .omit({ projectId: true, kind: true })
-    .extend({ revision })
+    .extend({ revision, templateId: id.nullable().optional() })
     .strict()
     .parse(req.body);
   if (current.versions.length >= 100)
@@ -201,7 +205,6 @@ documentRoutes.post("/drafts/:id/regenerate", async (req, res) => {
     draftInput.parse({
       projectId: current.projectId,
       kind: current.kind,
-      templateId: old.templateId,
       invoice: old.invoice
         ? {
             reference: old.invoice.reference,
@@ -222,6 +225,10 @@ documentRoutes.post("/drafts/:id/regenerate", async (req, res) => {
           }
         : undefined,
       ...options,
+      templateId:
+        options.templateId === null
+          ? undefined
+          : (options.templateId ?? old.templateId),
     }),
   );
   const { createdBy: _createdBy, ...changes } = generated;
