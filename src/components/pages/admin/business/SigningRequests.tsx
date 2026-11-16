@@ -91,7 +91,7 @@ function Prepare({ draft, eligibility, owner, onIssue }: {
       ...(usesData === "yes" && { personalDataSchedule: str("schedule"), personalDataScheduleDate: str("scheduleDate") }),
       providers,
       ...(providers.length > 0 && { providerApprovalReference: str("providerApproval"), providerApprovalDate: str("providerApprovalDate") }),
-      incidentEmail: str("incidentEmail"), backupRetentionDays: Number(str("backupDays")), linkDays: Number(str("linkDays")),
+      incidentEmail: str("incidentEmail"), backupRetentionDays: 30, linkDays: Number(str("linkDays")),
     };
     setBusy(true);
     setError("");
@@ -136,7 +136,7 @@ function Prepare({ draft, eligibility, owner, onIssue }: {
               <Field label="Data schedule date"><Input name="scheduleDate" type="date" required /></Field>
             </>
           )}
-          <Field label="Maximum backup retention (days)"><Input name="backupDays" type="number" min={0} max={30} required /></Field>
+          <p className="text-sm sm:col-span-2">The studio’s shared backup policy retains backups for up to 30 days.</p>
           <Field label="Client incident contact"><Input name="incidentEmail" type="email" required maxLength={254} /></Field>
           <Field label="Client link validity (days)"><Input name="linkDays" type="number" min={1} max={30} defaultValue={7} required /></Field>
         </fieldset>
@@ -350,6 +350,16 @@ export default function SigningRequests({ draftId }: { draftId?: string }) {
             )}
             {record.status === "completed" && <Btn type="button" variant="primary" disabled={busy} onClick={() => void run(() => downloadSigningPdf(record.id))}>Download signed PDF</Btn>}
             {record.clientSignature && <p className="text-sm">Client signed as {record.clientSignature.name} · {dateTime(record.clientSignature.signedAt)}</p>}
+            {record.clientSignature?.audit && (
+              <dl className="space-y-2 text-xs [overflow-wrap:anywhere]">
+                {record.clientSignature.audit.ip && (
+                  <div><dt className="font-semibold">Signing IP address</dt><dd>{record.clientSignature.audit.ip}</dd></div>
+                )}
+                {record.clientSignature.audit.userAgent && (
+                  <div><dt className="font-semibold">Browser-reported user agent</dt><dd>{record.clientSignature.audit.userAgent}</dd></div>
+                )}
+              </dl>
+            )}
             {record.ownerSignature && <p className="text-sm">Owner signed as {record.ownerSignature.name} · {dateTime(record.ownerSignature.signedAt)}</p>}
             {record.contentHash && <p className="text-xs [overflow-wrap:anywhere]">Agreement SHA-256 <span className="font-mono">{record.contentHash}</span></p>}
             {record.pdfHash && <p className="text-xs [overflow-wrap:anywhere]">PDF SHA-256 <span className="font-mono">{record.pdfHash}</span></p>}

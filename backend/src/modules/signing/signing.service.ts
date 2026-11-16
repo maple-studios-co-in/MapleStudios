@@ -5,14 +5,16 @@ import { AppError } from "../../lib/AppError.js";
 import { getMailProvider } from "../../lib/mail/provider.js";
 import { registerTick } from "../../lib/scheduler.js";
 import { AdminUser } from "../auth/admin.model.js";
+import { id as objectId } from "../business/business.schema.js";
+import { BusinessTemplate } from "../business/documents.model.js";
 import { agreementTemplateFields, type CompanyProfile } from "../business/documents.schema.js";
 import { companyProfile, fillTemplate, findDraft, validateAgreementText, type DraftSnapshot } from "../business/documents.service.js";
 import { getReadiness, getSecurityPolicy, requireReady } from "../security/security.service.js";
 import {
-  DeliveryBudget, Envelope, type EventType, type Signature, type SigningEnvelope, type SigningSnapshot,
+  DeliveryBudget, Envelope, type ClientSignature, type EventType, type SigningEnvelope, type SigningSnapshot,
 } from "./signing.model.js";
-import { renderSigningPdf, requirePrintable } from "./signing.pdf.js";
-import { clientConsent, ownerConsent, studioSignerInput, type AgreementDetails, type PreviewInput } from "./signing.schema.js";
+import { preflightSigningPdf, renderSigningPdf, requirePrintable } from "./signing.pdf.js";
+import { clientConsent, consentVersion, ownerConsent, studioSignerInput, type AgreementDetails, type PreviewInput } from "./signing.schema.js";
 
 type EnvelopeView = Omit<SigningEnvelope, "pdf">;
 
@@ -80,6 +82,7 @@ function retentionSnapshot(policy: Awaited<ReturnType<typeof getSecurityPolicy>>
   return {
     months, basis, legalHoldPolicy,
     notice: `The studio retains this record, including its PDF, signer identities and identifying audit information, for ${months} calendar month${months === 1 ? "" : "s"} from completion or formal closure if incomplete. At the retention date the record is due for owner review and deletion, subject to any legal hold.\nRetention basis: ${basis}\nLegal holds: ${legalHoldPolicy}`,
+    clientAuditNotice: "When you sign, Maple Studios records your IP address and basic device information your browser reports for the signing audit. Authorized staff can access it under the same record retention and legal hold policy.",
   };
 }
 function completionText(details: AgreementDetails) {
@@ -103,7 +106,15 @@ function completionText(details: AgreementDetails) {
   } satisfies Record<typeof agreementTemplateFields[number], string>;
 }
 
-export async function signingPreview({ draftId, draftRevision, linkDays: _linkDays, ...details }: PreviewInput) {
+const publishedTemplateRequired = () =>
+  AppError.badRequest("Choose a confidentiality draft generated from a currently published template.");
+
+async function requirePublishedTemplate(templateId: string) {
+  if (!await BusinessTemplate.exists({ _id: templateId, kind: "confidentiality", status: "published" }))
+    throw publishedTemplateRequired();
+}
+
+async function prepareSigning({ draftId, draftRevision, linkDays: _linkDays, ...details }: PreviewInput) {
   void _linkDays;
   const [draft, policy, { profile }] = await Promise.all([
     findDraft(draftId, false), getSecurityPolicy(), companyProfile(),
@@ -111,8 +122,9 @@ export async function signingPreview({ draftId, draftRevision, linkDays: _linkDa
   if (draft.revision !== draftRevision)
     throw AppError.conflict("The source draft changed. Reopen it and review the new revision.");
   const source = draft.snapshot as DraftSnapshot;
-  if (draft.kind !== "confidentiality" || !source.templateId || !Number.isInteger(source.templateRevision))
-    throw AppError.badRequest("Choose a confidentiality draft generated from a published template.");
+  const templateId = objectId.safeParse(source.templateId);
+  if (draft.kind !== "confidentiality" || !templateId.success || !Number.isInteger(source.templateRevision))
+    throw publishedTemplateRequired();
 
   const designation = companyRepresentative(profile);
   if (!designation.success)
@@ -148,11 +160,17 @@ export async function signingPreview({ draftId, draftRevision, linkDays: _linkDa
   requirePrintable(title, body, completion, retention.notice);
   const snapshot: SigningSnapshot = {
     version: 1,
-    source: { draftId: String(draft._id), draftRevision, templateId: source.templateId, templateRevision: source.templateRevision! },
+    source: { draftId: String(draft._id), draftRevision, templateId: templateId.data, templateRevision: source.templateRevision! },
     title, body, completion, details, studioSigner, retention,
-    consent: { client: clientConsent, owner: ownerConsent },
+    consent: { version: consentVersion, client: clientConsent, owner: ownerConsent },
   };
   return { snapshot, contentHash: contentDigest(snapshot) };
+}
+
+export async function signingPreview(input: PreviewInput) {
+  const preview = await prepareSigning(input);
+  await requirePublishedTemplate(preview.snapshot.source.templateId);
+  return preview;
 }
 
 export const signerDocument = ({ title, body, completion, retention, consent, studioSigner }: SigningSnapshot) =>
@@ -170,9 +188,11 @@ export async function issueAgreement(input: PreviewInput & { previewHash: string
   const { previewHash, ...fields } = input;
   await requireReady();
   if (!mailAvailable()) throw AppError.unavailable("Private email verification is not configured.");
-  const { snapshot, contentHash } = await signingPreview(fields);
+  const { snapshot, contentHash } = await prepareSigning(fields);
   if (contentHash !== previewHash)
     throw AppError.conflict("The agreement or retention policy changed. Review a new preview before issuing.");
+  await preflightSigningPdf(snapshot);
+  await requirePublishedTemplate(snapshot.source.templateId);
   const now = new Date();
   const id = randomBytes(12).toString("hex");
   const { href, link } = mintLink(id, fields.linkDays, "sign", now);
@@ -293,30 +313,41 @@ function checkedSnapshot(row: EnvelopeView, expected = row.contentHash) {
 
 export async function clientDocument(id: string, token: string) {
   const row = await Envelope.findOne(sessionFilter(id, token, new Date())).lean();
-  if (!row?.session) throw inactiveSession();
+  if (!row?.session || !row.link) throw inactiveSession();
   const snapshot = checkedSnapshot(row);
+  const linkExpiresAt = Math.min(row.link.expiresAt.getTime(), row.retentionDueAt?.getTime() ?? Infinity);
   return {
     status: row.status, contentHash: row.contentHash, document: signerDocument(snapshot),
     signer: { name: snapshot.details.signerName, capacity: snapshot.details.signerCapacity },
     clientSignedAt: row.clientSignature?.signedAt, completedAt: row.completedAt,
-    sessionExpiresAt: new Date(Math.min(row.session.expiresAt.getTime(), row.retentionDueAt?.getTime() ?? Infinity)),
+    linkExpiresAt: new Date(linkExpiresAt),
+    sessionExpiresAt: new Date(Math.min(row.session.expiresAt.getTime(), linkExpiresAt)),
     retentionDueAt: row.retentionDueAt, pdfHash: row.pdfHash,
   };
 }
 
-export async function acceptAgreement(id: string, token: string, input: { name: string; place: string; contentHash: string }) {
+export async function acceptAgreement(
+  id: string, token: string,
+  input: { name: string; capacity: string; place: string; contentHash: string },
+  audit?: ClientSignature["audit"],
+) {
   const now = new Date();
   const access = sessionFilter(id, token, now);
   const row = await Envelope.findOne(access).lean();
   if (!row?.session) throw inactiveSession();
   if (row.status !== "awaiting-client" || row.link?.mode !== "sign") throw changed();
   const snapshot = checkedSnapshot(row, input.contentHash);
+  if (snapshot.consent.version !== consentVersion)
+    throw new AppError(409, "SIGNING_CONSENT_REISSUE_REQUIRED", "Ask your Maple Studios contact for a new agreement with the current signing statement.");
   if (input.name !== snapshot.details.signerName)
     throw AppError.badRequest("Type your name exactly as it appears on the agreement.");
+  if (input.capacity !== snapshot.details.signerCapacity)
+    throw AppError.badRequest("Type your capacity exactly as it appears on the agreement.");
   requirePrintable(input.name, input.place);
-  const clientSignature: Signature = {
-    name: input.name, capacity: snapshot.details.signerCapacity, place: input.place,
+  const clientSignature: ClientSignature = {
+    name: input.name, capacity: input.capacity, place: input.place,
     signedAt: now, verifiedAt: row.session.verifiedAt,
+    ...(audit && { audit }),
   };
   const updated = await Envelope.updateOne({
     ...sessionFilter(id, token, new Date()), status: "awaiting-client", "link.mode": "sign",

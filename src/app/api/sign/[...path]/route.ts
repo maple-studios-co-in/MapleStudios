@@ -71,6 +71,11 @@ async function proxy(req: Request, { params }: Context) {
   const headers = new Headers();
   forwardClientIp(req.headers, headers);
   if (token) headers.set("authorization", `Bearer ${token}`);
+  if (action === "sign") {
+    const userAgent = req.headers.get("user-agent")?.slice(0, 512).replace(/[\p{Cc}\p{Cf}]+/gu, " ").trim();
+    // Supplying an empty value keeps fetch from substituting its own user agent.
+    headers.set("user-agent", userAgent ?? "");
+  }
   let body: string | undefined;
   if (isPost) {
     try {

@@ -11,6 +11,11 @@ const maroon = "#741A14";
 const ink = "#252021";
 const maxBytes = 2 * 1024 * 1024;
 const maxPages = 48;
+// Evidence starts on a fresh page. Its two single-line signatures, fixed
+// statements, bounded email and timestamps fit within two pages. Reserve
+// 256 KiB for their page streams and any additional embedded font glyphs.
+const evidencePages = 2;
+const evidenceBytes = 256 * 1024;
 
 export function requirePrintable(...values: string[]) {
   for (const value of values) {
@@ -21,16 +26,26 @@ export function requirePrintable(...values: string[]) {
   }
 }
 
-export async function renderSigningPdf(
+type Evidence = { contentHash: string; client: Signature; owner: Signature };
+
+export async function preflightSigningPdf(snapshot: SigningSnapshot) {
+  await renderPdf(snapshot);
+}
+
+export function renderSigningPdf(snapshot: SigningSnapshot, contentHash: string, client: Signature, owner: Signature) {
+  return renderPdf(snapshot, { contentHash, client, owner });
+}
+
+async function renderPdf(
   snapshot: SigningSnapshot,
-  contentHash: string,
-  client: Signature,
-  owner: Signature,
+  evidence?: Evidence,
 ): Promise<Buffer> {
+  const pageLimit = evidence ? maxPages : maxPages - evidencePages;
+  const byteLimit = evidence ? maxBytes : maxBytes - evidenceBytes;
   const doc = new PDFDocument({
     size: "A4", autoFirstPage: false, bufferPages: true,
     margins: { top: 79, bottom: 63, left: 55, right: 55 },
-    info: { Title: snapshot.title, Author: "Maple Studios", CreationDate: owner.signedAt },
+    info: { Title: snapshot.title, Author: "Maple Studios", ...(evidence && { CreationDate: evidence.owner.signedAt }) },
   });
   doc.registerFont("Agreement", fontBytes).font("Agreement");
   const buffers: Buffer[] = [];
@@ -38,7 +53,7 @@ export async function renderSigningPdf(
   const output = new Promise<Buffer>((resolve, reject) => {
     doc.on("data", (chunk: Buffer) => {
       bytes += chunk.length;
-      if (bytes > maxBytes) doc.destroy(AppError.badRequest("The signed PDF exceeds the record size limit."));
+      if (bytes > byteLimit) doc.destroy(AppError.badRequest("The signed PDF exceeds the record size limit."));
       else buffers.push(chunk);
     });
     doc.on("end", () => resolve(Buffer.concat(buffers)));
@@ -53,7 +68,7 @@ export async function renderSigningPdf(
   }
   let pages = 0;
   doc.on("pageAdded", () => {
-    if (++pages > maxPages)
+    if (++pages > pageLimit)
       throw AppError.badRequest("The agreement exceeds the signed PDF page limit.");
     const { x, y } = doc;
     doc.rect(55, 42, 8, 8).fill(maroon);
@@ -75,20 +90,27 @@ export async function renderSigningPdf(
     doc.moveDown(0.9);
     text("Record retention", 14, maroon);
     text(snapshot.retention.notice);
+    if (snapshot.retention.clientAuditNotice) {
+      doc.moveDown(0.6);
+      text(snapshot.retention.clientAuditNotice);
+    }
 
-    doc.addPage();
-    text("Electronic signature evidence", 20, maroon);
-    doc.moveDown(0.7);
-    const writeSignature = (label: string, value: Signature, statement: string, method: string) => {
-      text(label, 14, maroon);
-      text(`${value.name}\nCapacity: ${value.capacity}${value.place ? `\nPlace: ${value.place}` : ""}\nSigned: ${value.signedAt.toISOString()}\n${method}: ${value.verifiedAt.toISOString()}`);
-      text(statement);
-      doc.moveDown(0.8);
-    };
-    writeSignature(`Client: ${snapshot.details.signerEmail}`, client, snapshot.consent.client, "Email verified");
-    writeSignature("Studio owner", owner, snapshot.consent.owner, "Second factor verified");
-    text("Agreement content SHA-256", 10, maroon);
-    text(contentHash, 9);
+    if (evidence) {
+      doc.addPage();
+      text("Electronic signature evidence", 20, maroon);
+      if (snapshot.consent.version) text(`Consent version ${snapshot.consent.version}`, 10);
+      doc.moveDown(0.7);
+      const writeSignature = (label: string, value: Signature, statement: string, method: string) => {
+        text(label, 14, maroon);
+        text(`${value.name}\nCapacity: ${value.capacity}${value.place ? `\nPlace: ${value.place}` : ""}\nSigned: ${value.signedAt.toISOString()}\n${method}: ${value.verifiedAt.toISOString()}`);
+        text(statement);
+        doc.moveDown(0.8);
+      };
+      writeSignature(`Client: ${snapshot.details.signerEmail}`, evidence.client, snapshot.consent.client, "Email verified");
+      writeSignature("Studio owner", evidence.owner, snapshot.consent.owner, "Second factor verified");
+      text("Agreement content SHA-256", 10, maroon);
+      text(evidence.contentHash, 9);
+    }
 
     for (let n = 0; n < pages; n++) {
       doc.switchToPage(n);

@@ -24,13 +24,17 @@ export function createApp(): Express {
     pinoHttp({
       logger,
       serializers: {
-        req: (req: { url?: string; query?: unknown; params?: unknown }) => {
+        req: (req: { url?: string; query?: unknown; params?: unknown; headers?: unknown; remoteAddress?: string; remotePort?: number }) => {
           const pathname = req.url?.split("?")[0];
           // Unsubscribe URLs encode a live credential in a path segment.
           return {
             ...req,
             url: pathname?.replace(/(\/unsubscribe)\/[^/]+/, "$1/[redacted]"),
             query: undefined, params: undefined,
+            // Signing network/device evidence belongs to the agreement's retention record.
+            ...(/^\/api\/v1\/signing(?:\/|$)/i.test(pathname ?? "") && {
+              headers: undefined, remoteAddress: undefined, remotePort: undefined,
+            }),
           };
         },
       },

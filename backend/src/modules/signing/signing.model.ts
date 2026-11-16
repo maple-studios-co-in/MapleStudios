@@ -13,8 +13,8 @@ export type SigningSnapshot = {
   completion: string;
   details: AgreementDetails;
   studioSigner?: { name: string; capacity: string };
-  retention: { months: number; basis: string; legalHoldPolicy: string; notice: string };
-  consent: { client: string; owner: string };
+  retention: { months: number; basis: string; legalHoldPolicy: string; notice: string; clientAuditNotice?: string };
+  consent: { version?: number; client: string; owner: string };
 };
 export type Signature = {
   name: string;
@@ -23,6 +23,7 @@ export type Signature = {
   signedAt: Date;
   verifiedAt: Date;
 };
+export type ClientSignature = Signature & { audit?: { ip?: string; userAgent?: string } };
 type Link = { hash: string; createdAt: Date; expiresAt: Date; mode: "sign" | "view"; revokedAt?: Date };
 type Code = { nonce: string; hash: string; expiresAt: Date; attempts: number; delivered: boolean };
 type Session = { hash: string; expiresAt: Date; verifiedAt: Date };
@@ -37,7 +38,7 @@ export interface SigningEnvelope {
   otp?: Code;
   session?: Session;
   lastCodeAt?: Date;
-  clientSignature?: Signature;
+  clientSignature?: ClientSignature;
   ownerSignature?: Signature;
   createdAt?: Date;
   completedAt?: Date;
@@ -60,8 +61,13 @@ const otp = new Schema<Code>({
 const session = new Schema<Session>({
   hash: String, expiresAt: Date, verifiedAt: Date,
 }, { _id: false });
-const signature = new Schema<Signature>({
+const signatureFields = {
   name: String, capacity: String, place: String, signedAt: Date, verifiedAt: Date,
+};
+const signature = new Schema<Signature>(signatureFields, { _id: false });
+const clientSignature = new Schema<ClientSignature>({
+  ...signatureFields,
+  audit: new Schema<NonNullable<ClientSignature["audit"]>>({ ip: String, userAgent: String }, { _id: false }),
 }, { _id: false });
 const event = new Schema<SigningEvent>({
   type: String, at: Date, actorId: String, reason: String,
@@ -77,7 +83,7 @@ const envelope = new Schema<SigningEnvelope>({
   otp,
   session,
   lastCodeAt: Date,
-  clientSignature: signature,
+  clientSignature,
   ownerSignature: signature,
   createdAt: Date,
   completedAt: Date,

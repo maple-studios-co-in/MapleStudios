@@ -181,7 +181,10 @@ export type SigningRecord = {
   link?: { mode: "sign" | "view"; status: "active" | "expired" | "revoked"; expiresAt: string; revokedAt?: string };
   document?: import("../../sign/ClientSigning").AgreementDocument;
   events?: { type: string; at: string; actorId?: string; reason?: string }[];
-  clientSignature?: { name: string; capacity: string; place: string; signedAt: string; verifiedAt: string };
+  clientSignature?: {
+    name: string; capacity: string; place: string; signedAt: string; verifiedAt: string;
+    audit?: { ip?: string; userAgent?: string };
+  };
   ownerSignature?: { name: string; capacity: string; place: string; signedAt: string; verifiedAt: string };
 };
 

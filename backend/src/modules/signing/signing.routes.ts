@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { Router, type Request, type Response } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../../lib/AppError.js";
@@ -37,6 +38,18 @@ function clientToken(req: Request) {
   const match = header?.startsWith("Bearer ") && linkSecret.safeParse(header.slice(7));
   if (!match || !match.success) throw AppError.unauthorized("Open your private link and verify by email.");
   return match.data;
+}
+
+function acceptanceAudit(req: Request) {
+  // req.ip applies the API's single trusted loopback hop. Discard IPv6 scope
+  // identifiers and use a canonical address without carrying the header chain.
+  const address = req.ip === req.socket.remoteAddress ? "" : req.ip ?? "";
+  const family = address.includes("%") ? 0 : isIP(address);
+  const ip = family === 4 ? address
+    : family === 6 ? new URL(`http://[${address}]`).hostname.slice(1, -1)
+    : undefined;
+  const userAgent = req.get("user-agent")?.slice(0, 512).replace(/[\p{Cc}\p{Cf}]+/gu, " ").trim();
+  return ip || userAgent ? { ...(ip && { ip }), ...(userAgent && { userAgent }) } : undefined;
 }
 
 // PDF bytes are served only as an attachment after authorization.
@@ -106,7 +119,7 @@ publicSigningRoutes.get("/:id/document", async (req, res) => {
   res.json(await clientDocument(publicId(req), clientToken(req)));
 });
 publicSigningRoutes.post("/:id/sign", async (req, res) => {
-  res.json(await acceptAgreement(publicId(req), clientToken(req), signInput.parse(req.body)));
+  res.json(await acceptAgreement(publicId(req), clientToken(req), signInput.parse(req.body), acceptanceAudit(req)));
 });
 publicSigningRoutes.get("/:id/pdf", async (req, res) => {
   await sendPdf(res, publicId(req), clientToken(req));

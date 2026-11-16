@@ -7,8 +7,8 @@ export type AgreementDocument = {
   title: string;
   body: string;
   completion: string;
-  retention: { months: number; basis: string; legalHoldPolicy: string; notice: string };
-  consent: { client: string; owner: string };
+  retention: { months: number; basis: string; legalHoldPolicy: string; notice: string; clientAuditNotice?: string };
+  consent: { version?: number; client: string; owner: string };
   studioSigner?: { name: string; capacity: string };
 };
 
@@ -18,8 +18,7 @@ type PrivateDocument = {
   contentHash: string;
   signer: { name: string; capacity: string };
   sessionExpiresAt: string;
-  completedAt?: string;
-  retentionDueAt?: string;
+  linkExpiresAt: string;
   pdfHash?: string;
 };
 
@@ -44,6 +43,7 @@ export function AgreementText({ document }: { document: AgreementDocument }) {
       <section className="border-t border-[#e5d9d1] pt-5">
         <h3 className="mb-2 text-base font-semibold text-[#741a14]">Record retention</h3>
         <p className="whitespace-pre-wrap text-sm leading-6 [overflow-wrap:anywhere]">{document.retention.notice}</p>
+        {document.retention.clientAuditNotice && <p className="mt-2 text-sm leading-6">{document.retention.clientAuditNotice}</p>}
       </section>
     </article>
   );
@@ -60,6 +60,7 @@ export default function ClientSigning({ id }: { id: string }) {
   const [retryAt, setRetryAt] = useState(0);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [place, setPlace] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -106,6 +107,7 @@ export default function ClientSigning({ id }: { id: string }) {
     const timer = window.setTimeout(() => {
       setDocument(undefined);
       setName("");
+      setCapacity("");
       setPlace("");
       setConsent(false);
       setError("Your private session expired. Open the original link to verify again.");
@@ -133,6 +135,7 @@ export default function ClientSigning({ id }: { id: string }) {
       if (document && failure instanceof SigningRequestError && failure.status === 401) {
         setDocument(undefined);
         setName("");
+        setCapacity("");
         setPlace("");
         setConsent(false);
       }
@@ -169,9 +172,10 @@ export default function ClientSigning({ id }: { id: string }) {
     event.preventDefault();
     if (!document || !consent) return;
     void run(async () => {
-      await call("sign", { name, place, consent, contentHash: document.contentHash });
+      await call("sign", { name, capacity, place, consent, contentHash: document.contentHash });
       setDocument({ ...document, status: "awaiting-owner" });
       setName("");
+      setCapacity("");
       setPlace("");
       setConsent(false);
     });
@@ -198,14 +202,17 @@ export default function ClientSigning({ id }: { id: string }) {
                 {document.status === "awaiting-client" ? "Review your agreement" : document.status === "completed" ? "Agreement signed" : "Your signature is recorded"}
               </h1>
               {document.status === "awaiting-owner" && (
-                <p className="text-[#5a4840]">The signed PDF will be available here after the studio owner countersigns.</p>
+                <p className="text-[#5a4840]">You can download the signed PDF through a valid private link after the studio owner countersigns.</p>
               )}
             </header>
             {error && document.status !== "awaiting-client" && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">{error}</p>}
             {document.status === "completed" && (
               <section className="space-y-3 rounded-xl border border-[#decfc2] bg-white p-5">
                 <a href={`${endpoint}/pdf`} download className={`inline-flex items-center ${actionButton}`}>Download signed PDF</a>
-                {document.retentionDueAt && <p className="text-sm">Download your copy before {new Date(document.retentionDueAt).toLocaleString()}.</p>}
+                <p className="text-sm">Download your copy before this verified session ends on {new Date(document.sessionExpiresAt).toLocaleString()}.</p>
+                {document.linkExpiresAt !== document.sessionExpiresAt && (
+                  <p className="text-sm">You can verify again using your original private link until {new Date(document.linkExpiresAt).toLocaleString()}.</p>
+                )}
                 {document.pdfHash && <p className="text-xs text-[#62524a]">PDF SHA-256 <output className="mt-1 block font-mono [overflow-wrap:anywhere]">{document.pdfHash}</output></p>}
               </section>
             )}
@@ -213,12 +220,18 @@ export default function ClientSigning({ id }: { id: string }) {
               <button type="button" className={secondaryButton} disabled={busy} onClick={refresh}>Check signing status</button>
             }
             <AgreementText document={document.document} />
-            {document.status === "awaiting-client" && (
+            {document.status === "awaiting-client" && !document.document.consent.version && (
+              <p className="text-sm">Ask your Maple Studios contact for a new agreement with the current signing statement.</p>
+            )}
+            {document.status === "awaiting-client" && document.document.consent.version && (
               <form onSubmit={sign} className="space-y-4 rounded-xl border border-[#decfc2] bg-[#fffaf2] p-5 sm:p-7">
                 <h2 className="text-xl font-semibold">Sign the agreement</h2>
                 <p className="text-sm">Sign as <strong>{document.signer.name}</strong>, {document.signer.capacity}.</p>
                 <label className="block text-sm font-medium">Type your name as shown above
                   <input className={`mt-1.5 ${field}`} value={name} onChange={event => setName(event.target.value)} required maxLength={140} autoComplete="off" />
+                </label>
+                <label className="block text-sm font-medium">Type your capacity as shown above
+                  <input className={`mt-1.5 ${field}`} value={capacity} onChange={event => setCapacity(event.target.value)} required maxLength={140} autoComplete="off" />
                 </label>
                 <label className="block text-sm font-medium">Place of signing (optional)
                   <input className={`mt-1.5 ${field}`} value={place} onChange={event => setPlace(event.target.value)} maxLength={140} autoComplete="off" />
@@ -228,7 +241,7 @@ export default function ClientSigning({ id }: { id: string }) {
                   {document.document.consent.client}
                 </label>
                 {error && <p role="alert" className="text-sm text-red-900">{error}</p>}
-                <button className={actionButton} disabled={busy || !consent || name.trim() !== document.signer.name}>{busy ? "Working…" : "Sign agreement"}</button>
+                <button className={actionButton} disabled={busy || !consent || name.trim() !== document.signer.name || capacity.trim() !== document.signer.capacity}>{busy ? "Working…" : "Sign agreement"}</button>
               </form>
             )}
           </>

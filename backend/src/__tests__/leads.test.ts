@@ -264,16 +264,22 @@ describe("admin lead routes", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, updated: 2 });
 
-    const a2 = (await get(`/api/v1/admin/leads/${a.id}`)).body.item;
+    const updatedAsha = await get(`/api/v1/admin/leads/${a.id}`);
+    expect(updatedAsha.status, updatedAsha.text).toBe(200);
+    const a2 = updatedAsha.body.item;
     expect(a2.stage).toBe("contacted");
     expect(a2.owner).toBe("aditya");
     expect(a2.tags.sort()).toEqual(["q4", "vip"]);
     expect(a2.activities.some((x: { type: string }) => x.type === "stage")).toBe(true);
 
-    const r2 = (await get(`/api/v1/admin/leads/${r.id}`)).body.item;
+    const updatedRavi = await get(`/api/v1/admin/leads/${r.id}`);
+    expect(updatedRavi.status, updatedRavi.text).toBe(200);
+    const r2 = updatedRavi.body.item;
     expect(r2.tags.sort()).toEqual(["cafe", "q4"]);
 
-    const m2 = (await get(`/api/v1/admin/leads/${m.id}`)).body.item;
+    const unchangedMeera = await get(`/api/v1/admin/leads/${m.id}`);
+    expect(unchangedMeera.status, unchangedMeera.text).toBe(200);
+    const m2 = unchangedMeera.body.item;
     expect(m2.stage).toBe("qualified");
     expect(m2.activities).toHaveLength(0);
 

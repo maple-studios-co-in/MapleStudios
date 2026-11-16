@@ -11,7 +11,7 @@ import { encrypt } from "../lib/crypto.js";
 import { setMailProvider, type MailMessage } from "../lib/mail/provider.js";
 import { signAccessToken } from "../middleware/auth.js";
 import { AdminUser } from "../modules/auth/admin.model.js";
-import { BusinessCompany, BusinessDraft } from "../modules/business/documents.model.js";
+import { BusinessCompany, BusinessDraft, BusinessTemplate } from "../modules/business/documents.model.js";
 import { SecurityPolicy, attestationIds } from "../modules/security/security.model.js";
 
 let app = createApp();
@@ -29,6 +29,7 @@ const auth = (role: keyof typeof ids = "owner", recent = true) => ({
   })}`,
 });
 const representative = { representative: "Owner Example", representativeTitle: "Director" };
+const templateId = "500000000000000000000003";
 const retention = {
   agreementRetentionMonths: 12,
   retentionBasis: "Synthetic contract administration",
@@ -96,11 +97,12 @@ beforeEach(async () => {
     })),
   });
   await BusinessCompany.create({ _id: "company", profile: { name: "Synthetic Studio", ...representative } });
+  await BusinessTemplate.create({ _id: templateId, kind: "confidentiality", name: "Synthetic terms", body, status: "published", revision: 1 });
   const draft = await BusinessDraft.create({
     projectId: "500000000000000000000001", clientId: "500000000000000000000002",
     kind: "confidentiality", title: "Synthetic data and confidentiality agreement", body,
     snapshot: {
-      templateId: "500000000000000000000003", templateRevision: 1,
+      templateId, templateRevision: 1,
       company: { name: "Synthetic Studio", legalName: "Synthetic Studio Ltd", bankAccount: "00000000000000", ...representative },
       client: { name: "Synthetic Client Ltd" },
     },
@@ -151,7 +153,7 @@ const getDocument = (id: string, token: string) =>
   request(app).get(publicPath(id, "document")).set(session(token));
 const sign = (id: string, token: string, hash: string, fields = {}) =>
   request(app).post(publicPath(id, "sign")).set(session(token)).send({
-    contentHash: hash, name: base.signerName, consent: true, ...fields,
+    contentHash: hash, name: base.signerName, capacity: base.signerCapacity, consent: true, ...fields,
   });
 const counter = (id: string, hash: string, role: keyof typeof ids = "owner", recent = true, fields = {}) =>
   request(app).post(staff + `/${id}/countersign`).set(auth(role, recent)).send({
@@ -205,6 +207,150 @@ it("requires structured completion, rejects raw reminders, and pins the preview 
   await BusinessDraft.updateOne({ _id: draftId }, { $set: { body }, $inc: { revision: 1 } });
   const issued = await request(app).post(staff).set(auth()).send({ ...base, draftId, previewHash: p.body.contentHash });
   expect(issued.status).toBe(409);
+});
+
+it("blocks issuance after the source template is unpublished and preserves an existing copy", async () => {
+  const existing = await issue();
+  const p = await preview();
+  expect(p.status, p.text).toBe(200);
+  const withdrawn = await request(app).put("/api/v1/business/templates").set(auth()).send({
+    id: templateId, kind: "confidentiality", name: "Synthetic terms", body, status: "draft", revision: 1,
+  });
+  expect(withdrawn.status, withdrawn.text).toBe(200);
+  const result = await request(app).post(staff).set(auth()).send({ ...base, draftId, previewHash: p.body.contentHash });
+  expect(result.status, result.text).toBe(400);
+  expect((await preview()).status).toBe(400);
+  expect(await envelope().countDocuments()).toBe(1);
+  expect((await codeRequest(existing)).status).toBe(200);
+  const verified = await verify(existing, capturedCode());
+  const document = await getDocument(existing.id, verified.body.sessionToken);
+  expect(document.body.contentHash).toBe(existing.hash);
+  expect(document.body.document.body).toContain("Synthetic approved clause");
+});
+
+it("rejects an agreement exceeding PDF capacity before it issues an envelope", async () => {
+  await BusinessDraft.updateOne({ _id: draftId }, { $set: { body: "Approved clause.\n".repeat(2500).trim() } });
+  const p = await preview();
+  expect(p.status, p.text).toBe(200);
+  const result = await request(app).post(staff).set(auth()).send({ ...base, draftId, previewHash: p.body.contentHash });
+  expect(result.status, result.text).toBe(400);
+  expect(result.body.error).toMatch(/PDF page limit/i);
+  expect(await envelope().countDocuments()).toBe(0);
+});
+
+it("completes a long agreement with maximum-length signature fields", async () => {
+  const studioName = "W".repeat(160);
+  const studioCapacity = "W".repeat(160);
+  const clientName = "W".repeat(140);
+  const clientCapacity = "W".repeat(140);
+  const place = "W".repeat(140);
+  const designation = { representative: studioName, representativeTitle: studioCapacity };
+  await AdminUser.updateOne({ _id: ids.owner }, { $set: { name: studioName } });
+  await BusinessCompany.updateOne({ _id: "company" }, { $set: { profile: { name: "Synthetic Studio", ...designation } } });
+  await BusinessDraft.updateOne({ _id: draftId }, { $set: {
+    body: "Approved clause.\n".repeat(1700).trim(),
+    "snapshot.company.representative": studioName,
+    "snapshot.company.representativeTitle": studioCapacity,
+  } });
+  const link = await issue({ signerName: clientName, signerCapacity: clientCapacity });
+  await codeRequest(link);
+  const { body: { sessionToken: token } } = await verify(link, capturedCode());
+  const accepted = await sign(link.id, token, link.hash, { name: clientName, capacity: clientCapacity, place });
+  expect(accepted.status, accepted.text).toBe(200);
+  const completed = await counter(link.id, link.hash, "owner", true, { name: studioName, capacity: studioCapacity, place });
+  expect(completed.status, completed.text).toBe(200);
+  const file = await pdf(link.id, token);
+  expect(file.status).toBe(200);
+  const pageCount = file.body.toString("latin1").match(/\/Type \/Page\b/g)?.length;
+  expect(pageCount).toBeGreaterThanOrEqual(40);
+  expect(pageCount).toBeLessThanOrEqual(48);
+  expect(file.body.length).toBeLessThanOrEqual(2 * 1024 * 1024);
+});
+
+it("requires typed capacity and affirmative consent before recording the client signature", async () => {
+  const link = await issue();
+  await codeRequest(link);
+  const { body: { sessionToken: token } } = await verify(link, capturedCode());
+  const missing = await sign(link.id, token, link.hash, { capacity: undefined });
+  expect(missing.status, missing.text).toBe(400);
+  const mismatch = await sign(link.id, token, link.hash, { capacity: "Someone else's title" });
+  expect(mismatch.status, mismatch.text).toBe(400);
+  expect(mismatch.body.error).toMatch(/type your capacity/i);
+  expect((await sign(link.id, token, link.hash, { consent: false })).status).toBe(400);
+  expect((await sign(link.id, token, link.hash, { consent: undefined })).status).toBe(400);
+  expect(await envelope().findOne({ _id: link.id })).toMatchObject({ status: "awaiting-client" });
+  expect((await sign(link.id, token, link.hash)).status).toBe(200);
+});
+
+it("freezes the client's authority statement and audit notice in the agreement they verify", async () => {
+  const link = await issue();
+  await codeRequest(link);
+  const { body: { sessionToken: token } } = await verify(link, capturedCode());
+  const doc = await getDocument(link.id, token);
+  expect(doc.body.document.consent).toMatchObject({
+    version: 2, client: expect.stringMatching(/authorized to represent the client/i),
+  });
+  expect(doc.body.document.retention.clientAuditNotice).toMatch(/IP address.*browser reports/i);
+  expect(doc.body.contentHash).toBe(link.hash);
+});
+
+it("omits client audit metadata when the request supplies no trusted client IP or browser agent", async () => {
+  const link = await issue();
+  await codeRequest(link);
+  const { body: { sessionToken: token } } = await verify(link, capturedCode());
+  const accepted = await sign(link.id, token, link.hash);
+  expect(accepted.status, accepted.text).toBe(200);
+  const detail = await request(app).get(staff + `/${link.id}`).set(auth());
+  expect(detail.body.item.clientSignature.audit).toBeUndefined();
+});
+
+it("requires reissue for new acceptance with legacy consent and keeps already accepted evidence countersignable", async () => {
+  const link = await issue();
+  const row = await envelope().findOne({ _id: link.id });
+  const snapshot = row!.snapshot;
+  // Reconstruct a v1 envelope, which had a frozen client statement but no explicit version.
+  snapshot.consent = {
+    client: "I consent to sign this agreement electronically. I have reviewed this copy and agree to its terms in the stated capacity.",
+    owner: snapshot.consent.owner,
+  };
+  delete snapshot.retention.clientAuditNotice;
+  const hash = createHash("sha256").update(JSON.stringify(snapshot)).digest("hex");
+  await envelope().updateOne({ _id: link.id }, { $set: { snapshot, contentHash: hash } });
+  await codeRequest(link);
+  const { body: { sessionToken: token } } = await verify(link, capturedCode());
+  const denied = await sign(link.id, token, hash);
+  expect(denied.body).toMatchObject({ code: "SIGNING_CONSENT_REISSUE_REQUIRED" });
+  expect((await envelope().findOne({ _id: link.id }))?.clientSignature).toBeUndefined();
+
+  const signedAt = new Date();
+  const clientSignature = { name: base.signerName, capacity: base.signerCapacity, place: "", signedAt, verifiedAt: signedAt };
+  await envelope().updateOne({ _id: link.id }, { $set: { clientSignature, status: "awaiting-owner" } });
+  const completed = await counter(link.id, hash);
+  expect(completed.status, completed.text).toBe(200);
+  expect((await getDocument(link.id, token)).body.document.consent).toEqual(snapshot.consent);
+});
+
+it("reports the effective link and session deadlines independently of record retention", async () => {
+  const link = await issue();
+  await codeRequest(link);
+  const { body: { sessionToken: token, expiresAt } } = await verify(link, capturedCode());
+  const row = await envelope().findOne({ _id: link.id });
+  const doc = await getDocument(link.id, token);
+  expect(doc.body).toMatchObject({ linkExpiresAt: row!.link.expiresAt.toISOString(), sessionExpiresAt: expiresAt });
+  expect(Date.parse(doc.body.sessionExpiresAt)).toBeLessThan(Date.parse(doc.body.linkExpiresAt));
+
+  const linkDeadline = new Date(Date.now() + 120_000);
+  const retentionDeadline = new Date(Date.now() + 60_000);
+  await envelope().updateOne({ _id: link.id }, { $set: { "link.expiresAt": linkDeadline } });
+  expect((await getDocument(link.id, token)).body).toMatchObject({
+    linkExpiresAt: linkDeadline.toISOString(), sessionExpiresAt: linkDeadline.toISOString(),
+  });
+  await envelope().updateOne({ _id: link.id }, { $set: { retentionDueAt: retentionDeadline } });
+  expect((await getDocument(link.id, token)).body).toMatchObject({
+    retentionDueAt: retentionDeadline.toISOString(),
+    linkExpiresAt: retentionDeadline.toISOString(),
+    sessionExpiresAt: retentionDeadline.toISOString(),
+  });
 });
 
 it("sends a code only to the frozen recipient, keeps responses clean and invalidates failed deliveries", async () => {
@@ -325,7 +471,12 @@ it("renews a completed record as view-only and enforces holds and auditable rete
   const link = await issue();
   await codeRequest(link);
   const verified = await verify(link, capturedCode());
-  await sign(link.id, verified.body.sessionToken, link.hash);
+  const accepted = await sign(link.id, verified.body.sessionToken, link.hash)
+    .set("x-forwarded-for", "203.0.113.7").set("user-agent", "SyntheticPurgeBrowser");
+  expect(accepted.status, accepted.text).toBe(200);
+  expect((await envelope().findOne({ _id: link.id }))?.clientSignature.audit).toEqual({
+    ip: "203.0.113.7", userAgent: "SyntheticPurgeBrowser",
+  });
   const completed = await counter(link.id, link.hash);
   expect(completed.status, completed.text).toBe(200);
   const remove = () => request(app).post(staff + `/${link.id}/purge`).set(auth()).send({ confirm: true });
@@ -350,7 +501,10 @@ it("renews a completed record as view-only and enforces holds and auditable rete
   const row = await envelope().findOne({ _id: link.id });
   expect(Object.keys(row!).sort()).toEqual(["_id", "events", "purgedAt", "retentionDueAt", "status"]);
   const serialized = JSON.stringify(row);
-  for (const privateValue of [base.signerName, base.signerEmail, link.hash, "Synthetic hold reason", ids.owner, "Synthetic approved clause"])
+  for (const privateValue of [
+    base.signerName, base.signerEmail, link.hash, "Synthetic hold reason", ids.owner, "Synthetic approved clause",
+    "203.0.113.7", "SyntheticPurgeBrowser",
+  ])
     expect(serialized).not.toContain(privateValue);
   expect(row?.events).toEqual(expect.arrayContaining([expect.objectContaining({ type: "purged" }), expect.objectContaining({ type: "hold-released" })]));
 });
@@ -387,13 +541,14 @@ it("requires same origin for public mutations and moves the verified token into 
   const originalOrigin = process.env.GROWTH_API_ORIGIN;
   process.env.GROWTH_API_ORIGIN = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   const context = (action: string) => ({ params: Promise.resolve({ path: [link.id, action] }) });
-  function call(action: string, body?: object, origin?: string, cookie?: string) {
+  function call(action: string, body?: object, origin?: string, cookie?: string, headers?: Record<string, string>) {
     return new Request(`https://localhost/api/sign/${link.id}/${action}`, {
       method: body ? "POST" : "GET",
       headers: {
         ...(origin ? { origin } : {}),
         ...(cookie ? { cookie } : {}),
         ...(body ? { "content-type": "application/json" } : {}),
+        ...headers,
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
@@ -418,6 +573,26 @@ it("requires same origin for public mutations and moves the verified token into 
     const cookieHeader = `${cookie.name}=${cookie.value}`;
     expect((await handler.GET(call("document", undefined, undefined, cookieHeader), context("document"))).status).toBe(200);
     expect((await handler.POST(call("sign", { name: base.signerName, contentHash: link.hash, consent: true }, "https://other.example", cookieHeader), context("sign"))).status).toBe(403);
+    expect((await envelope().findOne({ _id: link.id }))?.clientSignature).toBeUndefined();
+    const accepted = await handler.POST(call("sign", {
+      name: base.signerName, capacity: base.signerCapacity, contentHash: link.hash, consent: true,
+    }, "https://localhost", cookieHeader, {
+      "x-forwarded-for": "198.51.100.50, 198.51.100.51",
+      "x-real-ip": "2001:0DB8:0000:0000::B",
+      "user-agent": "SyntheticBrowser\t" + "x".repeat(600),
+    }), context("sign"));
+    expect(accepted.status, await accepted.clone().text()).toBe(200);
+    const detail = await request(app).get(staff + `/${link.id}`).set(auth("admin"));
+    expect(detail.body.item.clientSignature.audit).toEqual({ ip: "2001:db8::b", userAgent: "SyntheticBrowser " + "x".repeat(495) });
+    expect(await accepted.text()).not.toContain("SyntheticBrowser");
+    const publicDocument = await handler.GET(call("document", undefined, undefined, cookieHeader), context("document"));
+    expect(await publicDocument.text()).not.toContain("2001:db8::b");
+    const publicDetail = await request(app).get(staff + `/${link.id}`).set(auth("member"));
+    expect(publicDetail.status).toBe(403);
+    expect(publicDetail.text).not.toContain("SyntheticBrowser");
+    const list = await request(app).get(staff).set(auth("admin"));
+    expect(list.text).not.toContain("SyntheticBrowser");
+    expect(list.text).not.toContain("2001:db8::b");
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()));
     if (originalOrigin) process.env.GROWTH_API_ORIGIN = originalOrigin;
@@ -464,15 +639,17 @@ it("lets Admin preview but reserves issuing, renewal and revocation for Owner", 
   expect((await request(app).delete(path).set(auth())).status).toBe(200);
 });
 
-it("caps contractual backup retention at 30 days without limiting signed-record retention", async () => {
+it("requires the studio's 30-day backup limit without limiting signed-record retention", async () => {
   const previewed = await preview({ backupRetentionDays: 30 });
   expect(previewed.body.document).toMatchObject({ retention: { months: 12 } });
   expect(previewed.body.document.completion).toContain("Maximum backup retention: 30 days");
-  expect((await preview({ backupRetentionDays: 31 })).status).toBe(400);
-  const issued = await request(app).post(staff).set(auth()).send({
-    ...base, draftId, backupRetentionDays: 31, previewHash: previewed.body.contentHash,
-  });
-  expect(issued.status).toBe(400);
+  for (const days of [0, 7, 29, 31]) {
+    expect((await preview({ backupRetentionDays: days })).status).toBe(400);
+    const issued = await request(app).post(staff).set(auth()).send({
+      ...base, draftId, backupRetentionDays: days, previewHash: previewed.body.contentHash,
+    });
+    expect(issued.status, issued.text).toBe(400);
+  }
 });
 
 it("requires both configured representative fields and refuses a preview changed before issue", async () => {

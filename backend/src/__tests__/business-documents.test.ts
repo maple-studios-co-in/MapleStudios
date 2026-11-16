@@ -212,7 +212,7 @@ it("retains edited draft versions and rejects stale edits", async () => {
   const versions = await request(app)
     .get(`${base}/drafts/${item.id}/versions`)
     .set(auth());
-  expect(versions.status).toBe(200);
+  expect(versions.status, versions.text).toBe(200);
   expect(
     versions.body.items.map((v: { revision: number }) => v.revision),
   ).toEqual([1, 0]);
