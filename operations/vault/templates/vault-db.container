@@ -1,0 +1,27 @@
+[Unit]
+Description=Maple Studios Passbolt MariaDB
+
+[Container]
+ContainerName=maple-vault-db
+Image=${db_image}
+Pull=never
+Network=vault.network
+Volume=vault-db.volume:/var/lib/mysql
+EnvironmentFile=${db_env}
+Environment=MARIADB_DATABASE=passbolt
+Environment=MARIADB_USER=passbolt
+Environment=MARIADB_ROOT_HOST=localhost
+NoNewPrivileges=true
+HealthCmd=healthcheck.sh --connect --innodb_initialized
+HealthInterval=30s
+HealthStartPeriod=60s
+LogDriver=k8s-file
+PodmanArgs=--http-proxy=false --log-opt=max-size=10mb
+Exec=--general-log=0 --slow-query-log=0
+
+[Service]
+Slice=vault.slice
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=120s
+UMask=0077

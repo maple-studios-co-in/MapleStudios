@@ -1,0 +1,7 @@
+[Unit]
+Description=Combined Maple Studios vault resource limits
+
+[Slice]
+MemoryMax=${memory_bytes}
+MemorySwapMax=0
+CPUQuota=${cpu_quota_percent}%

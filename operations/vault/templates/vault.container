@@ -1,0 +1,42 @@
+[Unit]
+Description=Maple Studios Passbolt CE
+Requires=vault-db.service
+After=vault-db.service
+
+[Container]
+ContainerName=maple-vault-app
+Image=${app_image}
+Pull=never
+Network=vault.network
+PublishPort=127.0.0.1:${app_port}:8080
+Volume=vault.volume:/etc/passbolt/gpg
+Volume=vault-jwt.volume:/etc/passbolt/jwt
+EnvironmentFile=${app_env}
+Environment=APP_FULL_BASE_URL=https://${hostname}
+Environment=DATASOURCES_DEFAULT_HOST=maple-vault-db
+Environment=DATASOURCES_DEFAULT_PORT=3306
+Environment=DATASOURCES_DEFAULT_USERNAME=passbolt
+Environment=DATASOURCES_DEFAULT_DATABASE=passbolt
+Environment=DATASOURCES_DEFAULT_LOG=false
+Environment=DEBUG=false
+Environment=PASSBOLT_SSL_FORCE=true
+Environment=PASSBOLT_SECURITY_PROXIES_ACTIVE=true
+Environment=PASSBOLT_SECURITY_FULLBASEURL_ENFORCE=true
+Environment=PASSBOLT_PLUGINS_SELF_REGISTRATION_ENABLED=false
+Environment=PASSBOLT_SECURITY_SMTP_SETTINGS_ENDPOINTS_DISABLED=true
+Exec=/usr/bin/wait-for.sh -t 60 maple-vault-db:3306 -- /docker-entrypoint.sh
+NoNewPrivileges=true
+DropCapability=all
+PodmanArgs=--http-proxy=false
+# The vendor image sends HTTP request lines and application errors to these streams.
+LogDriver=none
+
+[Service]
+Slice=vault.slice
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=120s
+UMask=0077
+
+[Install]
+WantedBy=default.target
