@@ -35,15 +35,15 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { sessionFetch } from "@/lib/admin/session-client";
-import type { StudioRole } from "@/lib/admin/access-policy";
+import { sessionAction, sessionFetch, type Account, type BrowserSession } from "@/lib/admin/session-client";
+import AuthenticatorForm from "@/components/pages/admin/security/AuthenticatorForm";
 import LogoMark from "@/components/common/LogoMark";
 
 /** Individual sessions are held in HttpOnly cookies; each API checks current access. */
 type AdminCtx = {
   /** the validated key, "" until sign-in */
   key: string;
-  account: {id:string;email:string;name:string;role:StudioRole} | null;
+  account: Account | null;
   /** fetch against an /api/admin/* route with the key attached */
   adminFetch: (input: string, init?: RequestInit) => Promise<Response>;
   signOut: () => void;
@@ -114,6 +114,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
       { href: "/admin/media", label: "Media", icon: ImageIcon },
       { href: "/admin/audit", label: "Audit", icon: History },
       { href: "/admin/settings", label: "Settings", icon: SettingsIcon },
+      { href: "/admin/security", label: "Security", icon: SettingsIcon },
     ],
   },
 ];
@@ -128,6 +129,21 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [signingIn,setSigningIn]=useState(false);
   const [draft, setDraft] = useState("");
   const [authed, setAuthed] = useState(false);
+  const [pending, setPending] = useState<"mfa_required" | "enrolment_required" | null>(null);
+  const [factorCode, setFactorCode] = useState("");
+  const acceptSession = useCallback((session: BrowserSession) => {
+    if ("state" in session) {
+      setPending(session.state);
+      setAccount(null);
+      setAuthed(false);
+    } else {
+      setPending(null);
+      setAccount(session.admin);
+      setAuthed(true);
+    }
+    setDraft("");
+    setFactorCode("");
+  }, []);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
@@ -137,26 +153,26 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     sessionStorage.removeItem("maple-admin-key");
     void sessionFetch("/api/admin/session").then(async response=>{
       if(!alive) return;
-      if(response.ok) { const data=await response.json(); setAccount(data.admin); setAuthed(true); }
+      if(response.ok) { acceptSession(await response.json()); }
     }).catch(()=>{if(alive)setError("Unable to check your session. Please retry.");}).finally(()=>{if(alive)setChecking(false);});
     return ()=>{alive=false;};
-  }, []);
+  }, [acceptSession]);
   useEffect(()=>setNavOpen(false),[pathname]);
   const signIn=async(e:React.FormEvent)=>{
     e.preventDefault(); if(signingIn) return;
     setSigningIn(true);setError(null);
     try {
-      const response=await fetch("/api/admin/session",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password:draft})});
-      const data=await response.json();
-      if(!response.ok) throw new Error(data.error || "Sign-in failed.");
-      setAccount(data.admin);setAuthed(true);setDraft("");
+      const data = await sessionAction<BrowserSession>(
+        pending === "mfa_required" ? { action: "verify", code: factorCode } : { email, password: draft },
+      );
+      acceptSession(data);
     } catch(error) { setError(error instanceof Error?error.message:"Sign-in failed. Please retry."); }
     finally {setSigningIn(false);}
   };
   const signOut=useCallback(async()=>{
     const response=await sessionFetch("/api/admin/session",{method:"DELETE"});
     if(!response.ok) {setError("Could not sign out. Please retry.");return;}
-    setAccount(null);setAuthed(false);
+    setAccount(null);setAuthed(false);setPending(null);setFactorCode("");setError(null);
   },[]);
   const adminFetch=useCallback(async(input:string,init:RequestInit={})=>{
     const response=await sessionFetch(input,{...init,headers:{"content-type":"application/json",...init.headers}});
@@ -170,6 +186,19 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         <span className="font-sans-luxury text-[13px] uppercase tracking-[0.28em] text-[#741a14]/60">
           Checking session…
         </span>
+      </div>
+    );
+  }
+
+  if (pending === "enrolment_required") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#11100e] px-6 py-8">
+        <section className="w-full max-w-[440px] rounded-xl border border-[#d8c3a5] bg-[#fff8ed] p-8 text-[#211715]">
+          <h1 className="mb-3 font-serif-luxury text-3xl">Set up your authenticator</h1>
+          <p className="mb-4 text-sm">Your account needs two-step sign-in before you can open the dashboard.</p>
+          <AuthenticatorForm onComplete={acceptSession} onCancel={() => void signOut()} />
+          {error && <p role="alert" className="mt-3 text-sm text-red-800">{error}</p>}
+        </section>
       </div>
     );
   }
@@ -188,11 +217,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             Authoring console
           </p>
           <h1 className="mt-3 font-serif-luxury text-[32px] leading-none text-[#11100e]">
-            Sign in to Maple
+            {pending ? "Verify your sign-in" : "Sign in to Maple"}
           </h1>
           <p className="mt-2 font-sans-luxury text-[13px] leading-[1.5] text-[#8b8178]">
-            Use your individual Maple Studios account.
+            {pending ? "Enter a fresh code from your authenticator app or use one of your saved recovery codes." : "Use your individual Maple Studios account."}
           </p>
+          {pending ? (
+            <input aria-label="Authenticator or recovery code" autoComplete="one-time-code" autoCapitalize="none" spellCheck={false} value={factorCode} onChange={e => setFactorCode(e.target.value)} required autoFocus className="mt-6 w-full rounded border border-[#d8c3a5] bg-white px-4 py-3 text-[#11100e]" />
+          ) : (<>
           <input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="username" aria-label="Work email" placeholder="you@maplestudios.ai" className="mt-6 w-full rounded border border-[#d8c3a5] bg-white px-4 py-3 text-[#11100e]" />
           <input
             required
@@ -208,6 +240,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             autoFocus
             className="mt-6 w-full rounded-[7px] border border-[#d8c3a5] bg-white/70 px-4 py-3 font-sans-luxury text-[14px] text-[#11100e] outline-none focus:border-[#741a14]"
           />
+          </>)}
           {error ? (
             <p role="alert" className="mt-2 font-sans-luxury text-[12.5px] text-[#a3231b]">
               {error}
@@ -218,8 +251,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             type="submit"
             className="mt-5 w-full cursor-pointer rounded-full bg-[#741a14] px-4 py-3 font-sans-luxury text-[12px] font-bold uppercase tracking-[0.18em] text-[#fff8ed] transition-opacity hover:opacity-90"
           >
-            {signingIn ? "Signing in…" : "Sign in"}
+            {signingIn ? "Checking…" : pending ? "Verify" : "Sign in"}
           </button>
+          {pending && <button type="button" onClick={() => void signOut()} className="mt-3 w-full text-sm text-[#741a14] underline">Start over</button>}
         </motion.form>
       </div>
     );
@@ -249,7 +283,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   {section.group}
                 </p>
                 <ul>
-                  {section.items.filter(item=>account?.role === "owner" || !["/admin/payroll","/admin/audit"].includes(item.href) && (account?.role !== "member" || ["/admin/team","/admin/settings","/admin/projects"].includes(item.href))).map((item) => {
+                  {section.items.filter(item=>account?.role === "owner" || !["/admin/payroll","/admin/audit"].includes(item.href) && (account?.role !== "member" || ["/admin/team","/admin/settings","/admin/projects","/admin/security"].includes(item.href))).map((item) => {
                     const active = item.exact
                       ? pathname === item.href
                       : pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -311,12 +345,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Link
+              {/* A fresh document applies the public site's headers. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a
                 href="/"
                 className="whitespace-nowrap rounded-full border border-[#741a14]/30 px-3 py-1.5 font-sans-luxury text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#741a14] transition-colors hover:bg-[#741a14]/10"
               >
                 View site
-              </Link>
+              </a>
               <button
                 onClick={signOut}
                 className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-[#741a14] px-3 py-1.5 font-sans-luxury text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#fff8ed] transition-opacity hover:opacity-90"
@@ -329,7 +365,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
           <main className="mx-auto max-w-[1240px] px-5 pb-24 pt-7 sm:px-8">
             {error ? <p role="alert" className="mb-4 text-red-800">{error}</p> : null}
-            {account?.role === "member" && !(["/admin/team","/admin/settings","/admin/projects"].includes(pathname)||pathname.startsWith("/admin/projects/")) ? <p>Your team workspace is ready. <Link href="/admin/team" className="underline">Open team & attendance</Link></p> : children}
+            {account?.role === "member" && !(["/admin/team","/admin/settings","/admin/projects","/admin/security"].includes(pathname)||pathname.startsWith("/admin/projects/")) ? <p>Your team workspace is ready. <Link href="/admin/team" className="underline">Open team & attendance</Link></p> : children}
           </main>
         </div>
       </div>

@@ -93,3 +93,15 @@ export const listQuery = z.object({
 export function literalSearch(q: string) {
   return new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 }
+
+/** Creation defaults must never be written over existing data by a sparse PATCH.
+ * Zod 4 also applies defaults in optional fields, so keep only supplied keys
+ * after the strict patch schema has validated and transformed them. */
+export function parseBusinessPatch<S extends z.ZodType<Record<string, unknown>>>(
+  schema: S,
+  input: Record<string, unknown>,
+): z.output<S> {
+  return Object.fromEntries(
+    Object.entries(schema.parse(input)).filter(([key]) => Object.hasOwn(input, key)),
+  ) as z.output<S>;
+}

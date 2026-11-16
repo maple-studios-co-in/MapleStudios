@@ -16,24 +16,27 @@
     "test:watch": "vitest",
     "seed": "tsx src/scripts/seed.ts",
     "migrate:json": "tsx src/scripts/migrate.ts",
-    "bootstrap:team": "tsx src/scripts/bootstrap-team.ts"
+    "bootstrap:team": "tsx src/scripts/bootstrap-team.ts",
+    "operator:reset-mfa": "node dist/scripts/reset-admin-mfa.js"
   },
   "dependencies": {
+    "@otplib/plugin-crypto-node": "13.6.0",
     "bcryptjs": "^3.0.2",
-    "compression": "^1.8.0",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "docx": "9.15.4",
     "dotenv": "^16.4.7",
-    "express": "^5.1.0",
+    "express": "^5.3.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.5.0",
-    "mongoose": "^8.13.0",
+    "mongoose": "^8.24.9",
+    "otplib": "13.6.0",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",
     "pngjs": "7.0.0",
-    "zod": "^3.24.2"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
@@ -53,5 +56,10 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.26.1",
     "vitest": "^3.0.8"
+  },
+  "overrides": {
+    "body-parser": "^2.4.0",
+    "proxy-addr": "^2.0.8",
+    "qs": "^6.16.1"
   }
 }

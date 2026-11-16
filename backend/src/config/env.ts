@@ -7,7 +7,9 @@ const EnvSchema = z.object({
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
-  TRUST_PROXY: z.coerce.number().int().min(0).default(1),
+  API_HOST: z.enum(["127.0.0.1", "::1", "localhost", "0.0.0.0", "::"]).optional(),
+  MFA_REQUIRED: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
+  BACKUP_STATUS_PATH: z.string().min(1).optional(),
 
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
   MONGODB_DB: z.string().min(1).default("maple_studios"),
@@ -74,6 +76,11 @@ if (!parsed.success) {
 const raw = parsed.data;
 const isProd = raw.NODE_ENV === "production";
 
+if (isProd && raw.API_HOST && !["127.0.0.1", "::1", "localhost"].includes(raw.API_HOST)) {
+  console.error("\nProduction API_HOST must be a loopback address. Refusing to start.\n");
+  process.exit(1);
+}
+
 // A placeholder secret in production is worse than a missing one, because
 // nothing fails until someone forges a token.
 if (isProd && raw.JWT_SECRET.includes("replace-me")) {
@@ -90,6 +97,7 @@ if (isProd && /^0+$/.test(raw.APP_ENCRYPTION_KEY)) {
 export const env = {
   ...raw,
   isProd,
+  apiHost: raw.API_HOST ?? "127.0.0.1",
   isTest: raw.NODE_ENV === "test",
   /** Sending is live only with a real Resend key; otherwise every send is a dry run. */
   mailLive: /^re_[A-Za-z0-9_-]{8,}$/.test(raw.RESEND_API_KEY ?? ""),

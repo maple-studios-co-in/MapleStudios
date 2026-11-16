@@ -1,3 +1,4 @@
+import { forwardClientIp } from "@/lib/admin/proxy-ip";
 import { NextResponse } from "next/server";
 import { sessionToken, sameOriginMutation } from "@/lib/admin/access-policy";
 export const dynamic = "force-dynamic";
@@ -10,8 +11,18 @@ async function proxy(req: Request, { params }: Context) {
       { status: 403 },
     );
   const { path } = await params;
+  // Session credentials may cross only the dedicated HttpOnly-cookie BFF.
+  // Match both the literal and encoded/dot-normalized aliases.
+  const target = new URL(
+    `/api/v1/${path.map(encodeURIComponent).join("/")}${new URL(req.url).search}`,
+    process.env.GROWTH_API_ORIGIN || "http://127.0.0.1:4006",
+  );
+  const namespace = decodeURIComponent(target.pathname).toLowerCase();
+  if (/^\/api\/v1\/auth\/(login|refresh|logout|mfa)(?:\/|$)/.test(namespace))
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
   const headers = new Headers();
-  for (const name of ["content-type", "x-forwarded-for", "user-agent"]) {
+  forwardClientIp(req.headers, headers);
+  for (const name of ["content-type", "user-agent"]) {
     const value = req.headers.get(name);
     if (value) headers.set(name, value);
   }
@@ -23,7 +34,7 @@ async function proxy(req: Request, { params }: Context) {
     }
   try {
     const response = await fetch(
-      `${process.env.GROWTH_API_ORIGIN || "http://127.0.0.1:4006"}/api/v1/${path.map(encodeURIComponent).join("/")}${new URL(req.url).search}`,
+      target,
       {
         method: req.method,
         headers,

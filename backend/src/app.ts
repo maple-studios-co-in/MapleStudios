@@ -14,14 +14,26 @@ import { api } from "./routes.js";
 export function createApp(): Express {
   const app = express();
 
-  // Behind Vercel/nginx, req.ip must come from X-Forwarded-For or every
-  // rate limiter buckets the whole internet into one proxy address.
-  app.set("trust proxy", env.TRUST_PROXY);
+  // Only the local BFF is trusted, and it supplies a single IP from the
+  // nginx-overwritten X-Real-IP header. Never follow user-supplied hop chains.
+  app.set("trust proxy", (ip: string, hop: number) =>
+    hop === 0 && ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(ip));
   app.disable("x-powered-by");
 
   app.use(
     pinoHttp({
       logger,
+      serializers: {
+        req: (req: { url?: string; query?: unknown; params?: unknown }) => {
+          const pathname = req.url?.split("?")[0];
+          // Unsubscribe URLs encode a live credential in a path segment.
+          return {
+            ...req,
+            url: pathname?.replace(/(\/unsubscribe)\/[^/]+/, "$1/[redacted]"),
+            query: undefined, params: undefined,
+          };
+        },
+      },
       genReqId: (req, res) => {
         const incoming = req.headers["x-request-id"];
         const id = typeof incoming === "string" ? incoming : crypto.randomUUID();
@@ -32,7 +44,10 @@ export function createApp(): Express {
     })
   );
 
-  app.use(helmet());
+  app.use(helmet({
+    strictTransportSecurity: env.isProd ? { maxAge: 31536000, includeSubDomains: false } : false,
+    referrerPolicy: { policy: "no-referrer" },
+  }));
   app.use(
     cors({
       origin(origin, cb) {

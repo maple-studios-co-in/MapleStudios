@@ -12,17 +12,21 @@ export interface AccessClaims {
   role: AdminRole;
   typ?: "access";
   ver: number;
+  mfaAt?: number;
+  mfaEnforced?: true;
 }
 
 export function signAccessToken(claims: AccessClaims): string {
   return jwt.sign({ ...claims, typ: "access" }, env.JWT_SECRET, {
+    algorithm: "HS256",
     expiresIn: env.JWT_EXPIRES_IN,
     issuer: "maple-studios-api",
   } as jwt.SignOptions);
 }
 
-export function signRefreshToken(claims: { sub: string; ver: number }): string {
+export function signRefreshToken(claims: Pick<AccessClaims, "sub" | "ver" | "mfaAt" | "mfaEnforced">): string {
   return jwt.sign({ ...claims, typ: "refresh" }, env.JWT_SECRET, {
+    algorithm: "HS256",
     expiresIn: env.REFRESH_EXPIRES_IN,
     issuer: "maple-studios-api",
   } as jwt.SignOptions);
@@ -32,11 +36,28 @@ export function verifyToken<T>(token: string): T {
   try {
     return jwt.verify(token, env.JWT_SECRET, {
       issuer: "maple-studios-api",
+      algorithms: ["HS256"],
     }) as T;
   } catch {
     throw AppError.unauthorized("Session expired or invalid - sign in again.");
   }
 }
+
+export function hasRecentMfa(mfaAt: number | undefined, now = Math.floor(Date.now() / 1000)) {
+  return typeof mfaAt === "number" && Number.isInteger(mfaAt) && mfaAt <= now && now - mfaAt <= 300;
+}
+export function allowsAccountSession(admin: { mfaEnrolledAt?: Date }, session: Pick<AccessClaims, "mfaAt" | "mfaEnforced">) {
+  const now = Math.floor(Date.now() / 1000);
+  const verified = Number.isInteger(session.mfaAt) && session.mfaAt! > 0 && session.mfaAt! <= now;
+  return (!admin.mfaEnrolledAt || verified) && (!env.MFA_REQUIRED || (!!admin.mfaEnrolledAt && verified && session.mfaEnforced === true));
+}
+
+export const requireRecentMfa: RequestHandler = (req, _res, next) => {
+  if (!req.admin) return next(AppError.unauthorized());
+  if (!req.admin.mfaEnrolled || !hasRecentMfa(req.admin.mfaAt))
+    return next(new AppError(403, "RECENT_MFA_REQUIRED", "Confirm your password and second factor to continue."));
+  next();
+};
 
 /** Constant-time compare so the legacy key cannot be guessed by timing. */
 function safeEqual(a: string, b: string): boolean {
@@ -62,10 +83,14 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       const admin = await AdminUser.findById(claims.sub).exec();
       if (!admin || admin.active === false || admin.tokenVersion !== claims.ver)
         throw AppError.unauthorized("Session was revoked. Sign in again.");
+      if (!allowsAccountSession(admin, claims))
+        throw AppError.unauthorized("Sign in again with your authenticator.");
       req.admin = {
         id: String(admin._id),
         email: admin.email,
         role: admin.role,
+        mfaAt: claims.mfaAt,
+        mfaEnrolled: Boolean(admin.mfaEnrolledAt),
       };
       next();
     } catch (err) {
@@ -75,7 +100,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
   }
 
   const legacy = req.get("x-admin-key");
-  if (env.legacyAdminKey && legacy && safeEqual(legacy, env.legacyAdminKey)) {
+  if (!env.MFA_REQUIRED && env.legacyAdminKey && legacy && safeEqual(legacy, env.legacyAdminKey)) {
     logger.warn(
       { path: req.path },
       "auth: legacy x-admin-key used - migrate to JWT",

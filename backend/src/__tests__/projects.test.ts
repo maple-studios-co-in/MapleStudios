@@ -312,3 +312,15 @@ describe("business project workspace", () => {
     ).toBe(400);
   });
 });
+
+it("preserves project assignments and deliverable scope across title-only edits", async () => {
+  const { p, d } = await deliverable();
+  const change = await request(app).patch(`${root}/projects/${p.id}`).set(headers("owner")).send({ revision: 0, title: "New title" });
+  expect(change.status).toBe(200);
+  expect(change.body.item.assigneeIds).toContain(ids.member);
+  expect(change.body.item.scope).toBe("Design and build");
+  const edit = await request(app).patch(`${root}/deliverables/${d.id}`).set(headers("owner")).send({ revision: 0, title: "New deliverable title" });
+  expect(edit.status).toBe(200);
+  expect(edit.body.item.assigneeId).toBe(ids.member);
+  expect(edit.body.item.description).toBe("Approved scope");
+});

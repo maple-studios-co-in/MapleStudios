@@ -11,6 +11,7 @@ import { publicTemplateRoutes, adminTemplateRoutes } from "./modules/templates/t
 import { publicCampaignRoutes, adminCampaignRoutes } from "./modules/campaigns/campaign.routes.js";
 import { publicSocialRoutes, adminSocialRoutes } from "./modules/social/social.routes.js";
 import { publicOutreachRoutes, adminOutreachRoutes } from "./modules/outreach/outreach.routes.js";
+import { securityRoutes } from "./modules/security/security.routes.js";
 import { publicLimiter } from "./middleware/rateLimit.js";
 
 export const api = Router();
@@ -21,6 +22,7 @@ api.use(publicLimiter);
 api.use("/", publicSlotRoutes);
 api.use("/", publicInquiryRoutes);
 api.use("/auth", authRoutes);
+api.use("/security", securityRoutes);
 api.use("/team", teamRoutes);
 api.use("/business", projectRoutes);
 api.use("/business", documentRoutes);

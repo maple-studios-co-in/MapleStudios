@@ -15,6 +15,7 @@ import {
   revision,
   listQuery,
   literalSearch,
+  parseBusinessPatch,
 } from "./business.schema.js";
 import {
   eligiblePeople,
@@ -82,11 +83,9 @@ projectRoutes.patch(
   "/clients/:id",
   requireBusinessManager,
   async (req, res) => {
-    const { revision: rev, ...input } = clientInput
-      .partial()
-      .extend({ revision })
-      .strict()
-      .parse(req.body);
+    const { revision: rev, ...input } = parseBusinessPatch(
+      clientInput.partial().extend({ revision }).strict(), req.body,
+    );
     const item = await Client.findOneAndUpdate(
       { _id: id.parse(req.params.id), revision: rev },
       { $set: { ...input, updatedBy: actor(req) }, $inc: { revision: 1 } },
@@ -145,12 +144,9 @@ projectRoutes.patch(
   requireBusinessManager,
   async (req, res) => {
     const p = await projectFor(req, String(req.params.id));
-    const { revision: rev, ...input } = projectInput
-      .omit({ clientId: true })
-      .partial()
-      .extend({ revision })
-      .strict()
-      .parse(req.body);
+    const { revision: rev, ...input } = parseBusinessPatch(
+      projectInput.omit({ clientId: true }).partial().extend({ revision }).strict(), req.body,
+    );
     if ((input.startDate ?? p.startDate) > (input.dueDate ?? p.dueDate))
       throw AppError.badRequest("Due date must follow the start date.");
     if (input.assigneeIds) await validateAssignments(input.assigneeIds);
@@ -202,9 +198,9 @@ projectRoutes.patch("/deliverables/:id", async (req, res) => {
   const p = await projectFor(req, d.projectId);
   if (!isManager(req) && d.assigneeId !== req.admin!.id)
     throw AppError.forbidden();
-  const parsed: z.infer<typeof managerDeliverablePatch> = (
-    isManager(req) ? managerDeliverablePatch : memberDeliverablePatch
-  ).parse(req.body);
+  const parsed: z.infer<typeof managerDeliverablePatch> = parseBusinessPatch(
+    isManager(req) ? managerDeliverablePatch : memberDeliverablePatch, req.body,
+  );
   const { revision: rev, ...input } = parsed;
   if (Object.keys(input).length === 0)
     throw AppError.badRequest("Nothing to update.");

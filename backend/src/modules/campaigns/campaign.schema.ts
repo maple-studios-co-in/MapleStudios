@@ -63,7 +63,7 @@ export const scheduleSchema = z
   .object({
     startAt: z.string().datetime({ offset: true, message: "startAt must be an ISO 8601 instant." }),
     dailyCap: z.number().int().min(1).max(1000).default(30),
-    window: z.object({ start: hhmm.default("09:30"), end: hhmm.default("18:00") }).default({}),
+    window: z.object({ start: hhmm.default("09:30"), end: hhmm.default("18:00") }).prefault({}),
     weekdaysOnly: z.boolean().default(true),
     timezone: z
       .string()

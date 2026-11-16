@@ -1,3 +1,8 @@
+export const ACCESS_COOKIE = "maple-session";
+export const REFRESH_COOKIE = "maple-refresh";
+export const PENDING_COOKIE = "maple-pending";
+export const SESSION_PATH = "/api/admin/session";
+
 export type StudioRole = "owner" | "admin" | "member";
 export function permitsStudio(role: StudioRole, path: string): boolean {
   if (role === "owner") return true;
@@ -25,6 +30,6 @@ export function sessionToken(cookie: string | null): string | undefined {
   return cookie
     ?.split(";")
     .map((v) => v.trim())
-    .find((v) => v.startsWith("maple-session="))
-    ?.slice("maple-session=".length);
+    .find((v) => v.startsWith(`${ACCESS_COOKIE}=`))
+    ?.slice(ACCESS_COOKIE.length + 1);
 }

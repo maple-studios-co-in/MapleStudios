@@ -12,6 +12,7 @@ import { setMailProvider, type MailMessage } from "../lib/mail/provider.js";
 import { EmailTemplate } from "../modules/templates/template.model.js";
 import { Lead } from "../modules/leads/lead.model.js";
 import { Segment } from "../modules/leads/segment.model.js";
+import { Campaign } from "../modules/campaigns/campaign.model.js";
 import { CampaignMessage } from "../modules/campaigns/message.model.js";
 import { Suppression } from "../modules/campaigns/suppression.model.js";
 import { runCampaignTick, setResendWebhookSecret } from "../modules/campaigns/campaign.service.js";
@@ -176,7 +177,10 @@ describe("campaigns: auth and validation", () => {
     expect((await post(campaignBody(id, { audience: { filter: { nope: 1 } } }))).status).toBe(400);
     expect((await post(campaignBody(id, { schedule: { startAt: hourAgo(), window: { start: "18:00", end: "09:00" } } }))).status).toBe(400);
     expect((await post(campaignBody(id, { schedule: { startAt: hourAgo(), timezone: "Mars/Olympus" } }))).status).toBe(400);
-    expect((await post(campaignBody(id, { schedule: { startAt: "tomorrow-ish" } }))).status).toBe(400);
+    const invalidStart = await post(campaignBody(id, { schedule: { startAt: "tomorrow-ish" } }));
+    expect(invalidStart.status, invalidStart.text).toBe(400);
+    expect(invalidStart.body.details).toContainEqual(expect.objectContaining({ field: "schedule.startAt" }));
+    expect(await Campaign.countDocuments()).toBe(0);
   });
 
   it("edits drafts only and deletes only inactive campaigns", async () => {

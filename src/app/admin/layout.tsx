@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import AdminShell from "@/components/pages/admin/AdminShell";
 
+// Per-request CSP nonces must be present on Next’s inline hydration scripts.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Studio admin — Maple Studios",
   robots: { index: false, follow: false },

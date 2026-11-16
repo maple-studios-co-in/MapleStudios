@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { z } from "zod";
 import { authenticate } from "../../middleware/auth.js";
+import { requireReady } from "../security/security.service.js";
 import { AppError } from "../../lib/AppError.js";
 import {
   noLegacy,
   requireBusinessManager,
   requireBusinessOwner,
 } from "./business.access.js";
-import { id, revision, listQuery, literalSearch } from "./business.schema.js";
+import { id, revision, listQuery, literalSearch, parseBusinessPatch } from "./business.schema.js";
 import {
   companyInput,
   templateInput,
@@ -34,11 +35,9 @@ documentRoutes.get("/company", async (_req, res) => {
   res.json({ item: { ...c.profile, revision: c.revision } });
 });
 documentRoutes.patch("/company", requireBusinessOwner, async (req, res) => {
-  const { revision: rev, ...patch } = companyInput
-    .partial()
-    .extend({ revision })
-    .strict()
-    .parse(req.body);
+  const { revision: rev, ...patch } = parseBusinessPatch(
+    companyInput.partial().extend({ revision }).strict(), req.body,
+  );
   const current = await companyProfile();
   if (current.revision !== rev)
     throw AppError.conflict("Company details changed. Refresh before saving.");
@@ -64,6 +63,8 @@ documentRoutes.put("/templates", requireBusinessOwner, async (req, res) => {
     revision: rev,
     ...input
   } = templateInput.parse(req.body);
+  if (input.kind === "confidentiality" && input.status === "published")
+    await requireReady();
   if (!templateId) {
     if (rev !== 0)
       throw AppError.badRequest("A new template starts at revision zero.");

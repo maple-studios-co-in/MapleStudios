@@ -6,6 +6,33 @@ import type { NextConfig } from "next";
 const API = process.env.GROWTH_API_ORIGIN ?? "http://127.0.0.1:4006";
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+          // The editor frames the public site from the same origin.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          ...(process.env.NODE_ENV === "production"
+            ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }]
+            : []),
+        ],
+      },
+      {
+        source: "/api/sign/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Frame-Options", value: "DENY" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [
       { source: "/api/connect/:path*", destination: `${API}/api/v1/connect/:path*` },

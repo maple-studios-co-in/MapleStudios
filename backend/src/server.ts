@@ -1,15 +1,19 @@
 import { createApp } from "./app.js";
 import { connectDb, disconnectDb } from "./config/db.js";
+import { assertMfaCutover } from "./modules/security/security.service.js";
+import { clearExpiredMfaState } from "./modules/auth/auth.service.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { startScheduler, stopScheduler } from "./lib/scheduler.js";
 
 async function main() {
   await connectDb();
+  await assertMfaCutover();
+  await clearExpiredMfaState();
 
   const app = createApp();
-  const server = app.listen(env.PORT, () => {
-    logger.info(`api listening on :${env.PORT} (${env.NODE_ENV})`);
+  const server = app.listen(env.PORT, env.apiHost, () => {
+    logger.info(`api listening on ${env.apiHost}:${env.PORT} (${env.NODE_ENV})`);
   });
   // Campaign sends and scheduled posts run inside this one process (single
   // instance under PM2). Registered ticks live next to their modules.

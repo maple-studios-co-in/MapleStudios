@@ -15,7 +15,7 @@ declare global {
       /** Parsed, typed input. Express 5 makes req.query read-only, so
           validated values live here rather than overwriting the originals. */
       valid?: { body?: unknown; query?: unknown; params?: unknown };
-      admin?: { id: string; email: string; role: string; legacy?: boolean };
+      admin?: { id: string; email: string; role: string; legacy?: boolean; mfaAt?: number; mfaEnrolled?: boolean };
     }
   }
 }

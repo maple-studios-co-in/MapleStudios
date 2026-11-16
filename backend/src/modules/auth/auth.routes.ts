@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { AppError } from "../../lib/AppError.js";
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { validate, body } from "../../middleware/validate.js";
-import { loginLimiter } from "../../middleware/rateLimit.js";
+import { loginLimiter, mfaLimiter } from "../../middleware/rateLimit.js";
 import {
   authenticate,
   requireAdmin,
@@ -18,10 +18,20 @@ import {
   createAdminSchema,
   loginSchema,
   refreshSchema,
+  mfaPasswordSchema, mfaCodeSchema, mfaReauthSchema, mfaConfirmSchema,
 } from "./auth.schema.js";
 import * as auth from "./auth.service.js";
 
 export const authRoutes = Router();
+authRoutes.use((_req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+function bearer(req: Request) {
+  const token = req.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+  if (!token) throw AppError.unauthorized();
+  return token;
+}
 
 authRoutes.post(
   "/login",
@@ -49,8 +59,39 @@ authRoutes.get("/me", authenticate, async (req, res) => {
     });
     return;
   }
-  const admin = await AdminUser.findById(req.admin?.id).exec();
-  res.json({ admin: admin ? adminWire(admin) : null });
+  const admin = await AdminUser.findById(req.admin?.id).select("+mfaRecoveryHashes").exec();
+  if (!admin) throw AppError.unauthorized();
+  res.json({ admin: adminWire(admin), mfa: auth.mfaSummary(admin, req.admin?.mfaAt) });
+});
+
+authRoutes.get("/mfa/pending", async (req, res) => {
+  res.json(await auth.pendingStatus(bearer(req)));
+});
+authRoutes.delete("/mfa/pending", mfaLimiter, async (req, res) => {
+  await auth.cancelPending(bearer(req));
+  res.json({ ok: true });
+});
+authRoutes.get("/mfa", authenticate, async (req, res) => {
+  if (req.admin?.legacy) throw AppError.forbidden("Use an individual account.");
+  const admin = await AdminUser.findById(req.admin?.id).select("+mfaRecoveryHashes");
+  if (!admin) throw AppError.unauthorized();
+  res.json(auth.mfaSummary(admin, req.admin?.mfaAt));
+});
+authRoutes.post("/mfa/challenge", mfaLimiter, validate({ body: mfaCodeSchema }), async (req, res) => {
+  res.json(await auth.completeChallenge(bearer(req), body(req, mfaCodeSchema).code));
+});
+authRoutes.post("/mfa/reauthenticate", mfaLimiter, validate({ body: mfaReauthSchema }), async (req, res) => {
+  const { password, code } = body(req, mfaReauthSchema);
+  res.json(await auth.reauthenticate(bearer(req), password, code));
+});
+authRoutes.post("/mfa/enrolment/start", mfaLimiter, validate({ body: mfaPasswordSchema }), async (req, res) => {
+  res.json(await auth.startEnrolment(bearer(req), body(req, mfaPasswordSchema).password));
+});
+authRoutes.post("/mfa/enrolment/prove", mfaLimiter, validate({ body: mfaCodeSchema }), async (req, res) => {
+  res.json(await auth.proveEnrolment(bearer(req), body(req, mfaCodeSchema).code));
+});
+authRoutes.post("/mfa/enrolment/confirm", mfaLimiter, validate({ body: mfaConfirmSchema }), async (req, res) => {
+  res.json(await auth.confirmEnrolment(bearer(req)));
 });
 
 /** Owner-only: add another admin. */
@@ -115,6 +156,7 @@ const changePassword = z.object({
 });
 authRoutes.post(
   "/password",
+  mfaLimiter,
   authenticate,
   validate({ body: changePassword }),
   async (req, res) => {

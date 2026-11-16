@@ -36,3 +36,10 @@ export const loginLimiter = rateLimit({
   skipSuccessfulRequests: true,
   message: { error: "Too many attempts - try again later.", code: "RATE_LIMITED" },
 });
+
+export const mfaLimiter = rateLimit({
+  ...shared,
+  windowMs: 15 * 60_000,
+  limit: 40,
+  message: { error: "Too many verification requests - try again later.", code: "RATE_LIMITED" },
+});

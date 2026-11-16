@@ -1,10 +1,12 @@
 import { sessionToken } from "./admin/access-policy";
+import { forwardClientIp } from "./admin/proxy-ip";
 import { headers } from "next/headers";
 
 export class GrowthError extends Error {
   constructor(
     public status: number,
     message: string,
+    public code?: string,
   ) {
     super(message);
   }
@@ -19,10 +21,9 @@ export async function growthRequest<T>(
   const incoming = await headers();
   const outgoing = new Headers(init.headers);
   outgoing.set("content-type", "application/json");
-  for (const name of ["x-forwarded-for", "user-agent"]) {
-    const value = incoming.get(name);
-    if (value) outgoing.set(name, value);
-  }
+  forwardClientIp(incoming, outgoing);
+  const agent = incoming.get("user-agent");
+  if (agent) outgoing.set("user-agent", agent);
   if (authenticated) {
     const token = sessionToken(incoming.get("cookie"));
     if (token) outgoing.set("authorization", `Bearer ${token}`);
@@ -53,6 +54,7 @@ export async function growthRequest<T>(
     throw new GrowthError(
       response.status,
       body?.error || "The request could not be completed.",
+      body?.code,
     );
   if (!body)
     throw new GrowthError(502, "The service returned an invalid response.");

@@ -1,5 +1,11 @@
 import fs from "node:fs";
-import { beforeEach, expect, it } from "vitest";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { env } from "../config/env.js";
+import { encrypt } from "../lib/crypto.js";
+import { SecurityPolicy, attestationIds } from "../modules/security/security.model.js";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../app.js";
 import { AdminUser } from "../modules/auth/admin.model.js";
@@ -13,7 +19,7 @@ const identities = {
   member: "200000000000000000000003",
 };
 const auth = (who: keyof typeof identities = "owner") => ({
-  authorization: `Bearer ${signAccessToken({ sub: identities[who], email: `${who}@example.com`, role: who, ver: 1 })}`,
+  authorization: `Bearer ${signAccessToken({ sub: identities[who], email: `${who}@example.com`, role: who, ver: 1, ...(env.MFA_REQUIRED ? { mfaAt: Math.floor(Date.now() / 1000), mfaEnforced: true } : {}) })}`,
 });
 beforeEach(async () => {
   for (const who of Object.keys(identities) as (keyof typeof identities)[]) {
@@ -33,6 +39,34 @@ beforeEach(async () => {
     });
   }
 });
+let readinessFixture: string | undefined;
+afterEach(async () => {
+  if (!readinessFixture) return;
+  Object.assign(env, { BACKUP_STATUS_PATH: undefined, MFA_REQUIRED: false });
+  await rm(readinessFixture, { recursive: true, force: true });
+  readinessFixture = undefined;
+});
+async function syntheticPublicationReadiness() {
+  readinessFixture = await mkdtemp(join(tmpdir(), "maple-document-ready-"));
+  const status = join(readinessFixture, "backup.json");
+  const now = new Date();
+  await writeFile(status, JSON.stringify({
+    version: 1, lastAttemptAt: now, lastSuccessAt: now, lastUploadVerifiedAt: now, lastRestoreVerifiedAt: now,
+    retentionDays: 30, encryption: "age", offsite: "google-drive", legacyPlaintextCleared: true, ok: true,
+  }), { mode: 0o600 });
+  await AdminUser.updateOne({ _id: identities.owner }, { $set: {
+    mfaEnrolledAt: now, mfaSecretEnc: encrypt("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"),
+    mfaRecoveryHashes: ["unused-recovery-hash"], mfaRecoveryLastUsedAt: now,
+  } });
+  await SecurityPolicy.create({
+    _id: "studio",
+    attestations: attestationIds.map(id => ({
+      id, scope: "Synthetic data for document tests", confirmedAt: now,
+      confirmedBy: { id: identities.owner, email: "owner@example.com" },
+    })),
+  });
+  Object.assign(env, { BACKUP_STATUS_PATH: status, MFA_REQUIRED: true });
+}
 async function setup() {
   const c = await request(app)
     .post(base + "/clients")
@@ -236,6 +270,7 @@ it("uses only published confidentiality templates and reports unresolved fields"
         .send({ projectId, kind: "confidentiality", templateId: tid })
     ).status,
   ).toBe(400);
+  await syntheticPublicationReadiness();
   t = await request(app)
     .put(base + "/templates")
     .set(auth())
@@ -424,6 +459,10 @@ it("saves owner payment settings and snapshots them into private invoice exports
     .set(auth())
     .send({ revision: 1, bankAccount: "009999999999", paymentQr: "" });
   expect(changed.status).toBe(200);
+  expect(changed.body.item).toMatchObject({
+    name: "Maple Studios", bankAccount: "009999999999", bankName: "Example Bank",
+    bankIfsc: "ABCD0123456", upiId: "example@bank", paymentQr: "",
+  });
   const html = await request(app)
     .get(`${base}/drafts/${item.id}/export?format=html`)
     .set(auth());

@@ -258,8 +258,5 @@ export type ImportQuery = z.infer<typeof importQuery>;
 
 /** The CSV arrives as the raw file text (express.text for text/csv). */
 export const csvBody = z
-  .string({
-    required_error: "Send the CSV as a text/csv request body.",
-    invalid_type_error: "Send the CSV as a text/csv request body.",
-  })
+  .string({ error: "Send the CSV as a text/csv request body." })
   .min(1, "The CSV is empty.");
