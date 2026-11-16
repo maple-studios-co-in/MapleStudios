@@ -5,14 +5,14 @@ import { AppError } from "../../lib/AppError.js";
 import { getMailProvider } from "../../lib/mail/provider.js";
 import { registerTick } from "../../lib/scheduler.js";
 import { AdminUser } from "../auth/admin.model.js";
-import { agreementTemplateFields } from "../business/documents.schema.js";
-import { fillTemplate, findDraft, validateAgreementText, type DraftSnapshot } from "../business/documents.service.js";
+import { agreementTemplateFields, type CompanyProfile } from "../business/documents.schema.js";
+import { companyProfile, fillTemplate, findDraft, validateAgreementText, type DraftSnapshot } from "../business/documents.service.js";
 import { getReadiness, getSecurityPolicy, requireReady } from "../security/security.service.js";
 import {
   DeliveryBudget, Envelope, type EventType, type Signature, type SigningEnvelope, type SigningSnapshot,
 } from "./signing.model.js";
 import { renderSigningPdf, requirePrintable } from "./signing.pdf.js";
-import { clientConsent, ownerConsent, type AgreementDetails, type PreviewInput } from "./signing.schema.js";
+import { clientConsent, ownerConsent, studioSignerInput, type AgreementDetails, type PreviewInput } from "./signing.schema.js";
 
 type EnvelopeView = Omit<SigningEnvelope, "pdf">;
 
@@ -49,17 +49,23 @@ const retentionAvailable = (policy: Awaited<ReturnType<typeof getSecurityPolicy>
   policy.agreementRetentionMonths >= 1 && policy.agreementRetentionMonths <= 1200 &&
   !!policy.retentionBasis.trim() && !!policy.legalHoldPolicy.trim();
 
+function companyRepresentative(profile: CompanyProfile) {
+  return studioSignerInput.safeParse({ name: profile.representative, capacity: profile.representativeTitle });
+}
+
 export async function signingEligibility() {
-  const { checks, policy, ready } = await getReadiness();
+  const [{ checks, policy, ready }, { profile }] = await Promise.all([getReadiness(), companyProfile()]);
+  const representative = companyRepresentative(profile).success;
   const retention = retentionAvailable(policy);
   const delivery = mailAvailable();
   let origin = true;
   try { publicOrigin(); } catch { origin = false; }
   return {
-    ready: ready && retention && delivery && origin,
+    ready: ready && retention && delivery && origin && representative,
     checks: [
       ...checks.map(({ id, ok }) => ({ id, ok })),
       { id: "agreement-retention", ok: retention },
+      { id: "company-representative", ok: representative },
       { id: "mail-transport-configured", ok: delivery },
       { id: "signing-origin-configured", ok: origin },
     ],
@@ -99,12 +105,23 @@ function completionText(details: AgreementDetails) {
 
 export async function signingPreview({ draftId, draftRevision, linkDays: _linkDays, ...details }: PreviewInput) {
   void _linkDays;
-  const [draft, policy] = await Promise.all([findDraft(draftId, false), getSecurityPolicy()]);
+  const [draft, policy, { profile }] = await Promise.all([
+    findDraft(draftId, false), getSecurityPolicy(), companyProfile(),
+  ]);
   if (draft.revision !== draftRevision)
     throw AppError.conflict("The source draft changed. Reopen it and review the new revision.");
   const source = draft.snapshot as DraftSnapshot;
   if (draft.kind !== "confidentiality" || !source.templateId || !Number.isInteger(source.templateRevision))
     throw AppError.badRequest("Choose a confidentiality draft generated from a published template.");
+
+  const designation = companyRepresentative(profile);
+  if (!designation.success)
+    throw new AppError(409, "SIGNING_REPRESENTATIVE_REQUIRED", "Set the authorized representative and title in Company settings before issuing.");
+  const studioSigner = designation.data;
+  if (
+    (source.company.representative && source.company.representative !== studioSigner.name) ||
+    (source.company.representativeTitle && source.company.representativeTitle !== studioSigner.capacity)
+  ) throw AppError.conflict("The company representative changed since this draft was generated. Regenerate and review the draft.");
 
   const fields = completionText(details);
   const replacements = Object.fromEntries(agreementTemplateFields.map(key => [`agreement.${key}`, fields[key]]));
@@ -115,6 +132,7 @@ export async function signingPreview({ draftId, draftRevision, linkDays: _linkDa
     `Statement of work: ${fields.sowReference} · ${fields.sowDate}`,
     `Fees: ${fields.fees}`,
     `Client signer: ${fields.signerName} · ${fields.signerCapacity} · ${fields.signerEmail}`,
+    `Authorized studio representative: ${studioSigner.name} · ${studioSigner.capacity}`,
     `Personal or production data: ${fields.personalOrProductionData}`,
     `Data schedule: ${fields.personalDataSchedule}${details.personalDataScheduleDate ? ` · ${fields.personalDataScheduleDate}` : ""}`,
     `Approved providers and AI: ${fields.providers}`,
@@ -131,14 +149,14 @@ export async function signingPreview({ draftId, draftRevision, linkDays: _linkDa
   const snapshot: SigningSnapshot = {
     version: 1,
     source: { draftId: String(draft._id), draftRevision, templateId: source.templateId, templateRevision: source.templateRevision! },
-    title, body, completion, details, retention,
+    title, body, completion, details, studioSigner, retention,
     consent: { client: clientConsent, owner: ownerConsent },
   };
   return { snapshot, contentHash: contentDigest(snapshot) };
 }
 
-export const signerDocument = ({ title, body, completion, retention, consent }: SigningSnapshot) =>
-  ({ title, body, completion, retention, consent });
+export const signerDocument = ({ title, body, completion, retention, consent, studioSigner }: SigningSnapshot) =>
+  ({ title, body, completion, retention, consent, studioSigner });
 
 function mintLink(id: string, days: number, mode: "sign" | "view", now: Date) {
   const raw = secret();
@@ -326,17 +344,23 @@ export async function countersignAgreement(
   input: { name: string; place: string; capacity: string; contentHash: string },
 ) {
   const [row, owner] = await Promise.all([
-    Envelope.findById(id).lean(), AdminUser.findById(admin.id).select("name").lean(),
+    Envelope.findById(id).lean(),
+    AdminUser.findOne({ _id: admin.id, role: "owner", active: { $ne: false } }).select("name").lean(),
   ]);
   if (!row) throw AppError.notFound("Agreement not found.");
   if (row.status !== "awaiting-owner" || !row.clientSignature) throw changed();
-  if (!owner || input.name !== owner.name.trim())
-    throw AppError.badRequest("Type the name on your owner account exactly as displayed.");
   const snapshot = checkedSnapshot(row, input.contentHash);
-  requirePrintable(input.name, input.capacity, input.place);
+  const representative = snapshot.studioSigner;
+  if (!representative)
+    throw AppError.conflict("This record has no frozen company representative and cannot be countersigned.");
+  if (!owner || owner.name.trim() !== representative.name)
+    throw AppError.forbidden("The authorized studio representative on this agreement must countersign.");
+  if (input.name !== representative.name || input.capacity !== representative.capacity)
+    throw AppError.badRequest("Confirm the representative name and capacity shown on the agreement.");
+  requirePrintable(input.place);
   const now = new Date();
   const ownerSignature = {
-    name: input.name, place: input.place, capacity: input.capacity, signedAt: now,
+    ...representative, place: input.place, signedAt: now,
     verifiedAt: new Date(admin.mfaAt! * 1000),
   };
   const pdf = await renderSigningPdf(snapshot, input.contentHash, row.clientSignature, ownerSignature);
@@ -382,13 +406,14 @@ export async function manageLink(id: string, actorId: string, days?: number) {
   if (!clientStates.includes(row.status) || !row.link) throw changed();
   const now = new Date();
   if (days !== undefined) {
+    // Reserve a final revocation if renewal consumes the change budget.
+    if ((row.linkChanges ?? 0) >= 60) throw AppError.conflict("The record reached its link renewal limit.");
     await requireReady();
     retentionSnapshot(await getSecurityPolicy());
     if (!mailAvailable()) throw AppError.unavailable("Private email verification is not configured.");
     if (row.retentionDueAt && row.retentionDueAt <= now)
       throw AppError.conflict("This record is due for retention review. Client access cannot be renewed.");
   } else if (row.link.revokedAt) throw changed();
-  if ((row.linkChanges ?? 0) >= 60) throw AppError.conflict("The record reached its link change limit.");
   const renewal = days === undefined ? undefined : mintLink(id, days, row.status === "completed" ? "view" : "sign", now);
   const updated = await Envelope.findOneAndUpdate({ _id: id, revision: row.revision }, {
     $set: renewal ? { link: renewal.link } : { "link.revokedAt": now },

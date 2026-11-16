@@ -32,19 +32,32 @@ function LinkStatus({ record }: { record: SigningRecord }) {
 }
 function Readiness({ eligibility, owner }: { eligibility?: Eligibility; owner: boolean }) {
   if (!eligibility) return <p role="status" className="text-sm">Checking issuing readiness…</p>;
-  if (eligibility.ready) return <p className="text-sm font-medium text-green-900">Ready to issue and renew links.</p>;
+  if (eligibility.ready) return <p className="text-sm font-medium text-green-900">
+    {owner ? "Ready to issue and renew links." : "Signing settings are ready. An owner issues and manages links."}
+  </p>;
   return (
     <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-[#614309]">
       <p className="font-semibold">Issuing and renewal are unavailable.</p>
       <ul className="list-disc pl-5">
         {eligibility.checks.filter(check => !check.ok).map(check => <li key={check.id}>{check.id.replace("attestation:", "").replaceAll("-", " ")}</li>)}
       </ul>
-      {owner && <Link href="/admin/security" className="font-semibold underline">Review Security settings</Link>}
+      {owner && (
+        <div className="flex flex-wrap gap-3">
+          <Link href="/admin/security" className="font-semibold underline">Review Security settings</Link>
+          {eligibility.checks.some(check => check.id === "company-representative" && !check.ok) &&
+            <Link href="/admin/company" className="font-semibold underline">Set company representative</Link>}
+        </div>
+      )}
     </div>
   );
 }
 
-function Prepare({ draft, eligibility, onIssue }: { draft: Draft; eligibility?: Eligibility; onIssue: (link: string) => void }) {
+function Prepare({ draft, eligibility, owner, onIssue }: {
+  draft: Draft;
+  eligibility?: Eligibility;
+  owner: boolean;
+  onIssue: (link: string) => void;
+}) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [usesData, setUsesData] = useState("");
   const [preview, setPreview] = useState<Preview>();
@@ -83,7 +96,7 @@ function Prepare({ draft, eligibility, onIssue }: { draft: Draft; eligibility?: 
     setBusy(true);
     setError("");
     try {
-      if (preview && approved && eligibility?.ready) {
+      if (owner && preview && approved && eligibility?.ready) {
         const result = await signingRequest<Changed>("", "POST", { ...fields, previewHash: preview.contentHash });
         invalidate();
         if (result.link) onIssue(result.link);
@@ -123,7 +136,7 @@ function Prepare({ draft, eligibility, onIssue }: { draft: Draft; eligibility?: 
               <Field label="Data schedule date"><Input name="scheduleDate" type="date" required /></Field>
             </>
           )}
-          <Field label="Maximum backup retention (days)"><Input name="backupDays" type="number" min={0} max={3650} required /></Field>
+          <Field label="Maximum backup retention (days)"><Input name="backupDays" type="number" min={0} max={30} required /></Field>
           <Field label="Client incident contact"><Input name="incidentEmail" type="email" required maxLength={254} /></Field>
           <Field label="Client link validity (days)"><Input name="linkDays" type="number" min={1} max={30} defaultValue={7} required /></Field>
         </fieldset>
@@ -147,16 +160,20 @@ function Prepare({ draft, eligibility, onIssue }: { draft: Draft; eligibility?: 
         {preview && (
           <>
             <AgreementText document={preview.document} />
-            <label className="flex items-start gap-2 text-sm" onChange={event => event.stopPropagation()}>
-              <input type="checkbox" className="mt-0.5" checked={approved} onChange={event => setApproved(event.target.checked)} />
-              I reviewed this frozen copy and verified the intended recipient’s email.
-            </label>
+            {owner ? (
+              <label className="flex items-start gap-2 text-sm" onChange={event => event.stopPropagation()}>
+                <input type="checkbox" className="mt-0.5" checked={approved} onChange={event => setApproved(event.target.checked)} />
+                I reviewed this frozen copy and verified the intended recipient’s email.
+              </label>
+            ) : <p className="text-sm">An owner issues the private link after reviewing the agreement.</p>}
           </>
         )}
         <ErrorBox error={error} />
-        <Btn type="submit" variant="primary" disabled={busy || (Boolean(preview) && (!approved || !eligibility?.ready))}>
-          {busy ? "Working…" : preview ? "Issue private link" : "Preview frozen copy"}
-        </Btn>
+        {(!preview || owner) && (
+          <Btn type="submit" variant="primary" disabled={busy || (Boolean(preview) && (!approved || !eligibility?.ready))}>
+            {busy ? "Working…" : preview ? "Issue private link" : "Preview frozen copy"}
+          </Btn>
+        )}
       </form>
     </Card>
   );
@@ -227,7 +244,7 @@ export default function SigningRequests({ draftId }: { draftId?: string }) {
     } finally { setBusy(false); }
   }
   function manageLink(method: "POST" | "DELETE") {
-    if (!record) return;
+    if (!record || !owner) return;
     const id = record.id;
     void run(async () => {
       const result = await signingRequest<Changed>(`/${id}/link`, method, method === "POST" ? { days: linkDays } : undefined);
@@ -262,7 +279,9 @@ export default function SigningRequests({ draftId }: { draftId?: string }) {
   }
 
   if (!manager) return <PageHead title="Signing requests" sub="An owner or admin account is required." />;
-  const canManageLink = record && !["purged", "closed-incomplete"].includes(record.status);
+  const canManageLink = owner && record && !["purged", "closed-incomplete"].includes(record.status);
+  const studioSigner = record?.document?.studioSigner;
+  const canCountersign = studioSigner && account?.name.trim() === studioSigner.name;
   return (
     <div className="space-y-5">
       <PageHead title="Signing requests" sub="Issue private links to frozen confidentiality agreements and track signatures." />
@@ -278,7 +297,7 @@ export default function SigningRequests({ draftId }: { draftId?: string }) {
         </div>
       )}
       {copied && <p role="status" className="text-sm">Private link copied. Share it with the intended signer.</p>}
-      {draft ? <Prepare key={draft.id} draft={draft} eligibility={eligibility} onIssue={link => { reveal(link); setDraft(undefined); }} /> :
+      {draft ? <Prepare key={draft.id} draft={draft} eligibility={eligibility} owner={owner} onIssue={link => { reveal(link); setDraft(undefined); }} /> :
         <Link href="/admin/drafts" className="inline-flex min-h-10 items-center rounded-md border border-[#94685a] px-4 text-sm font-semibold text-[#741a14]">Prepare from a client draft</Link>}
       <Card pad={false}>
         <ul className="divide-y divide-[#e6d8c9]">
@@ -337,7 +356,13 @@ export default function SigningRequests({ draftId }: { draftId?: string }) {
             {record.document && <AgreementText document={record.document} />}
             {owner && record.status !== "purged" && (
               <div className="flex flex-wrap gap-2">
-                {record.status === "awaiting-owner" && <Btn variant="primary" onClick={() => openAction("countersign")}>Countersign</Btn>}
+                {record.status === "awaiting-owner" && (
+                  canCountersign
+                    ? <Btn variant="primary" onClick={() => openAction("countersign")}>Countersign</Btn>
+                    : <p className="w-full text-sm">{studioSigner
+                      ? `Only ${studioSigner.name}, the authorized representative on this agreement, can countersign.`
+                      : "This agreement needs a frozen company representative before it can be countersigned."}</p>
+                )}
                 {(record.status === "awaiting-client" || record.status === "awaiting-owner") && <Btn onClick={() => openAction("close")}>Close incomplete</Btn>}
                 <Btn onClick={() => openAction("hold")}>{record.held ? "Release legal hold" : "Place legal hold"}</Btn>
                 {record.retentionDue && !record.held && <Btn onClick={() => openAction("purge")}>Review deletion</Btn>}
@@ -349,10 +374,10 @@ export default function SigningRequests({ draftId }: { draftId?: string }) {
                 <form key={action} onSubmit={submitAction} className="space-y-3">
                   {action === "countersign" && (
                     <>
-                      <h3 className="font-semibold">Countersign as {account?.name}</h3>
+                      <h3 className="font-semibold">Countersign as {studioSigner?.name}</h3>
                       <div className="grid gap-3 sm:grid-cols-3">
-                        <Field label="Type your owner account name"><Input name="name" required maxLength={140} /></Field>
-                        <Field label="Signing capacity"><Input name="capacity" required maxLength={140} /></Field>
+                        <Field label="Type your name as shown"><Input name="name" required maxLength={160} /></Field>
+                        <Field label="Signing capacity"><Input name="capacity" readOnly value={studioSigner?.capacity ?? ""} /></Field>
                         <Field label="Place (optional)"><Input name="place" maxLength={140} /></Field>
                       </div>
                       <label className="flex items-start gap-2 text-sm">

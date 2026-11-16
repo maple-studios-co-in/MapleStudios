@@ -9,6 +9,7 @@ export type AgreementDocument = {
   completion: string;
   retention: { months: number; basis: string; legalHoldPolicy: string; notice: string };
   consent: { client: string; owner: string };
+  studioSigner?: { name: string; capacity: string };
 };
 
 type PrivateDocument = {

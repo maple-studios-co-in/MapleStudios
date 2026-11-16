@@ -11,7 +11,7 @@ import { encrypt } from "../lib/crypto.js";
 import { setMailProvider, type MailMessage } from "../lib/mail/provider.js";
 import { signAccessToken } from "../middleware/auth.js";
 import { AdminUser } from "../modules/auth/admin.model.js";
-import { BusinessDraft } from "../modules/business/documents.model.js";
+import { BusinessCompany, BusinessDraft } from "../modules/business/documents.model.js";
 import { SecurityPolicy, attestationIds } from "../modules/security/security.model.js";
 
 let app = createApp();
@@ -28,6 +28,7 @@ const auth = (role: keyof typeof ids = "owner", recent = true) => ({
     mfaAt: Math.floor(Date.now() / 1000) - (recent ? 0 : 301), mfaEnforced: true,
   })}`,
 });
+const representative = { representative: "Owner Example", representativeTitle: "Director" };
 const retention = {
   agreementRetentionMonths: 12,
   retentionBasis: "Synthetic contract administration",
@@ -94,12 +95,13 @@ beforeEach(async () => {
       confirmedBy: { id: ids.owner, email: "owner@example.test" },
     })),
   });
+  await BusinessCompany.create({ _id: "company", profile: { name: "Synthetic Studio", ...representative } });
   const draft = await BusinessDraft.create({
     projectId: "500000000000000000000001", clientId: "500000000000000000000002",
     kind: "confidentiality", title: "Synthetic data and confidentiality agreement", body,
     snapshot: {
       templateId: "500000000000000000000003", templateRevision: 1,
-      company: { name: "Synthetic Studio", legalName: "Synthetic Studio Ltd", bankAccount: "00000000000000" },
+      company: { name: "Synthetic Studio", legalName: "Synthetic Studio Ltd", bankAccount: "00000000000000", ...representative },
       client: { name: "Synthetic Client Ltd" },
     },
   });
@@ -126,7 +128,7 @@ const preview = (fields: Record<string, unknown> = {}, role: keyof typeof ids = 
 async function issue(fields: Record<string, unknown> = {}) {
   const p = await preview(fields);
   expect(p.status, p.text).toBe(200);
-  const r = await request(app).post(staff).set(auth("admin")).send({
+  const r = await request(app).post(staff).set(auth("owner")).send({
     ...base, draftId, ...fields, previewHash: p.body.contentHash,
   });
   expect(r.status, r.text).toBe(201);
@@ -151,9 +153,9 @@ const sign = (id: string, token: string, hash: string, fields = {}) =>
   request(app).post(publicPath(id, "sign")).set(session(token)).send({
     contentHash: hash, name: base.signerName, consent: true, ...fields,
   });
-const counter = (id: string, hash: string, role: keyof typeof ids = "owner", recent = true) =>
+const counter = (id: string, hash: string, role: keyof typeof ids = "owner", recent = true, fields = {}) =>
   request(app).post(staff + `/${id}/countersign`).set(auth(role, recent)).send({
-    contentHash: hash, name: "Owner Example", capacity: "Director", consent: true,
+    contentHash: hash, name: "Owner Example", capacity: "Director", consent: true, ...fields,
   });
 const pdf = (id: string, token: string) =>
   request(app).get(publicPath(id, "pdf")).set(session(token)).buffer(true).parse((res, done) => {
@@ -243,9 +245,9 @@ it("rejects a bad secret, expired link, revoked link and a session from another 
   expect((await getDocument(other.id, token)).status).toBe(401);
   await envelope().updateOne({ _id: other.id }, { $set: { "link.expiresAt": new Date(Date.now() - 1000) } });
   expect((await codeRequest(other)).status).toBe(404);
-  expect((await request(app).delete(staff + `/${link.id}/link`).set(auth("admin"))).status).toBe(200);
+  expect((await request(app).delete(staff + `/${link.id}/link`).set(auth("owner"))).status).toBe(200);
   expect((await codeRequest(link)).status).toBe(404);
-  const reissued = await request(app).post(staff + `/${link.id}/link`).set(auth("admin")).send({ days: 3 });
+  const reissued = await request(app).post(staff + `/${link.id}/link`).set(auth("owner")).send({ days: 3 });
   expect(reissued.status).toBe(200);
   expect((await getDocument(link.id, token)).status).toBe(401);
 });
@@ -444,4 +446,85 @@ it("cannot sign an altered snapshot or download altered executed bytes", async (
   expect((await counter(link.id, link.hash)).status).toBe(200);
   await envelope().updateOne({ _id: link.id }, { $set: { pdf: Buffer.from("%PDF- changed bytes") } });
   expect((await pdf(link.id, token)).status).toBe(409);
+});
+
+
+it("lets Admin preview but reserves issuing, renewal and revocation for Owner", async () => {
+  const p = await preview({}, "admin");
+  expect(p.status).toBe(200);
+  const form = { ...base, draftId, previewHash: p.body.contentHash };
+  expect((await request(app).post(staff).set(auth("admin")).send(form)).status).toBe(403);
+  expect(await envelope().countDocuments()).toBe(0);
+  const issued = await request(app).post(staff).set(auth()).send(form);
+  expect(issued.status).toBe(201);
+  const path = staff + `/${issued.body.item.id}/link`;
+  expect((await request(app).post(path).set(auth("admin")).send({ days: 3 })).status).toBe(403);
+  expect((await request(app).delete(path).set(auth("admin"))).status).toBe(403);
+  expect((await request(app).post(path).set(auth()).send({ days: 3 })).status).toBe(200);
+  expect((await request(app).delete(path).set(auth())).status).toBe(200);
+});
+
+it("caps contractual backup retention at 30 days without limiting signed-record retention", async () => {
+  const previewed = await preview({ backupRetentionDays: 30 });
+  expect(previewed.body.document).toMatchObject({ retention: { months: 12 } });
+  expect(previewed.body.document.completion).toContain("Maximum backup retention: 30 days");
+  expect((await preview({ backupRetentionDays: 31 })).status).toBe(400);
+  const issued = await request(app).post(staff).set(auth()).send({
+    ...base, draftId, backupRetentionDays: 31, previewHash: previewed.body.contentHash,
+  });
+  expect(issued.status).toBe(400);
+});
+
+it("requires both configured representative fields and refuses a preview changed before issue", async () => {
+  const p = await preview();
+  expect(p.status).toBe(200);
+  for (const field of ["representative", "representativeTitle"]) {
+    await BusinessCompany.updateOne({ _id: "company" }, { $set: { [`profile.${field}`]: "" } });
+    const result = await request(app).post(staff).set(auth()).send({ ...base, draftId, previewHash: p.body.contentHash });
+    expect(result.body).toMatchObject({ code: "SIGNING_REPRESENTATIVE_REQUIRED" });
+    await BusinessCompany.updateOne({ _id: "company" }, { $set: { profile: { name: "Synthetic Studio", ...representative } } });
+  }
+  await BusinessCompany.updateOne({ _id: "company" }, { $set: { "profile.representativeTitle": "New title" } });
+  const changed = await request(app).post(staff).set(auth()).send({ ...base, draftId, previewHash: p.body.contentHash });
+  expect(changed.status).toBe(409);
+  expect(await envelope().countDocuments()).toBe(0);
+});
+
+it("binds the authenticated Owner and their explicit signature to the frozen company representative", async () => {
+  const link = await issue();
+  await codeRequest(link);
+  const verified = await verify(link, capturedCode());
+  const token = verified.body.sessionToken;
+  const document = await getDocument(link.id, token);
+  expect(document.body.document).toMatchObject({ studioSigner: { name: "Owner Example", capacity: "Director" } });
+  expect(document.body.document.completion).toContain("Authorized studio representative: Owner Example · Director");
+  expect((await sign(link.id, token, link.hash)).status).toBe(200);
+
+  await AdminUser.updateOne({ _id: ids.owner }, { $set: { name: "Another Owner" } });
+  expect((await counter(link.id, link.hash, "owner", true, { name: "Another Owner" })).status).toBe(403);
+  expect((await counter(link.id, link.hash)).status).toBe(403);
+  await AdminUser.updateOne({ _id: ids.owner }, { $set: { name: "Owner Example" } });
+  expect((await counter(link.id, link.hash, "owner", true, { capacity: "Other title" })).status).toBe(400);
+
+  await BusinessCompany.updateOne({ _id: "company" }, { $set: {
+    "profile.representative": "Later Representative", "profile.representativeTitle": "Later title",
+  } });
+  expect((await counter(link.id, link.hash)).status).toBe(200);
+  const record = await request(app).get(staff + `/${link.id}`).set(auth());
+  expect(record.body.item.ownerSignature).toMatchObject({ name: "Owner Example", capacity: "Director" });
+});
+
+it("always allows an active link to be revoked after the link change limit", async () => {
+  const link = await issue();
+  await envelope().updateOne({ _id: link.id }, { $set: { linkChanges: 59 } });
+  const path = staff + `/${link.id}/link`;
+  const last = await request(app).post(path).set(auth()).send({ days: 7 });
+  expect(last.status).toBe(200);
+  expect((await request(app).post(path).set(auth()).send({ days: 7 })).status).toBe(409);
+  const stillActive = { id: link.id, secret: new URL(last.body.link).hash.slice(1) };
+  expect((await codeRequest(stillActive)).status).toBe(200);
+  const revoked = await request(app).delete(path).set(auth());
+  expect(revoked.body.item).toMatchObject({ link: { status: "revoked" } });
+  expect((await codeRequest(stillActive)).status).toBe(404);
+  expect((await request(app).post(path).set(auth()).send({ days: 7 })).status).toBe(409);
 });

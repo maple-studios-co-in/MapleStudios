@@ -30,7 +30,7 @@ const issueFields = z.strictObject({
   })).max(20),
   providerApprovalReference: singleLine(200).default(""),
   providerApprovalDate: date.optional(),
-  backupRetentionDays: z.number().int().min(0).max(3650),
+  backupRetentionDays: z.number().int().min(0).max(30),
   incidentEmail: email,
 });
 function completionDetails(value: z.infer<typeof issueFields>, ctx: z.RefinementCtx) {
@@ -51,7 +51,8 @@ export const linkInput = z.strictObject({ days: linkDays });
 export const codeInput = z.strictObject({ secret: linkSecret });
 export const verifyInput = codeInput.extend({ code: z.string().regex(/^\d{6}$/) });
 export const signInput = z.strictObject({ contentHash, name: required(140), consent, place: singleLine(140).default("") });
-export const counterInput = signInput.extend({ capacity: required(140) });
+export const studioSignerInput = z.strictObject({ name: required(160), capacity: required(160) });
+export const counterInput = signInput.extend(studioSignerInput.shape);
 export const closeInput = z.strictObject({ reason: required(500) });
 export const holdInput = closeInput.extend({ held: z.boolean() });
 export const purgeInput = z.strictObject({ confirm: consent });

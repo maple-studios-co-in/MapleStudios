@@ -12,6 +12,7 @@ export type SigningSnapshot = {
   body: string;
   completion: string;
   details: AgreementDetails;
+  studioSigner?: { name: string; capacity: string };
   retention: { months: number; basis: string; legalHoldPolicy: string; notice: string };
   consent: { client: string; owner: string };
 };

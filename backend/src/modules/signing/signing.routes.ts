@@ -64,7 +64,7 @@ staffSigningRoutes.post("/preview", async (req, res) => {
   const { snapshot, contentHash } = await signingPreview(previewInput.parse(req.body));
   res.json({ document: signerDocument(snapshot), contentHash });
 });
-staffSigningRoutes.post("/", async (req, res) => {
+staffSigningRoutes.post("/", requireBusinessOwner, async (req, res) => {
   res.status(201).json(await issueAgreement(issueInput.parse(req.body), req.admin!.id));
 });
 staffSigningRoutes.get("/:id", async (req, res) => {
@@ -73,10 +73,10 @@ staffSigningRoutes.get("/:id", async (req, res) => {
   res.json({ item: staffView(row, true) });
 });
 staffSigningRoutes.get("/:id/pdf", async (req, res) => { await sendPdf(res, staffId(req)); });
-staffSigningRoutes.post("/:id/link", async (req, res) => {
+staffSigningRoutes.post("/:id/link", requireBusinessOwner, async (req, res) => {
   res.json(await manageLink(staffId(req), req.admin!.id, linkInput.parse(req.body).days));
 });
-staffSigningRoutes.delete("/:id/link", async (req, res) => {
+staffSigningRoutes.delete("/:id/link", requireBusinessOwner, async (req, res) => {
   res.json(await manageLink(staffId(req), req.admin!.id));
 });
 staffSigningRoutes.post("/:id/countersign", requireBusinessOwner, requireRecentMfa, async (req, res) => {
