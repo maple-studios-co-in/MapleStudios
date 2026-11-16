@@ -2,6 +2,7 @@ import { createApp } from "./app.js";
 import { connectDb, disconnectDb } from "./config/db.js";
 import { assertMfaCutover } from "./modules/security/security.service.js";
 import { clearExpiredMfaState } from "./modules/auth/auth.service.js";
+import { clearExpiredSigningAccess } from "./modules/signing/signing.service.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { startScheduler, stopScheduler } from "./lib/scheduler.js";
@@ -10,6 +11,7 @@ async function main() {
   await connectDb();
   await assertMfaCutover();
   await clearExpiredMfaState();
+  await clearExpiredSigningAccess();
 
   const app = createApp();
   const server = app.listen(env.PORT, env.apiHost, () => {

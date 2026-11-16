@@ -12,6 +12,7 @@ import { publicCampaignRoutes, adminCampaignRoutes } from "./modules/campaigns/c
 import { publicSocialRoutes, adminSocialRoutes } from "./modules/social/social.routes.js";
 import { publicOutreachRoutes, adminOutreachRoutes } from "./modules/outreach/outreach.routes.js";
 import { securityRoutes } from "./modules/security/security.routes.js";
+import { publicSigningRoutes, staffSigningRoutes } from "./modules/signing/signing.routes.js";
 import { publicLimiter } from "./middleware/rateLimit.js";
 
 export const api = Router();
@@ -24,6 +25,8 @@ api.use("/", publicInquiryRoutes);
 api.use("/auth", authRoutes);
 api.use("/security", securityRoutes);
 api.use("/team", teamRoutes);
+api.use("/signing", publicSigningRoutes);
+api.use("/business/signing", staffSigningRoutes);
 api.use("/business", projectRoutes);
 api.use("/business", documentRoutes);
 

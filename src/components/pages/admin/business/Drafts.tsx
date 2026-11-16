@@ -231,6 +231,11 @@ export default function Drafts({ projectId }: { projectId?: string }) {
               >
                 Edit & export
               </Btn>
+              {d.kind === "confidentiality" && (
+                <Link href={`/admin/signing?draft=${d.id}`} className="inline-flex items-center rounded-full border border-[#741a14]/30 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#741a14] hover:bg-[#741a14]/8">
+                  Prepare signing request
+                </Link>
+              )}
               <Btn onClick={() => history(d)}>Versions</Btn>
               <Btn disabled={busy} onClick={() => openGenerator(d)}>
                 Regenerate

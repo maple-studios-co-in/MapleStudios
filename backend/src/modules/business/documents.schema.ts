@@ -107,3 +107,11 @@ export const draftEdit = z
     invoice: invoiceInput.optional(),
   })
   .strict();
+
+// Confidentiality drafts may carry this exact set of fields until issue time.
+export const agreementTemplateFields = [
+  "sowReference", "sowDate", "fees", "signerName", "signerEmail", "signerCapacity",
+  "personalOrProductionData", "personalDataSchedule", "personalDataScheduleDate",
+  "providers", "providerApprovalReference", "providerApprovalDate", "backupRetentionDays",
+  "incidentEmail",
+] as const;

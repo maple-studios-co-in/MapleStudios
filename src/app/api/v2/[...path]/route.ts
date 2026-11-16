@@ -11,6 +11,8 @@ async function proxy(req: Request, { params }: Context) {
       { status: 403 },
     );
   const { path } = await params;
+  if (!path[0] || !/^[a-z][a-z0-9-]*$/i.test(path[0]))
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
   // Session credentials may cross only the dedicated HttpOnly-cookie BFF.
   // Match both the literal and encoded/dot-normalized aliases.
   const target = new URL(
@@ -18,7 +20,7 @@ async function proxy(req: Request, { params }: Context) {
     process.env.GROWTH_API_ORIGIN || "http://127.0.0.1:4006",
   );
   const namespace = decodeURIComponent(target.pathname).toLowerCase();
-  if (/^\/api\/v1\/auth\/(login|refresh|logout|mfa)(?:\/|$)/.test(namespace))
+  if (/^\/api\/v1\/signing(?:\/|$)/.test(namespace) || /^\/api\/v1\/auth\/(login|refresh|logout|mfa)(?:\/|$)/.test(namespace))
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   const headers = new Headers();
   forwardClientIp(req.headers, headers);
@@ -51,6 +53,7 @@ async function proxy(req: Request, { params }: Context) {
         "content-type":
           response.headers.get("content-type") || "application/json",
         "cache-control": "no-store",
+        ...(response.headers.has("x-agreement-pdf-sha256") ? { "x-agreement-pdf-sha256": response.headers.get("x-agreement-pdf-sha256")! } : {}),
         ...(response.headers.has("content-disposition")
           ? {
               "content-disposition": response.headers.get(

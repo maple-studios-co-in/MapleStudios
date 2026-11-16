@@ -42,11 +42,12 @@ export function Pager({
     </div>
   );
 }
-export function useList<T>(path: string) {
+export function useList<T>(path: string | undefined) {
   const [data, setData] = useState<List<T>>();
   const [error, setError] = useState("");
   const [tick, setTick] = useState(0);
   useEffect(() => {
+    if (!path) return;
     let alive = true;
     setData(undefined);
     setError("");

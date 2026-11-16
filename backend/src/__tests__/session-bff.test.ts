@@ -94,3 +94,30 @@ it("does not relay raw session endpoints through the generic public BFF", async 
   expect(response.status).toBe(404);
   expect(await response.json()).not.toHaveProperty("token");
 });
+
+it("restores the access session before a new security action without resubmitting a factor", async () => {
+  const { sessionAction } = await import("../../../src/lib/admin/session-client");
+  const requests: string[] = [];
+  let checked = false;
+  const fake = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    expect(input).toBe("/api/admin/session");
+    const method = init?.method ?? "GET";
+    requests.push(method);
+    if (method === "PATCH") return Response.json({ ok: true });
+    if (method === "GET" && !checked) {
+      checked = true;
+      return Response.json({ error: "Expired access" }, { status: 401 });
+    }
+    if (method === "GET") return Response.json({ admin: { id: "synthetic" } });
+    return Response.json({ error: "Invalid factor" }, { status: 401 });
+  });
+  try {
+    await expect(sessionAction({ action: "reauthenticate", password: "synthetic", code: "123456" })).rejects.toThrow("Invalid factor");
+    expect(requests).toEqual(["GET", "PATCH", "GET", "POST"]);
+    requests.length = 0;
+    await expect(sessionAction({ action: "proveEnrolment", code: "123456" })).rejects.toThrow("Invalid factor");
+    expect(requests).toEqual(["POST"]);
+  } finally {
+    fake.mockRestore();
+  }
+});

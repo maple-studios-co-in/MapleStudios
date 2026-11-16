@@ -47,8 +47,8 @@ const PAGE_LABELS: Record<string, string> = {
     generic label for /admin/* is just "ADMIN", which reads like a splash
     screen rather than a transition. Skipping also keeps ten full-viewport
     layers off the compositor for the whole admin session. */
-function isAdminPath(path: string) {
-  return path === "/admin" || path.startsWith("/admin/");
+function isPrivatePath(path: string) {
+  return path === "/admin" || path.startsWith("/admin/") || path === "/sign" || path.startsWith("/sign/");
 }
 
 function labelFor(href: string) {
@@ -95,7 +95,7 @@ export default function PageTransition() {
       if (!path || path === pathname) return;
       // Leaving the console, entering it, or moving within it: let the router
       // navigate normally rather than covering the screen first.
-      if (isAdminPath(path) || isAdminPath(pathname)) return;
+      if (isPrivatePath(path) || isPrivatePath(pathname)) return;
       e.preventDefault();
       if (pending.current) return;
       pending.current = href;
@@ -149,7 +149,7 @@ export default function PageTransition() {
 
   // Rendered after every hook has run, so the hook order stays stable when the
   // operator moves between the marketing site and the console.
-  if (isAdminPath(pathname)) return null;
+  if (isPrivatePath(pathname)) return null;
 
   return (
     <div

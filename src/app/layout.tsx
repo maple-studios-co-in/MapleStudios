@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import SiteFonts from "@/components/common/SiteFonts";
 import PageTransition from "@/components/common/PageTransition";
 import { SITE_URL } from "@/lib/constants";
 import "./globals.css";
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="antialiased selection:bg-[#761c17] selection:text-white">
+        <SiteFonts />
         {children}
         {/* Route transition: cream belts + centred maple leaf on every internal link */}
         <PageTransition />

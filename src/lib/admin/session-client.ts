@@ -38,7 +38,13 @@ export class SessionActionError extends Error {
   }
 }
 
-export async function sessionAction<T>(input: object): Promise<T> {
+export async function sessionAction<T>(input: { action?: string } & Record<string, unknown>): Promise<T> {
+  // Restore expired access before starting a new action. Proof and confirmation
+  // keep the exact bearer that started enrollment.
+  if (input.action === "reauthenticate" || input.action === "startEnrolment") {
+    const current = await sessionFetch("/api/admin/session");
+    if (!current.ok) throw new SessionActionError("Reload the dashboard or sign in again to continue.");
+  }
   // A failed verification must not be retried automatically as a refresh.
   const response = await fetch("/api/admin/session", {
     method: "POST",

@@ -14,7 +14,7 @@ export interface MailMessage {
 
 export interface MailProvider {
   readonly name: "resend" | "dry-run";
-  send(message: MailMessage): Promise<{ id: string }>;
+  send(message: MailMessage, options?: { signal: AbortSignal }): Promise<{ id: string }>;
 }
 
 /** Nothing leaves the box. The message is logged so a campaign can be
@@ -32,9 +32,10 @@ export class ResendProvider implements MailProvider {
   readonly name = "resend" as const;
   constructor(private readonly apiKey: string) {}
 
-  async send(message: MailMessage) {
+  async send(message: MailMessage, options?: { signal: AbortSignal }) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      signal: options?.signal,
       headers: { authorization: `Bearer ${this.apiKey}`, "content-type": "application/json" },
       body: JSON.stringify({
         from: `${message.from.name} <${message.from.email}>`,

@@ -1,3 +1,4 @@
+import { sessionFetch } from "@/lib/admin/session-client";
 import { teamRequest } from "../team/api";
 export const api = <T>(path: string, method = "GET", body?: unknown) =>
   teamRequest<T>(`/business${path}`, method, body);
@@ -161,3 +162,60 @@ export const cleanInvoice = (i: Invoice) => ({
     taxRateBps: l.taxRateBps,
   })),
 });
+
+export type SigningState = "awaiting-client" | "awaiting-owner" | "completed" | "closed-incomplete" | "purged";
+export type SigningRecord = {
+  id: string;
+  title?: string;
+  status: SigningState;
+  signer?: { name: string; email: string; capacity: string };
+  contentHash?: string;
+  pdfHash?: string;
+  createdAt?: string;
+  closedAt?: string;
+  completedAt?: string;
+  retentionDueAt?: string;
+  retentionDue: boolean;
+  held: boolean;
+  purgedAt?: string;
+  link?: { mode: "sign" | "view"; status: "active" | "expired" | "revoked"; expiresAt: string; revokedAt?: string };
+  document?: import("../../sign/ClientSigning").AgreementDocument;
+  events?: { type: string; at: string; actorId?: string; reason?: string }[];
+  clientSignature?: { name: string; capacity: string; place: string; signedAt: string; verifiedAt: string };
+  ownerSignature?: { name: string; capacity: string; place: string; signedAt: string; verifiedAt: string };
+};
+
+export class SigningApiError extends Error {
+  constructor(message: string, public code?: string) { super(message); }
+}
+export async function signingRequest<T>(path = "", method = "GET", body?: unknown): Promise<T> {
+  const response = await sessionFetch(`/api/v2/business/signing${path}`, {
+    method,
+    ...(body === undefined ? {} : {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const detail = data.details?.map((item: { field: string; message: string }) => `${item.field}: ${item.message}`).join(" · ");
+    throw new SigningApiError(detail || data.error || "Signing request could not be completed.", data.code);
+  }
+  return data as T;
+}
+export async function downloadSigningPdf(id: string) {
+  const response = await sessionFetch(`/api/v2/business/signing/${id}/pdf`);
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new SigningApiError(data.error || "The signed PDF could not be downloaded.", data.code);
+  }
+  const href = URL.createObjectURL(await response.blob());
+  try {
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = `maple-agreement-${id}.pdf`;
+    link.click();
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(href), 1000);
+  }
+}

@@ -1,7 +1,7 @@
 import type { Request } from "express";
 import { AppError } from "../../lib/AppError.js";
 import { Client, Deliverable } from "./business.model.js";
-import { BusinessCompany, BusinessTemplate } from "./documents.model.js";
+import { BusinessCompany, BusinessTemplate, BusinessDraft } from "./documents.model.js";
 import {
   companyInput,
   defaults,
@@ -9,6 +9,7 @@ import {
   type DraftInput,
 } from "./documents.schema.js";
 import { projectFor } from "./business.access.js";
+import { id } from "./business.schema.js";
 import { calculateInvoice, type CalculatedInvoice } from "./invoice.js";
 export type DraftSnapshot = {
   company: CompanyProfile;
@@ -41,6 +42,12 @@ export async function companyProfile() {
     profile: companyInput.parse(row?.profile || defaults),
     revision: row?.revision || 0,
   };
+}
+export async function findDraft(value: unknown, includeVersions = true) {
+  const query = BusinessDraft.findById(id.parse(value));
+  const item = await (includeVersions ? query : query.select("-versions"));
+  if (!item) throw AppError.notFound("Draft not found.");
+  return item;
 }
 export const unresolved = (...values: string[]) => [
   ...new Set(
@@ -189,4 +196,21 @@ export async function generateDraft(req: Request, input: DraftInput) {
     createdBy: req.admin!.email,
     updatedBy: req.admin!.email,
   };
+}
+
+const placeholder = /\{\{|\}\}|\[\[|\]\]|\[\s*(?:insert|enter|add|fill|to be|complete|sign here|name|title|date|place)\b[^\]\n]*\]|\b(?:tbd|todo|to be (?:filled|completed|inserted|confirmed)|(?:complete|fill in) (?:this|manually|before (?:signing|sending))|manual (?:completion|entry)|draft only|for internal use only|do not (?:issue|send|sign))\b/i;
+const signatureLabel = /^(?:name|full name|title|capacity|place|date|place and date|date and place|signature):[ \t]+_{2,}[ \t]*$/i;
+const signatureHeading = /^(?:\d+[.)][ \t]+)?(?:signatures?|signature blocks?|signature evidence)\s*:?$/i;
+const signatureParty = /^(?:for and on behalf of |for )(?:the )?(?:client|company|studio|provider|service provider|party [ab12])\s*:?$/i;
+
+export function validateAgreementText(title: string, body: string) {
+  if (/(?![\n\t])[\p{Cc}\p{Cf}]/u.test(title + body) || placeholder.test(title + "\n" + body) || /_{2,}/.test(title))
+    throw AppError.badRequest("Resolve placeholders, draft reminders and unsupported formatting before issuing.");
+  const lines = body.split("\n");
+  // Only an explicitly labelled trailing signature block may contain signature blanks.
+  const heading = lines.findLastIndex(line => signatureHeading.test(line.trim()));
+  const suffixIsSignature = heading >= 0 && lines.slice(heading + 1)
+    .every(line => !line.trim() || signatureParty.test(line.trim()) || signatureLabel.test(line.trim()));
+  if (lines.some((line, index) => /_{2,}/.test(line) && !(suffixIsSignature && index > heading && signatureLabel.test(line.trim()))))
+    throw AppError.badRequest("Replace all completion blanks with agreement fields before issuing.");
 }

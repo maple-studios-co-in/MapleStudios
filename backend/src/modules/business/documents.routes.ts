@@ -23,6 +23,7 @@ import {
 import {
   companyProfile,
   generateDraft,
+  findDraft,
   unresolved,
   type DraftSnapshot,
 } from "./documents.service.js";
@@ -132,11 +133,6 @@ documentRoutes.post("/drafts", async (req, res) => {
   );
   res.status(201).json({ item });
 });
-async function findDraft(value: unknown) {
-  const item = await BusinessDraft.findById(id.parse(value));
-  if (!item) throw AppError.notFound("Draft not found.");
-  return item;
-}
 documentRoutes.get("/drafts/:id", async (req, res) => {
   const item = await findDraft(req.params.id);
   const output = item.toJSON();

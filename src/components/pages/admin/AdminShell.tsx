@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   CalendarClock,
   FileText,
+  FileCheck,
   Film,
   Gauge,
   Handshake,
@@ -62,7 +63,7 @@ type NavItem = { href: string; label: string; icon: typeof Gauge; exact?: boolea
 /** Grouped rail. "Studio" is the original operations console — those four
     screens and their routes are unchanged; the CMS groups are additive. */
 const NAV: { group: string; items: NavItem[] }[] = [
-  {group:"Business",items:[{href:"/admin/clients",label:"Clients",icon:Handshake},{href:"/admin/projects",label:"Projects",icon:Briefcase},{href:"/admin/drafts",label:"Client drafts",icon:FileText},{href:"/admin/company",label:"Company & templates",icon:SettingsIcon}]},
+  {group:"Business",items:[{href:"/admin/clients",label:"Clients",icon:Handshake},{href:"/admin/projects",label:"Projects",icon:Briefcase},{href:"/admin/drafts",label:"Client drafts",icon:FileText},{href:"/admin/signing",label:"Signing requests",icon:FileCheck},{href:"/admin/company",label:"Company & templates",icon:SettingsIcon}]},
   {group:"Team",items:[{href:"/admin/team",label:"Team & attendance",icon:Users},{href:"/admin/payroll",label:"Payroll",icon:FileText}]},
   {
     group: "Studio",
