@@ -39,7 +39,7 @@ vault_run() (
     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$vault_uid/bus" "$@"
 )
 # Inspect the dedicated user's containers/storage.conf and host storage defaults first.
-vault_run podman info --format '{{.Host.Security.Rootless}} {{.Host.CgroupVersion}} {{.Host.CgroupManager}} {{.Host.NetworkBackend}} {{.Store.GraphRoot}}'
+vault_run podman info --format '{{.Host.Security.Rootless}} {{.Host.CgroupsVersion}} {{.Host.CgroupManager}} {{.Host.NetworkBackend}} {{.Store.GraphRoot}}'
 ```
 
 Confirm rootless execution, cgroup v2, the systemd cgroup manager, Netavark with container DNS, and a graph root inside the private home. Verify host clock synchronisation and SMTP reachability during the trial.
@@ -399,9 +399,12 @@ Verify `p port maple-vault-recovery-db` lists no port, and `p exec maple-vault-r
 )
 ```
 
-Verify the fresh isolated network blocks external egress before starting Passbolt. For example, after setting `trial_url` to the approved TLS test origin and `trial_port` to the reviewed unused loopback port:
+Verify the fresh isolated network blocks external egress before starting Passbolt. Set `trial_url` to the approved TLS test origin and `trial_port` to the reviewed unused loopback port.
+
+Use the reviewed `proxy-start.sh` from the same deployment package. It sets the FastCGI HTTPS parameter from the test TLS proxy’s exact `X-Forwarded-Proto: https` assertion before starting the vendor entrypoint in a fresh container. The proxy overwrites that header and forwards the fixed test Host. Leave `PASSBOLT_SSL_FORCE=true`.
 
 ```bash
+proxy_start=$(base64 -w0 /opt/maple-vault/proxy-start.sh) &&
 p run -d --pull=never --name maple-vault-recovery-app --network maple-vault-recovery-net \
   --http-proxy=false --security-opt=no-new-privileges --cap-drop=all --memory=1024m --cpus=1 --log-driver=none \
   -p "127.0.0.1:$trial_port:8080" --env-file "$scratch/recovery-app.env" \
@@ -413,7 +416,9 @@ p run -d --pull=never --name maple-vault-recovery-app --network maple-vault-reco
   --env PASSBOLT_SECURITY_SMTP_SETTINGS_ENDPOINTS_DISABLED=true \
   --volume maple-vault-recovery-gpg:/etc/passbolt/gpg:nocopy \
   --volume maple-vault-recovery-jwt:/etc/passbolt/jwt:ro,nocopy \
-  "$app_image" /usr/bin/wait-for.sh -t 60 maple-vault-recovery-db:3306 -- /docker-entrypoint.sh
+  "$app_image" /usr/bin/wait-for.sh -t 60 maple-vault-recovery-db:3306 -- \
+  /bin/bash -ec 'script=$(/usr/bin/base64 -d <<< "$1"); test -n "$script"; exec /bin/bash -c "$script"' \
+  vault-proxy "$proxy_start"
 
 p exec --user www-data maple-vault-recovery-app /bin/bash -c \
   '. /etc/environment && ./bin/cake passbolt healthcheck'

@@ -1,6 +1,7 @@
 """Render reviewed vault templates without running deployment commands."""
 
 import argparse
+from base64 import b64encode
 import json
 import os
 from pathlib import Path
@@ -158,6 +159,8 @@ def render(config, output):
     require(output != home and output.is_relative_to(home), "output location")
     private_dir(output.parent, os.geteuid(), "output parent")
 
+    # Encode the reviewed container script so systemd never expands its Nginx variables.
+    settings["proxy_start"] = b64encode(TEMPLATES.with_name("proxy-start.sh").read_bytes()).decode("ascii")
     # Resolve every template before creating any output.
     rendered = {}
     for name in UNITS:

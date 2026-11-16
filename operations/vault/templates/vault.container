@@ -24,7 +24,8 @@ Environment=PASSBOLT_SECURITY_PROXIES_ACTIVE=true
 Environment=PASSBOLT_SECURITY_FULLBASEURL_ENFORCE=true
 Environment=PASSBOLT_PLUGINS_SELF_REGISTRATION_ENABLED=false
 Environment=PASSBOLT_SECURITY_SMTP_SETTINGS_ENDPOINTS_DISABLED=true
-Exec=/usr/bin/wait-for.sh -t 60 maple-vault-db:3306 -- /docker-entrypoint.sh
+# The renderer inserts the reviewed proxy-start.sh body as a Base64 argument.
+Exec=/usr/bin/wait-for.sh -t 60 maple-vault-db:3306 -- /bin/bash -ec 'script=$$$$(/usr/bin/base64 -d <<< "$$$$1"); test -n "$$$$script"; exec /bin/bash -c "$$$$script"' vault-proxy ${proxy_start}
 NoNewPrivileges=true
 DropCapability=all
 PodmanArgs=--http-proxy=false

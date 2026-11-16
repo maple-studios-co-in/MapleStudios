@@ -1,8 +1,12 @@
+import base64
+from hashlib import sha256
 import importlib
 import json
 import os
 from pathlib import Path
 import re
+import shlex
+import shutil
 import stat
 import subprocess
 import sys
@@ -226,6 +230,121 @@ class RenderTests(unittest.TestCase):
         self.assertIn("MemoryMax=2000000000", rendered["vault.slice"])
         self.assertIn("CPUQuota=200%", rendered["vault.slice"])
         self.assertIn("Options=isolate=true", rendered["vault.network"])
+
+    def rendered_app_start(self):
+        result = self.run_render()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        app = (self.output / "vault.container").read_text()
+        exec_line = next(line for line in app.splitlines() if line.startswith("Exec="))
+        args = shlex.split(exec_line.removeprefix("Exec="))
+        self.assertEqual(args[:5], ["/usr/bin/wait-for.sh", "-t", "60", "maple-vault-db:3306", "--"])
+        self.assertIn("Environment=PASSBOLT_SSL_FORCE=true", app)
+        self.assertEqual(args[5:7], ["/bin/bash", "-ec"])
+        self.assertEqual(len(args), 10)
+        return args[5:]
+
+    def test_vault_app_prepares_fastcgi_https_before_vendor_start(self):
+        args = self.rendered_app_start()
+        upstream = base64.b64decode(args[-1], validate=True)
+        self.assertEqual(upstream, (HERE / "proxy-start.sh").read_bytes())
+        self.assertIn(b"map $http_x_forwarded_proto $maple_vault_cgi_https {", upstream)
+        self.assertIn(b"default $https;", upstream)
+        self.assertIn(b"~^https$ on;", upstream)
+        self.assertIn(b"exec /docker-entrypoint.sh", upstream)
+        self.assertIn('$$1', args[2])
+
+    def exercise_proxy(self, params, *, pinned=None, collision=False):
+        command, flags, loader, name, encoded = self.rendered_app_start()
+        shell = base64.b64decode(encoded, validate=True).decode()
+        nginx = self.home / "nginx"
+        conf = nginx / "conf.d"
+        conf.mkdir(parents=True)
+        parameters = nginx / "fastcgi_params"
+        parameters.write_bytes(params)
+        mapping = conf / "maple-vault-https.conf"
+        if collision:
+            mapping.symlink_to(self.home / "missing")
+        vendor = self.home / "entrypoint"
+        started = self.home / "started"
+        vendor.write_text(f"#!/bin/bash\numask > {shlex.quote(str(started))}\n")
+        vendor.chmod(0o700)
+        digest = sha256(params if pinned is None else pinned).hexdigest()
+        shell, replacements = re.subn(r"(?m)^expected=[a-f0-9]{64}$", f"expected={digest}", shell)
+        self.assertEqual(replacements, 1)
+        shell = shell.replace("nginx=/etc/nginx", f"nginx={shlex.quote(str(nginx))}")
+        shell = shell.replace("exec /docker-entrypoint.sh", f"exec {shlex.quote(str(vendor))}")
+        # Use the host equivalents of these Debian utilities in the fixture.
+        for utility in ("grep", "mktemp", "rm", "sed", "cat", "mv"):
+            path = shutil.which(utility)
+            self.assertIsNotNone(path)
+            shell = shell.replace(f"/usr/bin/{utility}", shlex.quote(path))
+        checksum = shutil.which("sha256sum")
+        if checksum is None:
+            checksum = shlex.quote(shutil.which("shasum")) + " -a 256"
+        else:
+            checksum = shlex.quote(checksum)
+        shell = shell.replace("/usr/bin/sha256sum", checksum)
+        # The Quadlet generator double-quotes the shell argument and escapes its quotes.
+        generated_loader = shlex.split(json.dumps(loader))[0]
+        # Then systemd resolves each pair of dollar signs to a literal dollar.
+        self.assertNotIn("$", generated_loader.replace("$$", ""))
+        result = subprocess.run(
+            [command, flags, generated_loader.replace("$$", "$"), name, base64.b64encode(shell.encode()).decode()],
+            capture_output=True, timeout=5,
+            env={**os.environ, "https": "wrong", "http_x_forwarded_proto": "wrong",
+                 "maple_vault_cgi_https": "wrong"},
+        )
+        return result, parameters, mapping, started
+
+    def test_proxy_start_preserves_literal_nginx_variables_and_other_parameters(self):
+        old = b"fastcgi_param  HTTPS              $https if_not_empty;\n"
+        params = b"fastcgi_param HTTP_HOST $host;\n" + old + b"fastcgi_param REQUEST_SCHEME $scheme;\n"
+        result, parameters, mapping, started = self.exercise_proxy(params)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(started.is_file())
+        self.assertEqual(started.read_text(), subprocess.check_output(["/bin/bash", "-c", "umask"], text=True))
+        self.assertEqual(parameters.read_bytes(), params.replace(b"$https", b"$maple_vault_cgi_https"))
+        self.assertEqual(mapping.read_text(), (
+            "map $http_x_forwarded_proto $maple_vault_cgi_https {\n"
+            "    default $https;\n"
+            "    ~^https$ on;\n"
+            "}\n"
+        ))
+        # Follow the emitted map and CakePHP's initial CGI HTTPS test.
+        default, https_rule = re.findall(r"(?m)^ +([^ ]+) ([^;]+);$", mapping.read_text())
+        for native_tls, forwarded, expected in (("", "https", 200), ("", "", 302), ("", "http", 302),
+                                                ("", "https,http", 302), ("", "HTTPS", 302), ("on", "", 200)):
+            with self.subTest(native_tls=native_tls, forwarded=forwarded):
+                cgi_https = https_rule[1] if re.search(https_rule[0][1:], forwarded) else native_tls
+                self.assertEqual(default, ("default", "$https"))
+                self.assertEqual(200 if cgi_https else 302, expected)
+
+    def test_proxy_start_refuses_fastcgi_hash_drift(self):
+        params = b"fastcgi_param  HTTPS              $https if_not_empty;\n"
+        result, parameters, mapping, started = self.exercise_proxy(params, pinned=params + b"# changed\n")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"pinned configuration", result.stderr)
+        self.assertEqual(parameters.read_bytes(), params)
+        self.assertFalse(mapping.exists())
+        self.assertFalse(started.exists())
+
+    def test_proxy_start_refuses_duplicate_https_parameters(self):
+        params = b"fastcgi_param  HTTPS              $https if_not_empty;\n" * 2
+        result, parameters, mapping, started = self.exercise_proxy(params)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"exactly one", result.stderr)
+        self.assertEqual(parameters.read_bytes(), params)
+        self.assertFalse(mapping.exists())
+        self.assertFalse(started.exists())
+
+    def test_proxy_start_refuses_dangling_map_collision(self):
+        params = b"fastcgi_param  HTTPS              $https if_not_empty;\n"
+        result, parameters, mapping, started = self.exercise_proxy(params, collision=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"already exists", result.stderr)
+        self.assertEqual(parameters.read_bytes(), params)
+        self.assertTrue(mapping.is_symlink())
+        self.assertFalse(started.exists())
 
     def test_nginx_stages_acme_and_https_from_templates(self):
         module = importlib.import_module("render")
