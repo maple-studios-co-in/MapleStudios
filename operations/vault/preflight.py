@@ -17,7 +17,7 @@ ACCOUNT = "maple-vault"
 GIB = 1 << 30
 PATH = "/usr/sbin:/usr/bin:/sbin:/bin"
 TOOLS = ("podman", "systemctl", "loginctl", "newuidmap", "newgidmap", "getsubids",
-         "ss", "nginx", "certbot")
+         "ss", "nginx", "certbot", "getent")
 GENERATOR = Path("/usr/lib/systemd/user-generators/podman-user-generator")
 
 
@@ -27,12 +27,28 @@ def required_bytes(phase, reserve):
     return 30 * GIB if phase == "before-pull" else 20 * GIB + reserve
 
 
-def capacity(home, phase, reserve):
+def filesystem_devices(home, graph_root, staging):
+    devices = set()
+    for directory in (home, graph_root, staging):
+        if not (directory and directory.is_relative_to(home) and directory.is_dir()
+                and directory.resolve(strict=True) == directory):
+            return set()
+        devices.add(directory.stat().st_dev)
+    return devices
+
+
+def capacity(home, phase, reserve, graph_root=None, staging=None):
     minimum = required_bytes(phase, reserve)
+    try:
+        verified = len(filesystem_devices(home, graph_root, staging)) == 1
+    except (OSError, RuntimeError):
+        verified = False
     for directory in (home, *home.parents):
         try:
             free = shutil.disk_usage(directory).free
-            return {"ok": free >= minimum, "free_bytes": free, "required_bytes": minimum,
+            return {"ok": verified and directory == home and free >= minimum,
+                    "space_sufficient": free >= minimum, "free_bytes": free,
+                    "required_bytes": minimum, "installation_filesystem_verified": verified,
                     "measured_at_home": directory == home}
         except FileNotFoundError:
             continue
@@ -50,14 +66,23 @@ def account_check(home, uid):
         metadata = home.lstat()
         group = grp.getgrgid(account.pw_gid)
         groups = os.getgrouplist(ACCOUNT, account.pw_gid)
+        users = pwd.getpwall()
+        groups_at_gid = grp.getgrall()
+        shadow = (command_output("getent", "shadow", ACCOUNT) or "").splitlines()
+        password = shadow[0].split(":") if len(shadow) == 1 else []
         checks = {
-            "uid": account.pw_uid > 0 and (uid is None or uid == account.pw_uid),
+            "uid_gid": uid is not None and account.pw_uid == account.pw_gid == uid,
             "home": account.pw_dir == str(home) and home.resolve() == home
                     and stat.S_ISDIR(metadata.st_mode) and stat.S_IMODE(metadata.st_mode) == 0o700
                     and metadata.st_uid == account.pw_uid and metadata.st_gid == account.pw_gid,
             "group": group.gr_name == ACCOUNT and set(group.gr_mem) <= {ACCOUNT}
-                     and set(groups) == {account.pw_gid},
+                     and set(groups) == {account.pw_gid}
+                     and [entry.gr_name for entry in groups_at_gid if entry.gr_gid == uid] == [ACCOUNT],
+            "exclusive_identity": [entry.pw_name for entry in users
+                                   if entry.pw_uid == uid or entry.pw_gid == uid] == [ACCOUNT],
             "nologin": account.pw_shell == "/usr/sbin/nologin",
+            "password_locked": len(password) == 9 and password[0] == ACCOUNT
+                               and password[1].startswith(("!", "*")),
         }
     except (KeyError, OSError, RuntimeError):
         return {"ok": False, "reason": "dedicated account metadata unavailable"}
@@ -77,17 +102,51 @@ def command_output(*args):
         return None
 
 
-def rootless_check():
+def safe_subids(path, effective, uid, host_ids):
+    try:
+        assignments = []
+        for line in path.read_text().splitlines():
+            owner, start, count = line.split(":")
+            start, count = int(start), int(count)
+            if not owner or start < 1 or count < 1 or start + count > (1 << 32) - 1:
+                return False
+            assignments.append((owner, start, start + count))
+    except (OSError, ValueError):
+        return False
+
+    if any(start <= uid < end for _, start, end in assignments):
+        return False
+    own = {ACCOUNT, str(uid)}
+    intervals = [(start, end) for owner, start, end in assignments if owner in own]
+    ranges = []
+    for line in (effective or "").splitlines():
+        match = re.fullmatch(r"\d+: maple-vault ([1-9]\d*) ([1-9]\d*)", line)
+        if not match:
+            return False
+        start, count = map(int, match.groups())
+        ranges.append((start, start + count))
+    if sorted(ranges) != sorted(intervals) or not any(end - start >= 65536 for start, end in intervals):
+        return False
+    for start, end in intervals:
+        if start < 65536 or any(start <= host_id < end for host_id in host_ids):
+            return False
+        if sum(start < other_end and other_start < end
+               for _, other_start, other_end in assignments) != 1:
+            return False
+    return True
+
+
+def rootless_check(uid):
+    users = pwd.getpwall()
     uid_ranges = command_output("getsubids", ACCOUNT)
     gid_ranges = command_output("getsubids", "-g", ACCOUNT)
     lingering = command_output("loginctl", "show-user", "--property=Linger", "--value", ACCOUNT)
-
-    def has_range(output):
-        ranges = re.findall(r"(?m)^\d+: maple-vault ([1-9]\d*) ([1-9]\d*)$", output or "")
-        return any(int(start) >= 65536 and int(count) >= 65536 for start, count in ranges)
-
-    checks = {"subuid": has_range(uid_ranges), "subgid": has_range(gid_ranges),
-              "linger": (lingering or "").strip() == "yes"}
+    checks = {
+        "subuid": safe_subids(Path("/etc/subuid"), uid_ranges, uid, {user.pw_uid for user in users}),
+        "subgid": safe_subids(Path("/etc/subgid"), gid_ranges, uid,
+                              {user.pw_gid for user in users} | {group.gr_gid for group in grp.getgrall()}),
+        "linger": (lingering or "").strip() == "yes",
+    }
     return {"ok": all(checks.values()), "checks": checks}
 
 
@@ -132,13 +191,15 @@ def main():
     parser.add_argument("--reserve-bytes", required=True, type=int)
     parser.add_argument("--port", type=int, default=18080)
     parser.add_argument("--uid", type=int)
+    parser.add_argument("--graph-root", type=Path)
+    parser.add_argument("--staging", type=Path)
     args = parser.parse_args()
     if not args.home.is_absolute() or not 1024 <= args.port <= 65535:
         parser.error("provide an absolute home and a port in 1024..65535")
     if args.uid is not None and not 1000 <= args.uid <= 60000:
         parser.error("UID must be in 1000..60000")
     try:
-        disk = capacity(args.home, args.phase, args.reserve_bytes)
+        disk = capacity(args.home, args.phase, args.reserve_bytes, args.graph_root, args.staging)
     except ValueError as error:
         parser.error(str(error))
 
@@ -147,7 +208,7 @@ def main():
         "capacity": disk,
         "account": account,
         "tools": tools_check(),
-        "rootless_account": rootless_check() if account["ok"] else {"ok": False},
+        "rootless_account": rootless_check(args.uid) if account["ok"] else {"ok": False},
         "port": port_check(args.phase, args.port),
     }
     ok = all(check["ok"] for check in checks.values())

@@ -6,7 +6,7 @@ Passbolt Community Edition on rootless Podman. The deployment package is verifie
 
 The vault needs at least 30 GiB free on the filesystem holding its Podman storage before any image pull. After installation it needs at least 20 GiB plus a measured allowance for upgrade and backup staging. Use the home filesystem for default rootless Podman storage and staging. If any state uses another filesystem, measure capacity for that filesystem before proceeding.
 
-Stage the reviewed `operations/vault` directory at `/opt/maple-vault` under root ownership on the VPS. The following commands are for the root operator at activation.
+Use the Hostinger root console for these commands. Copy the reviewed archive from the deploy transfer location into a new root-owned mode 0700 directory. Verify the controller-provided SHA-256 against that root-owned copy before extraction. Stage the verified package under `/opt/maple-vault` with root ownership and permissions that allow only root to modify its scripts, templates and parent directories.
 
 ```bash
 bundle=/opt/maple-vault
@@ -17,15 +17,13 @@ python3 "$bundle/preflight.py" --home "$vault_home" --port "$app_port" \
   --phase before-pull --reserve-bytes 0
 ```
 
-Before the account exists, preflight reports account failure and measures the nearest existing parent for a provisional capacity result. Choose a free port if the proposed port is in use. The root operator selects a UID and GID with the same unused numeric value in 1000–60000. After the capacity and tooling checks pass, run the following with that value in `vault_uid`.
+For this provisional check, inspect `capacity.space_sufficient`, `tools.ok` and `port.ok`. Overall preflight stays false until the account and actual installation filesystem are verified. Choose a free port if the proposed port is in use. The root operator selects a UID and GID with the same unused numeric value in 1000–60000. After the capacity and tooling checks pass, run the following with that value in `vault_uid`.
 
 ```bash
 bash "$bundle/provision-host.sh" --apply --uid "$vault_uid"
-python3 "$bundle/preflight.py" --home "$vault_home" --uid "$vault_uid" \
-  --port "$app_port" --phase before-pull --reserve-bytes 0
 ```
 
-The script uses Ubuntu's account allocator for a locked, non-login account, its private primary group and subordinate UID/GID ranges. It creates a mode 0700 home and enables linger for the user manager. It refuses any existing account, IDs or home. If setup stops partway or the dedicated account already exists, review its state and use the preflight checks before proceeding. Check as root that site sudo policy grants `maple-vault` no privileges and that it cannot read dashboard configuration or backups. Confirm the existing dashboard account cannot traverse the vault home.
+The script uses Ubuntu's account allocator for a locked, non-login account, its private primary group and subordinate UID/GID ranges. It creates a mode 0700 home and enables linger for the user manager. It refuses existing accounts, IDs, home paths, and an enabled mailbox-spool default. If setup stops partway or the dedicated account already exists, review its provenance, locked password, matching UID/GID, exclusive group, home and subordinate mappings before proceeding. The full root preflight checks these identity properties. Check as root that site sudo policy grants `maple-vault` no privileges and that it cannot read dashboard configuration or backups. Confirm the existing dashboard account cannot traverse the vault home.
 
 ## Private configuration and image selection
 
@@ -34,15 +32,17 @@ Choose a supported release with the official Passbolt CE `-ce-non-root` image ta
 Use the dedicated UID for all vault operations. From the root operator shell, this helper gives commands the dedicated user's manager and home.
 
 ```bash
-vault_run() {
+vault_run() (
+  cd / || exit
   runuser -u maple-vault -- env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin \
     HOME=/home/maple-vault XDG_RUNTIME_DIR="/run/user/$vault_uid" \
     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$vault_uid/bus" "$@"
-}
+)
+# Inspect the dedicated user's containers/storage.conf and host storage defaults first.
 vault_run podman info --format '{{.Host.Security.Rootless}} {{.Host.CgroupVersion}} {{.Host.CgroupManager}} {{.Host.NetworkBackend}} {{.Store.GraphRoot}}'
 ```
 
-Confirm rootless execution, cgroup v2, the systemd cgroup manager, Netavark with container DNS and a graph root inside the private home on the checked filesystem. Inspect the user's Podman configuration for a custom storage root before the first Podman command. Verify host clock synchronisation and SMTP reachability during the trial.
+Confirm rootless execution, cgroup v2, the systemd cgroup manager, Netavark with container DNS, and a graph root inside the private home. Verify host clock synchronisation and SMTP reachability during the trial.
 
 Create `deploy.json`, `app.env` and `db.env` inside the dedicated home as `maple-vault` with mode 0600. Enter the environment files directly in a private editor with swap and backups disabled. Keep these files out of the repository and shell history. Use plain Podman env-file syntax, with a single `KEY=value` per line. The environment files carry:
 
@@ -74,45 +74,106 @@ The slice caps the two containers together at 2 GB (2,000,000,000 bytes), zero a
 
 ## Stage and validate the containers
 
+Enter the verified app and DB references from the handoff in `app_image` and `db_image`. Use those same references in `deploy.json`. Set `reserve_bytes` to the trial working-space allowance.
+
 ```bash
+backup_stage="$vault_home/staging"
+vault_run install -d -m 0700 "$backup_stage"
+graph_root=$(vault_run podman info --format '{{.Store.GraphRoot}}')
+vault_preflight() {
+  python3 "$bundle/preflight.py" --home "$vault_home" --uid "$vault_uid" \
+    --port "$app_port" --graph-root "$graph_root" --staging "$backup_stage" \
+    --phase "$1" --reserve-bytes "$2"
+}
 vault_run python3 "$bundle/render.py" --config "$vault_home/deploy.json" \
   --output "$vault_home/rendered"
-vault_run env QUADLET_UNIT_DIRS="$vault_home/rendered" \
-  /usr/lib/systemd/user-generators/podman-user-generator --dryrun
 ```
 
-Check that the generator produces both services, that each uses `vault.slice` and `--cgroups=split`, and that the app's only published port is `127.0.0.1:18080:8080` (substitute the checked port if changed). MariaDB is addressed by its container name on the bridge. The three volumes persist the database, GPG keys and JWT keys. [Ubuntu's Quadlet manual](https://manpages.ubuntu.com/manpages/noble/man5/quadlet.5.html) · [Podman 4.9.3 generator source](https://github.com/containers/podman/blob/v4.9.3/pkg/systemd/quadlet/quadlet.go) · [Passbolt Docker backup requirements](https://www.passbolt.com/docs/hosting/maintenance/backup/from-docker/)
+The staging command checks target filenames including dangling symlinks, existing systemd unit names, unprocessed Quadlets and Podman resources. It dry-runs the actual generator and requires split cgroups under the shared slice, a single loopback app mapping, zero DB mappings, and `--opt isolate=true` in the generated network command. Initial staging refuses collisions. For an interrupted installation, stop and review any existing units or named resources. Reuse a resource only after matching its provenance, owner, storage path, driver and options to this deployment. Keep the original files and persistent volumes available while resolving the collision. [Ubuntu Quadlet manual](https://manpages.ubuntu.com/manpages/noble/man5/quadlet.5.html) · [Podman 4.9.3 generator](https://github.com/containers/podman/blob/v4.9.3/pkg/systemd/quadlet/quadlet.go)
 
-After the pre-pull gate and digest verification, `vault_run podman pull` each of the two verified digest references. Transfer the rendered container, network and volume units into the dedicated account's Quadlet directory. Place the regular systemd slice under its user unit directory.
+Run the full root preflight immediately before pulling. It verifies the actual graph root, backup staging path and home are existing directories on the same filesystem. The checks stop the command chain before a pull or start if a gate fails.
 
 ```bash
-quadlet="$vault_home/.config/containers/systemd"
-user_units="$vault_home/.config/systemd/user"
-vault_run install -d -m 0700 "$quadlet" "$user_units"
-for unit in vault.container vault-db.container vault.network vault.volume vault-jwt.volume vault-db.volume; do
-  vault_run install -m 0600 "$vault_home/rendered/$unit" "$quadlet/$unit"
-done
-vault_run install -m 0600 "$vault_home/rendered/vault.slice" "$user_units/vault.slice"
-vault_run systemctl --user daemon-reload
+vault_preflight before-pull 0 &&
+vault_run podman pull "$app_image" &&
+vault_run podman pull "$db_image" &&
+vault_run python3 "$bundle/stage_units.py" --home "$vault_home" --source "$vault_home/rendered" &&
+vault_run systemctl --user daemon-reload &&
+vault_run python3 "$bundle/stage_units.py" --home "$vault_home" --verify &&
 vault_run systemctl --user start vault.service
 ```
 
-Validate both unit statuses. Check `vault_run podman port maple-vault-app` for just the selected loopback port and `vault_run podman port maple-vault-db` for zero mappings. View only allowlisted fields from `podman inspect --format`, since the unrestricted output contains environment credentials. Check that both container PIDs' unified cgroups are descendants of `vault.slice` and inspect the slice's `memory.max`, `memory.swap.max` and `cpu.max`. Run `preflight.py` with the same home, UID and port, `--phase after-install` and the positive `--reserve-bytes` measured for upgrade/backup staging. Verify volume permissions, MariaDB health, and key/data persistence after a restart and an approved reboot. The app's Quadlet starts the DB as a dependency and enables boot startup through its `[Install]` section.
+The verification command checks effective generated unit origins and container source paths. Unexpected systemd overrides or late resource collisions stop activation. Run this sequence from the root console with exclusive control of the dedicated account. If it fails after staging, use the rollback below to prevent a subsequent reboot from starting the trial.
+
+Validate both unit statuses. Check `vault_run podman port maple-vault-app` for just the selected loopback port and `vault_run podman port maple-vault-db` for zero mappings. View only allowlisted fields from `podman inspect --format`, since unrestricted output includes environment credentials. Check that both container PIDs' unified cgroups are descendants of `vault.slice` and verify the slice's `memory.max`, `memory.swap.max` and `cpu.max`. Verify that the network is a DNS-enabled bridge with isolation and that the GPG, JWT and DB volumes are writable, persistent and located inside the checked graph root. [Passbolt container backup requirements](https://www.passbolt.com/docs/hosting/maintenance/backup/from-docker/)
+
+Remeasure the working space needed for an upgrade and backup. Use that positive byte count in `reserve_bytes`. Run the following before requesting the DNS change or creating TLS. If the commands fail, stop the trial using the rollback section and retain its data.
+
+```bash
+graph_root=$(vault_run podman info --format '{{.Store.GraphRoot}}') &&
+vault_preflight after-install "$reserve_bytes"
+```
 
 ## DNS and TLS
 
-The owner points the specific `vault.maplestudios.ai` A record at the VPS. Add AAAA only after enabling and validating the corresponding IPv6 virtual-host listeners and ingress. Confirm no existing DNS or Nginx mapping conflicts. Set up an HTTP-only Nginx site for the exact hostname first, using the port 80 block in the rendered config with `return 404` in the ordinary location until issuance. Create the root-controlled `/var/lib/maple-vault-acme` webroot. Run `nginx -t` before a graceful reload.
+After the post-install gate and container checks, the DNS operator points the dedicated `vault.maplestudios.ai` A record at the VPS in DNS-only mode. Add AAAA only after verifying the IPv6 listeners and ingress. Check for existing DNS or Nginx mapping conflicts.
+
+From the root console, choose the approved hostname independently of the vault JSON and use the same loopback port checked above. The two vhost stages are generated directly from the trusted root-owned package and reviewed in root-owned storage. Stage the HTTP-only challenge configuration first.
+
+```bash
+vault_hostname=vault.maplestudios.ai
+nginx_stage=$(mktemp -d /root/maple-vault-nginx.XXXXXX)
+nginx_site=/etc/nginx/sites-available/maple-vault.conf
+nginx_link=/etc/nginx/sites-enabled/maple-vault.conf
+python3 "$bundle/render.py" --nginx acme --hostname "$vault_hostname" \
+  --port "$app_port" --output "$nginx_stage/acme.conf"
+```
+
+Review `"$nginx_stage/acme.conf"` from that directory. Ensure the ACME webroot path is controlled by root. Enable the reviewed file when both site paths are free.
+
+```bash
+test ! -e "$nginx_site" && test ! -L "$nginx_site" &&
+test ! -e "$nginx_link" && test ! -L "$nginx_link" &&
+install -d -m 0755 -o root -g root /var/lib/maple-vault-acme &&
+install -m 0600 -o root -g root "$nginx_stage/acme.conf" "$nginx_site" &&
+ln -sT "$nginx_site" "$nginx_link" &&
+nginx -t && systemctl reload nginx
+```
+
+After the ACME site is enabled and DNS resolves, issue the certificate and render the HTTPS site into the same root-owned staging directory.
 
 ```bash
 certbot certonly --webroot -w /var/lib/maple-vault-acme \
-  --cert-name vault.maplestudios.ai -d vault.maplestudios.ai \
-  --deploy-hook '/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx'
+  --cert-name "$vault_hostname" -d "$vault_hostname" \
+  --deploy-hook '/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx' &&
+python3 "$bundle/render.py" --nginx https --hostname "$vault_hostname" \
+  --port "$app_port" --output "$nginx_stage/https.conf"
 ```
 
-Review the complete rendered Nginx site and install a root-owned copy in `/etc/nginx/sites-available/maple-vault.conf`. Enable only that copy via the corresponding `sites-enabled` link. The enabled site must live outside the vault account's writable home. Run `nginx -t` and gracefully reload after validation. Test certificate renewal for this certificate and verify HTTPS, proxy scheme handling, disabled public signup and the absence of sensitive values in logs with synthetic requests. If there's an upstream proxy, verify its request logging and forwarded client identity before exposing the site. [Certbot webroot and renewal](https://eff-certbot.readthedocs.io/en/stable/using.html) · [Nginx proxy headers](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
+Review the HTTPS file in root-owned staging. Replace only the installed ACME file for this vault, then test and gracefully reload.
+
+```bash
+cmp -s "$nginx_site" "$nginx_stage/acme.conf" &&
+install -m 0600 -o root -g root "$nginx_stage/https.conf" "$nginx_site" &&
+nginx -t && systemctl reload nginx
+```
+
+If the validation fails after replacing the file, restore the reviewed ACME file and retest before a reload. Test renewal for this certificate. Verify HTTPS, proxy scheme handling, disabled public signup, restart and approved reboot persistence, and the absence of sensitive values in logs with synthetic requests. [Certbot webroot and renewal](https://eff-certbot.readthedocs.io/en/stable/using.html) · [Nginx configuration testing](https://nginx.org/en/docs/switches.html)
 
 Run the vendor health check under the image's existing non-root identity using `vault_run podman exec maple-vault-app /bin/bash -c '. /etc/environment && ./bin/cake passbolt healthcheck'`. The designated owner performs the vendor first-admin registration and opens the one-time setup link in a private session. Keep the link in that session. Complete MFA and the separate recovery custody and disposable-restore checks before storing company secrets. [Passbolt first admin setup](https://www.passbolt.com/docs/hosting/install/ce/docker/#step-5-create-first-admin-user)
 
 ## Rollback
 
-Stop `vault.service` and `vault-db.service` through the dedicated user manager. To keep them stopped over reboot, move the two installed vault container files out of the Quadlet search path into private staging and reload that manager. Disable only the vault's Nginx site by moving its enabled symlink out of the include directory. Validate Nginx and gracefully reload. Keep the private account, images, volumes, certificate, environment files and backups available for recovery. If the Podman trial fails, record the exact error before assessing Passbolt's supported Docker deployment.
+For a failed trial or capacity gate, stop both vault services and move their container source files out of the user generator's search path. This parks boot activation while retaining the network, persistent data and configuration.
+
+```bash
+quadlet="$vault_home/.config/containers/systemd"
+if parked=$(vault_run mktemp -d "$vault_home/parked-units.XXXXXX") &&
+   vault_run mv -t "$parked" -- "$quadlet/vault.container" "$quadlet/vault-db.container"; then
+  vault_run systemctl --user stop vault.service vault-db.service ||
+    printf '%s\n' 'Check vault unit status. One or both units could not be stopped.'
+  vault_run systemctl --user daemon-reload
+fi
+```
+
+Check both unit statuses and verify the vault port has closed. If an Nginx site was enabled for the trial, move only its enabled symlink to the root staging directory. Test Nginx and reload. Preserve the private account, images, environment files, volumes, certificate and backups. If the Podman trial fails, record the specific error before assessing Passbolt's supported Docker deployment.

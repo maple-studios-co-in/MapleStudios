@@ -69,15 +69,59 @@ def unique_fields(pairs):
     return result
 
 
+def validate_hostname(hostname):
+    require(isinstance(hostname, str) and len(hostname) <= 253
+            and re.fullmatch(rf"(?:{LABEL}\.)+[a-z](?:[a-z0-9-]{{0,61}}[a-z0-9])?", hostname),
+            "hostname")
+
+
+def public_tls(hostname):
+    base = f"/etc/letsencrypt/live/{hostname}"
+    return {"tls_certificate": f"{base}/fullchain.pem", "tls_certificate_key": f"{base}/privkey.pem"}
+
+
+def nginx_config(phase, hostname, port):
+    validate_hostname(hostname)
+    require(type(port) is int and 1024 <= port <= 65535, "port")
+    require(phase in ("acme", "https"), "Nginx phase")
+    http = Template((TEMPLATES / "nginx-http.conf").read_text())
+    redirect = "return 404;" if phase == "acme" else f"return 308 https://{hostname}$request_uri;"
+    contents = http.substitute(hostname=hostname, redirect=redirect)
+    if phase == "https":
+        https = Template((TEMPLATES / "nginx.conf").read_text())
+        contents += "\n" + https.substitute(hostname=hostname, app_port=port, **public_tls(hostname))
+    return contents
+
+
+def trusted_tree(path, uid):
+    for directory in (path, *path.parents):
+        metadata = directory.lstat()
+        if not (stat.S_ISDIR(metadata.st_mode) and metadata.st_uid == uid
+                and not metadata.st_mode & 0o022):
+            return False
+    return True
+
+
+def stage_nginx(phase, hostname, port, output):
+    require(os.geteuid() == 0, "root required to stage Nginx")
+    output = safe_path(output, "output path")
+    require(trusted_tree(output.parent, 0) and trusted_tree(TEMPLATES, 0), "root-owned staging")
+    for name in ("nginx-http.conf", "nginx.conf"):
+        template = (TEMPLATES / name).lstat()
+        require(stat.S_ISREG(template.st_mode) and template.st_uid == 0
+                and not template.st_mode & 0o022 and template.st_nlink == 1, "root-owned template")
+    contents = nginx_config(phase, hostname, port)
+    with output.open("x", encoding="utf-8") as file:
+        file.write(contents)
+
+
 def validate(config):
     uid = os.geteuid()
     settings = private_file(config, uid, "config", read_json=True)
     require(isinstance(settings, dict) and settings.keys() == FIELDS, "configuration fields")
 
     hostname = settings["hostname"]
-    require(isinstance(hostname, str) and len(hostname) <= 253
-            and re.fullmatch(rf"(?:{LABEL}\.)+[a-z](?:[a-z0-9-]{{0,61}}[a-z0-9])?", hostname),
-            "hostname")
+    validate_hostname(hostname)
 
     for field, minimum, maximum in (
         ("uid", 1, 60000), ("app_port", 1024, 65535), ("memory_bytes", 1, 2_000_000_000),
@@ -103,9 +147,8 @@ def validate(config):
         require(isinstance(value, str) and re.fullmatch(
             rf"{re.escape(repository)}@sha256:[0-9a-f]{{64}}", value), field)
 
-    for field, name in (("tls_certificate", "fullchain.pem"),
-                        ("tls_certificate_key", "privkey.pem")):
-        require(settings[field] == f"/etc/letsencrypt/live/{hostname}/{name}", field)
+    for field, path in public_tls(hostname).items():
+        require(settings[field] == path, field)
     return settings, home
 
 
@@ -117,7 +160,7 @@ def render(config, output):
 
     # Resolve every template before creating any output.
     rendered = {}
-    for name in (*UNITS, "nginx.conf"):
+    for name in UNITS:
         source = "vault.volume" if name == "vault-jwt.volume" else name
         rendered[name] = Template((TEMPLATES / source).read_text()).substitute(settings)
 
@@ -139,17 +182,28 @@ def render(config, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--config")
+    mode.add_argument("--nginx", choices=("acme", "https"))
+    parser.add_argument("--hostname")
+    parser.add_argument("--port", type=int)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
+    if args.nginx and (args.hostname is None or args.port is None):
+        parser.error("--nginx requires --hostname and --port")
+    if args.config and (args.hostname is not None or args.port is not None):
+        parser.error("--hostname and --port are only used with --nginx")
     os.umask(0o077)
     try:
-        render(args.config, args.output)
+        if args.nginx:
+            stage_nginx(args.nginx, args.hostname, args.port, args.output)
+        else:
+            render(args.config, args.output)
     except InvalidConfig as error:
         print(str(error), file=sys.stderr)
         return 1
     except OSError:
-        print("cannot render to a new private output directory", file=sys.stderr)
+        print("cannot create private output", file=sys.stderr)
         return 1
     return 0
 
