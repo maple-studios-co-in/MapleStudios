@@ -1,6 +1,6 @@
 # Security readiness and private client signing
 
-Status: proposed implementation design, pending owner approval. No production security changes or client signatures have been made in this phase.
+Status: approved by the owner on 16 November 2026 for implementation and deployment after testing. Agreement retention remains configurable and unset initially. No real client signatures are authorised by deployment.
 
 ## Intent and selected approaches
 
