@@ -1,6 +1,6 @@
 # Maple Studios company vault
 
-Status: proposed design, awaiting owner review. 16 November 2026.
+Status: approved by owner on 16 November 2026; implementation authorised. No deletion or paid upgrade authorised.
 
 ## Intent and decisions
 
