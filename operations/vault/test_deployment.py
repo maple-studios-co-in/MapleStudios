@@ -2,6 +2,7 @@ import importlib
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import subprocess
 import sys
@@ -400,6 +401,39 @@ class StageTests(unittest.TestCase):
                 self.stage.stage(self.home, self.source)
         self.assertEqual(list(self.destination.iterdir()), [])
 
+    def test_systemd_255_unfiltered_listing_accepts_only_absent_exact_names(self):
+        installed = SimpleNamespace(returncode=0, stderr="", stdout=(
+            "UNIT FILE       STATE    PRESET\n"
+            "other-vault.service enabled enabled\n"
+            "vault.service-helper.timer disabled disabled\n\n"
+            "2 unit files listed.\n"
+        ))
+        loaded = SimpleNamespace(returncode=0, stderr="", stdout=(
+            "other.service loaded active running An unrelated vault.service description\n"
+        ))
+
+        def list_units(command, **kwargs):
+            if command[2] == "list-unit-files":
+                # v255 returns 1 on a filtered query with no matches.
+                if set(self.stage.GENERATED.values()) & set(command):
+                    return SimpleNamespace(returncode=1, stderr="", stdout="")
+                return installed
+            return loaded
+
+        with patch.object(self.stage, "run_host", side_effect=list_units):
+            self.stage.no_unit_collisions(self.destination)
+            installed.returncode = 1
+            installed.stdout = "UNIT FILE STATE PRESET\n\n0 unit files listed.\n"
+            self.stage.no_unit_collisions(self.destination)
+            installed.stdout = ""
+            with self.assertRaisesRegex(ValueError, "systemd"):
+                self.stage.no_unit_collisions(self.destination)
+            installed.returncode = 0
+            installed.stdout = "other.service enabled enabled\n"
+            loaded.stdout = "vault-db.service loaded inactive dead Maple Studios vault database\n"
+            with self.assertRaisesRegex(ValueError, "systemd"):
+                self.stage.no_unit_collisions(self.destination)
+
     def test_effective_systemd_collisions_abort_with_no_copy(self):
         with patch.object(self.stage, "run_host",
                           return_value=SimpleNamespace(returncode=0, stdout="vault.service enabled\n")):
@@ -459,6 +493,65 @@ class StageTests(unittest.TestCase):
             self.assertEqual(stat.S_IMODE((self.destination / "vault.container").stat().st_mode), 0o600)
             with self.assertRaises(ValueError):
                 self.stage.stage(self.home, self.source)
+
+
+class RollbackTests(unittest.TestCase):
+    def test_runbook_attempts_stop_parking_and_reload_independently(self):
+        rollback = (HERE / "README.md").read_text().split("## Rollback", 1)[1]
+        block = re.search(r"```bash\n(.*?)```", rollback, re.S).group(1)
+        harness = r'''vault_home=$1
+case_name=$2
+vault_run() {
+    printf '%s\n' "$*" >>"$vault_home/calls"
+    case $1 in
+        systemctl)
+            if [[ $3 == stop && $4 == vault.service && $case_name == stop-error ]] ||
+               [[ $3 == daemon-reload && $case_name == reload-error ]]; then
+                return 1
+            fi ;;
+        mktemp)
+            [[ $case_name != mkdir-error ]] || return 1
+            mkdir "$vault_home/parked" && printf '%s\n' "$vault_home/parked" ;;
+        mv)
+            if [[ $case_name == first-move-error && $* == *"/vault.container"* ]]; then
+                return 1
+            fi
+            if [[ $2 == -T ]]; then
+                mv "$4" "$5"
+            else
+                return 1
+            fi ;;
+        *) return 99 ;;
+    esac
+}
+'''
+        for case_name, expected_status, parked_names in (
+            ("mkdir-error", 1, set()),
+            ("first-move-error", 1, {"vault-db.container"}),
+            ("already-parked", 0, {"vault-db.container"}),
+            ("stop-error", 1, {"vault.container", "vault-db.container"}),
+            ("reload-error", 1, {"vault.container", "vault-db.container"}),
+        ):
+            with self.subTest(case=case_name), tempfile.TemporaryDirectory() as directory:
+                home = Path(directory)
+                units = home / ".config" / "containers" / "systemd"
+                units.mkdir(parents=True)
+                for unit in ("vault.container", "vault-db.container"):
+                    if unit == "vault-db.container" or case_name != "already-parked":
+                        (units / unit).write_text(unit)
+                result = subprocess.run(["bash", "-e", "-c", harness + block, "test",
+                                         directory, case_name], capture_output=True, text=True, check=False)
+                calls = (home / "calls").read_text().splitlines()
+                self.assertEqual(calls[:2], ["systemctl --user stop vault.service",
+                                             "systemctl --user stop vault-db.service"])
+                self.assertEqual(calls[-1], "systemctl --user daemon-reload")
+                self.assertEqual(result.returncode, expected_status, result.stderr)
+                self.assertEqual({path.name for path in (home / "parked").glob("*")}, parked_names)
+                for unit in parked_names:
+                    self.assertEqual((home / "parked" / unit).read_text(), unit)
+                    self.assertFalse((units / unit).exists())
+                if expected_status:
+                    self.assertTrue(result.stderr.strip())
 
 
 class ProvisionTests(unittest.TestCase):

@@ -71,13 +71,20 @@ def check_generated(output):
 
 
 def no_unit_collisions(quadlet):
-    services = (*GENERATED.values(), "vault.slice")
+    services = {*GENERATED.values(), "vault.slice"}
+    env = {**os.environ, "LC_ALL": "C", "SYSTEMD_COLORS": "0"}
     for action in ("list-unit-files", "list-units"):
-        flags = ("--all", "--plain") if action == "list-units" else ()
-        result = run_host(("systemctl", "--user", action, *flags,
-                           "--no-legend", "--no-pager", *services))
-        require(result.returncode == 0 and not result.stdout.strip(),
-                "existing or unverified systemd units")
+        flags = ("--all", "--plain", "--no-legend") if action == "list-units" else ()
+        result = run_host(("systemctl", "--user", action, *flags, "--full", "--no-pager"),
+                          env=env)
+        rows = result.stdout.strip().splitlines()
+        # systemd 255 returns 1 for a genuinely empty unit-file list. Keep its
+        # footer so an empty list is distinguishable from a manager failure.
+        empty = (action == "list-unit-files" and result.returncode == 1 and not result.stderr
+                 and bool(rows) and rows[-1] == "0 unit files listed.")
+        require(result.returncode == 0 or empty, "systemd unit lookup")
+        listed = {row.split()[0] for row in rows if row.split()}
+        require(not services & listed, "existing systemd units")
 
     # Also inspect on-disk Quadlets the manager may not have seen yet.
     global_dir = Path("/etc/containers/systemd/users")

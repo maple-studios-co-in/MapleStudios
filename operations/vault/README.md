@@ -167,13 +167,39 @@ Run the vendor health check under the image's existing non-root identity using `
 For a failed trial or capacity gate, stop both vault services and move their container source files out of the user generator's search path. This parks boot activation while retaining the network, persistent data and configuration.
 
 ```bash
-quadlet="$vault_home/.config/containers/systemd"
-if parked=$(vault_run mktemp -d "$vault_home/parked-units.XXXXXX") &&
-   vault_run mv -t "$parked" -- "$quadlet/vault.container" "$quadlet/vault-db.container"; then
-  vault_run systemctl --user stop vault.service vault-db.service ||
-    printf '%s\n' 'Check vault unit status. One or both units could not be stopped.'
-  vault_run systemctl --user daemon-reload
-fi
+(
+  failed=0
+  quadlet="$vault_home/.config/containers/systemd"
+  for service in vault.service vault-db.service; do
+    vault_run systemctl --user stop "$service" || {
+      printf 'Could not stop %s. Check its current state.\n' "$service" >&2
+      failed=1
+    }
+  done
+
+  parked=
+  for unit in vault.container vault-db.container; do
+    source="$quadlet/$unit"
+    [[ -e $source || -L $source ]] || continue
+    if [[ -z $parked ]]; then
+      parked=$(vault_run mktemp -d "$vault_home/parked-units.XXXXXX") || {
+        printf '%s\n' 'Could not create the directory for parked units.' >&2
+        failed=1
+        break
+      }
+    fi
+    vault_run mv -T -- "$source" "$parked/$unit" || {
+      printf 'Could not park %s. Its boot activation may still be present.\n' "$unit" >&2
+      failed=1
+    }
+  done
+
+  vault_run systemctl --user daemon-reload || {
+    printf '%s\n' 'Could not reload the vault user manager.' >&2
+    failed=1
+  }
+  exit "$failed"
+)
 ```
 
-Check both unit statuses and verify the vault port has closed. If an Nginx site was enabled for the trial, move only its enabled symlink to the root staging directory. Test Nginx and reload. Preserve the private account, images, environment files, volumes, certificate and backups. If the Podman trial fails, record the specific error before assessing Passbolt's supported Docker deployment.
+A nonzero result means rollback needs further attention before reboot. Check both unit statuses, verify the vault port has closed and confirm neither container source file remains in the generator's search path. If an Nginx site was enabled for the trial, move only its enabled symlink to the root staging directory. Test Nginx and reload. Preserve the private account, images, environment files, volumes, certificate and backups. If the Podman trial fails, record the specific error before assessing Passbolt's supported Docker deployment.
