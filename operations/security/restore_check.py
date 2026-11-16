@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 """Verify a Drive-retrieved Maple generation against an isolated scratch restore."""
 import argparse
+import contextlib
 import hashlib
 import os
+import secrets
+import selectors
 import shutil
 import signal
-import selectors
+import socket
 import struct
 import subprocess
-import socket
 import stat
 import sys
 import tarfile
 import tempfile
 import time
 from pathlib import Path, PurePosixPath
+from urllib.parse import quote
 
 sys.dont_write_bytecode = True
 
@@ -27,8 +30,8 @@ IDENTITY_LIMIT = 16 * 1024
 RESTORE_ERRORS = {
     "archive_hash_mismatch", "backup_running", "command_failed", "command_timeout", "config_invalid",
     "file_inventory_mismatch", "invalid_archive", "invalid_evidence", "isolated_mongo_failed",
-    "missing_upload_evidence", "mongo_inventory_mismatch", "stream_incomplete", "stream_invalid",
-    "stream_timeout", "unsafe_identity_input", "unsafe_restore_path", "unsafe_restore_port",
+    "missing_upload_evidence", "mongo_inventory_mismatch", "stream_ciphertext_mismatch", "stream_incomplete",
+    "stream_invalid", "stream_timeout", "unsafe_identity_input", "unsafe_restore_path", "unsafe_restore_port",
     "unsafe_stream_input",
 }
 
@@ -151,19 +154,89 @@ def contents(download, job_id):
     return manifest, hashlib.sha256(manifest_raw).hexdigest(), paths
 
 
-def is_our_daemon(runner, mongosh, port, child):
-    if child.poll() is not None:
-        raise JobError("isolated_mongo_failed")
-    endpoint = f"mongodb://127.0.0.1:{port}/admin?directConnection=true&serverSelectionTimeoutMS=1000"
-    args = [mongosh, "--norc", "--quiet", endpoint, "--eval",
-            "print(db.adminCommand({serverStatus:1}).pid.toString())"]
+@contextlib.contextmanager
+def scratch_daemon(runner, mongod, dbpath, socket_path, port, end, *, authenticated):
+    args = [mongod, "--dbpath", str(dbpath), "--bind_ip", str(socket_path), "--port", str(port)]
+    if authenticated:
+        args.extend(("--auth", "--setParameter", "enableLocalhostAuthBypass=false"))
+    child = runner.spawn(args, timeout=remaining(end))
     try:
-        return mongo_run(runner, args, timeout=3, limit=1024).strip() == str(child.pid).encode()
-    except JobError:
-        return False
+        yield child
+    finally:
+        if child.poll() is None:
+            try:
+                child.terminate()
+                child.wait(timeout=10)
+            except (subprocess.TimeoutExpired, ProcessLookupError):
+                pass
+        runner.finish([child])
+        socket_path.unlink(missing_ok=True)
+
+
+def wait_for_our_mongo(runner, mongosh, child, socket_path, port, endpoint, end, *, authenticated=False):
+    deadline = min(end, time.monotonic() + 35)
+    while child.poll() is None:
+        # A private owner-created socket and verified process ID identify this scratch database.
+        if socket_path.is_socket():
+            verify_port(port)
+            if authenticated:
+                js_path = json_bytes(str(endpoint)).decode().strip()
+                script = (f"const uri=JSON.parse(require('fs').readFileSync({js_path},'utf8')).uri;"
+                          "print(new Mongo(uri).getDB('admin').runCommand({serverStatus:1}).pid.toString())")
+                args = [mongosh, "--nodb", "--norc", "--quiet", "--eval", script]
+            else:
+                args = [mongosh, "--norc", "--quiet", endpoint, "--eval",
+                        "print(db.adminCommand({serverStatus:1}).pid.toString())"]
+            try:
+                response = mongo_run(runner, args, timeout=min(3, remaining(deadline)), limit=1024)
+                if response.strip() == str(child.pid).encode():
+                    return
+            except JobError:
+                pass
+        time.sleep(min(0.2, remaining(deadline)))
+    raise JobError("isolated_mongo_failed")
+
+
+@contextlib.contextmanager
+def authenticated_mongo(runner, tools, target, port, database, end):
+    dbpath = target / "mongo"
+    dbpath.mkdir(mode=0o700)
+    verify_port(port)
+    password = secrets.token_urlsafe(32)
+    credential = target / "restore-mongo.json"
+    bootstrap = target / "bootstrap-mongo.json"
+    # A short path avoids the platform-specific Unix-domain socket path limit.
+    with tempfile.TemporaryDirectory(prefix="maple-mongo-", dir="/tmp") as socket_dir:
+        socket_path = Path(socket_dir) / "mongo.sock"
+        authority = quote(str(socket_path), safe="")
+        options = "directConnection=true&serverSelectionTimeoutMS=1000"
+        endpoint = f"mongodb://{authority}/admin?{options}"
+        # Bootstrap stays on the private socket and the database still holds no backup data.
+        atomic_json(bootstrap, {"password": password})
+        try:
+            with scratch_daemon(runner, tools["mongod"], dbpath, socket_path, port, end, authenticated=False) as child:
+                wait_for_our_mongo(runner, tools["mongosh"], child, socket_path, port, endpoint, end)
+                path = json_bytes(str(bootstrap)).decode().strip()
+                name = json_bytes(database).decode().strip()
+                script = (f"const pw=JSON.parse(require('fs').readFileSync({path},'utf8')).password;"
+                          "db.createUser({user:'maple_drill',pwd:pw,roles:[{role:'restore',db:'admin'},"
+                          f"{{role:'clusterMonitor',db:'admin'}},{{role:'read',db:{name}}}]}})")
+                mongo_run(runner, [tools["mongosh"], "--norc", "--quiet", endpoint, "--eval", script],
+                          timeout=remaining(end), limit=1024)
+        finally:
+            bootstrap.unlink()
+        uri = f"mongodb://maple_drill:{password}@{authority}/{database}?authSource=admin&{options}"
+        atomic_json(credential, {"uri": uri})
+        try:
+            with scratch_daemon(runner, tools["mongod"], dbpath, socket_path, port, end, authenticated=True) as child:
+                wait_for_our_mongo(runner, tools["mongosh"], child, socket_path, port, credential, end, authenticated=True)
+                yield credential
+        finally:
+            credential.unlink()
 
 
 FRAME_LIMIT = 64 * 1024
+CIPHERTEXT_PROOF = struct.Struct(">Q32s")
 
 
 def fd_read(fd, maximum, deadline):
@@ -175,10 +248,10 @@ def fd_read(fd, maximum, deadline):
 
 
 class FrameReader:
-    """Read one stream. A zero-length frame is emitted only after age exits 0."""
+    """Read one archive and verify the sender's authenticated ciphertext evidence."""
 
-    def __init__(self, fd, deadline):
-        self.fd, self.deadline = fd, deadline
+    def __init__(self, fd, deadline, expected):
+        self.fd, self.deadline, self.expected = fd, deadline, expected
         self.pending = b""
         self.complete = False
 
@@ -197,6 +270,9 @@ class FrameReader:
             if not self.pending:
                 length, = struct.unpack(">I", self.exact(4))
                 if length == 0:
+                    size, digest = CIPHERTEXT_PROOF.unpack(self.exact(CIPHERTEXT_PROOF.size))
+                    if {"bytes": size, "sha256": digest.hex()} != self.expected:
+                        raise JobError("stream_ciphertext_mismatch")
                     self.complete = True
                     break
                 if length > FRAME_LIMIT:
@@ -208,6 +284,53 @@ class FrameReader:
         return bytes(result)
 
 
+def relay_ciphertext(proof_fd):
+    """Hash exactly the ciphertext streamed to age; the relay never sees the identity."""
+    sha = hashlib.sha256()
+    size = 0
+    with os.fdopen(proof_fd, "wb") as proof:
+        while chunk := sys.stdin.buffer.read1(FRAME_LIMIT):
+            sys.stdout.buffer.write(chunk)
+            sha.update(chunk)
+            size += len(chunk)
+        sys.stdout.buffer.flush()
+        proof.write(CIPHERTEXT_PROOF.pack(size, sha.digest()))
+
+
+def send_archive(runner, age, source_fd, identity, output, end):
+    children = []
+    with contextlib.ExitStack() as files:
+        identity_fd, identity_write = os.pipe()
+        identity_read = files.enter_context(os.fdopen(identity_fd, "rb"))
+        with os.fdopen(identity_write, "wb") as writer:
+            writer.write(identity)
+        proof_fd, proof_write = os.pipe()
+        proof = files.enter_context(os.fdopen(proof_fd, "rb"))
+        try:
+            with os.fdopen(proof_write, "wb") as writer:
+                runner.inherited = (identity_read.fileno(),)
+                decrypt = runner.spawn([age, "-d", "-i", f"/dev/fd/{identity_fd}"], timeout=remaining(end),
+                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                children.append(decrypt)
+                runner.inherited = (writer.fileno(),)
+                relay = runner.spawn([sys.executable, str(Path(__file__).resolve()), "--internal-ciphertext", str(proof_write)],
+                                     timeout=remaining(end), stdin=source_fd, stdout=decrypt.stdin)
+                children.append(relay)
+                decrypt.stdin.close()
+            while chunk := fd_read(decrypt.stdout.fileno(), FRAME_LIMIT, end):
+                runner.put(output, struct.pack(">I", len(chunk)) + chunk, end)
+            for child in children:
+                runner.wait(child, end)
+            # This proof has no authentication value until both age and the relay exited 0.
+            encoded = proof.read(CIPHERTEXT_PROOF.size + 1)
+            if len(encoded) != CIPHERTEXT_PROOF.size:
+                raise JobError("stream_incomplete")
+            runner.put(output, bytes(4) + encoded, end)
+        finally:
+            runner.inherited = ()
+            runner.finish(children)
+
+
 def send_stream(age, files_fd, database_fd, identity, *, output, timeout):
     if (not os.path.isabs(age) or not os.access(age, os.X_OK) or not 0 < len(identity) <= IDENTITY_LIMIT
             or not 3 <= files_fd <= 1023 or not 3 <= database_fd <= 1023 or files_fd == database_fd
@@ -217,17 +340,7 @@ def send_stream(age, files_fd, database_fd, identity, *, output, timeout):
     runner = Runner()
     end = time.monotonic() + timeout
     for fd in (files_fd, database_fd):
-        runner.inherited = (fd,)
-        proc = runner.spawn([age, "-d", "-i", "-", f"/dev/fd/{fd}"], timeout=remaining(end),
-                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        try:
-            runner.feed(proc, identity, end)
-            while chunk := fd_read(proc.stdout.fileno(), FRAME_LIMIT, end):
-                runner.put(output, struct.pack(">I", len(chunk)) + chunk, end)
-            runner.wait(proc, end)
-            runner.put(output, bytes(4), end)
-        finally:
-            runner.finish([proc])
+        send_archive(runner, age, fd, identity, output, end)
 
 
 def pipe_mongo(runner, args, source, end):
@@ -239,6 +352,7 @@ def pipe_mongo(runner, args, source, end):
         runner.wait(child, end)
     finally:
         runner.finish([child])
+
 
 def check(download, job_id, cfg, identity, evidence, *, framed_input=None):
     manifest, manifest_hash, paths = contents(download, job_id)
@@ -263,38 +377,23 @@ def check(download, job_id, cfg, identity, evidence, *, framed_input=None):
                          timeout=remaining(end), input_data=identity)
             snapshot = decode_json(private_read(files / ".verified-snapshot.json", JSON_LIMIT))
         else:
-            snapshot = unpack(FrameReader(framed_input, end), files)
-        dbpath = target / "mongo"
-        dbpath.mkdir(mode=0o700)
-        verify_port(port)
-        child = runner.spawn([tools["mongod"], "--dbpath", str(dbpath), "--bind_ip", "127.0.0.1",
-                              "--port", str(port), "--nounixsocket"], timeout=remaining(end))
-        try:
-            start_deadline = min(end, time.monotonic() + 35)
-            while not is_our_daemon(runner, tools["mongosh"], port, child):
-                time.sleep(min(0.5, remaining(start_deadline)))
-            database = snapshot["database"]
-            restore = [tools["mongorestore"], "--host", "127.0.0.1", "--port", str(port),
-                       "--archive", "--gzip", "--stopOnError", "--nsInclude", database + ".*"]
+            snapshot = unpack(FrameReader(framed_input, end, manifest["archives"]["files.tar.age"]), files)
+        database = snapshot["database"]
+        with authenticated_mongo(runner, tools, target, port, database, end) as credential:
+            restore = [tools["mongorestore"], "--config", str(credential), "--archive", "--gzip", "--stopOnError",
+                       "--nsInclude", database + ".*"]
             if framed_input is None:
                 runner.chain([[tools["age"], "-d", "-i", "-", str(paths["database.age"])], restore],
                              timeout=remaining(end), input_data=identity)
             else:
-                pipe_mongo(runner, restore, FrameReader(framed_input, end), end)
+                pipe_mongo(runner, restore, FrameReader(framed_input, end, manifest["archives"]["database.age"]), end)
                 if fd_read(framed_input, 1, end):
                     raise JobError("stream_invalid")
-            result = validate_summary(mongo_run(runner, mongo_summary_args(tools["mongosh"], database, port=port),
-                                                timeout=remaining(end), limit=JSON_LIMIT))
+            result = validate_summary(mongo_run(
+                runner, mongo_summary_args(tools["mongosh"], database, config=credential),
+                timeout=remaining(end), limit=JSON_LIMIT))
             if result != snapshot["mongo"]:
                 raise JobError("mongo_inventory_mismatch")
-        finally:
-            if child.poll() is None:
-                try:
-                    child.terminate()
-                    child.wait(timeout=10)
-                except (subprocess.TimeoutExpired, ProcessLookupError):
-                    pass
-            runner.finish([child])
     atomic_json(evidence, {"version": 1, "jobId": job_id, "generation": manifest["generation"],
                            "manifestSha256": manifest_hash, "verifiedAt": timestamp(utc_now())})
 
@@ -369,6 +468,9 @@ def main():
     try:
         if len(sys.argv) > 1 and sys.argv[1] == "--stream-send":
             return stream_sender_cli()
+        if len(sys.argv) == 3 and sys.argv[1] == "--internal-ciphertext":
+            relay_ciphertext(int(sys.argv[2]))
+            return 0
         if len(sys.argv) == 3 and sys.argv[1] == "--internal-unpack":
             target = private_dir(resolved_path(sys.argv[2]))
             if target.name != "payload" or target.parent.parent.name != "maple-restore-scratch" or tuple(target.iterdir()):

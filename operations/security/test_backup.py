@@ -7,8 +7,10 @@ import json
 import os
 import shutil
 import signal
+import socket
 import sys
 import struct
+import subprocess
 import tarfile
 import tempfile
 import time
@@ -240,7 +242,7 @@ class BackupTests(unittest.TestCase):
         self.assertIn("backup_stale", alerts[0])
 
     def test_exact_retention_boundary_clears_owned_objects_only_with_permanent_delete(self):
-        started = NOW - timedelta(days=30)
+        started = NOW - timedelta(days=29)
         self.assertTrue(backup.run_backup(self.config, self.runner, now=lambda: started))
         owned = set(self.runner.remote)
         self.runner.remote["some-other-data.age"] = b"untouched"
@@ -254,7 +256,7 @@ class BackupTests(unittest.TestCase):
 
     def test_partial_upload_expires_and_failed_expiry_is_visible(self):
         self.runner.fault = "verify"
-        started = NOW - timedelta(days=30)
+        started = NOW - timedelta(days=29)
         self.assertFalse(backup.run_backup(self.config, self.runner, now=lambda: started))
         self.assertEqual(len(self.runner.remote), 1)
         self.runner.fault = "expiry"
@@ -265,6 +267,15 @@ class BackupTests(unittest.TestCase):
         self.assertTrue(backup.run_backup(self.config, self.runner, now=lambda: NOW, expiry_only=True))
         self.assertFalse(self.runner.remote)
         self.assertFalse(self.status()["ok"])
+
+    def test_overdue_generation_is_removed_and_fails_retention_status(self):
+        self.assertTrue(backup.run_backup(self.config, self.runner, now=lambda: NOW - timedelta(days=30)))
+        status = self.status()
+        self.assertFalse(backup.run_backup(self.config, self.runner, now=lambda: NOW, expiry_only=True))
+        self.assertFalse(self.runner.remote)
+        self.assertFalse(self.status()["ok"])
+        self.assertEqual(self.status()["error"], "retention_overdue")
+        self.assertEqual(self.status()["lastSuccessAt"], status["lastSuccessAt"])
 
     def test_streamed_tar_round_trip_excludes_auth_material(self):
         source = self.config.sources["config"]
@@ -281,14 +292,16 @@ class BackupTests(unittest.TestCase):
         self.assertEqual(snapshot["files"]["files/config/.env"]["sha256"], hashlib.sha256(FILES_DATA).hexdigest())
 
     def test_no_more_than_two_authenticated_streams(self):
-        payload = struct.pack(">I", 3) + b"abc" + bytes(4)
+        sha = hashlib.sha256(b"ciphertext").digest()
+        expected = {"bytes": 10, "sha256": sha.hex()}
+        payload = struct.pack(">I", 3) + b"abc" + bytes(4) + struct.pack(">Q32s", 10, sha)
         with tempfile.TemporaryFile() as stream:
             stream.write(payload + payload[:5])
             stream.seek(0)
-            reader = restore_check.FrameReader(stream.fileno(), time.monotonic() + 2)
+            reader = restore_check.FrameReader(stream.fileno(), time.monotonic() + 2, expected)
             self.assertEqual(reader.read(), b"abc")
             with self.assertRaises(backup.JobError):
-                restore_check.FrameReader(stream.fileno(), time.monotonic() + 2).read()
+                restore_check.FrameReader(stream.fileno(), time.monotonic() + 2, expected).read()
 
     def test_watchdog_configuration_survives_missing_source_and_transfer_tool(self):
         data = dataclasses.asdict(self.config)
@@ -351,6 +364,162 @@ class ProcessTests(unittest.TestCase):
             out.seek(0)
             self.assertEqual(out.readline().decode().strip(), hashlib.sha256(b"payload").hexdigest())
             self.assertNotIn(b"payload", out.read())
+
+
+MONGO_TOOLS = {
+    "mongosh": os.environ.get("MAPLE_TEST_MONGOSH") or shutil.which("mongosh"),
+    **{name: shutil.which(name) for name in ("mongod", "mongodump", "mongorestore", "age")},
+}
+
+
+@unittest.skipUnless(all(MONGO_TOOLS.values()), "Requires age and MongoDB tools (MAPLE_TEST_MONGOSH can set mongosh path)")
+class DisposableRestoreTests(unittest.TestCase):
+    # Public fixture from the official age-keygen manual, exclusively for synthetic data.
+    public = "age1lvyvwawkr0mcnnnncaghunadrqkmuf9e6507x9y920xxpp866cnql7dp2z"
+    identity = b"AGE-SECRET-KEY-1N9JEPW6DWJ0ZQUDX63F5A03GX8QUW7PXDE39N8UYF82VZ9PC8UFS3M7XA9\n"
+    job_id = "1" * 32
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.runner = backup.Runner()
+        self.source_port = self.free_port()
+        source = self.root / "source"
+        source.mkdir(mode=0o700)
+        mongo = self.runner.spawn([MONGO_TOOLS["mongod"], "--dbpath", str(source), "--bind_ip", "127.0.0.1",
+                                  "--port", str(self.source_port), "--nounixsocket"], timeout=30)
+        self.addCleanup(self.runner.finish, [mongo])
+        self.uri = f"mongodb://127.0.0.1:{self.source_port}/synthetic?directConnection=true&serverSelectionTimeoutMS=1000"
+        ready = time.monotonic() + 15
+        while True:
+            try:
+                self.assertEqual(self.shell(self.uri, "print(db.serverStatus().pid.toString())").strip(),
+                                 str(mongo.pid).encode())
+                break
+            except backup.JobError:
+                if mongo.poll() is not None or time.monotonic() >= ready:
+                    raise
+                time.sleep(0.2)
+        self.shell(self.uri, "db.sample.insertOne({_id:1, value:'initial'}); db.sample.createIndex({value:1,_id:-1})")
+        self.restore_port = self.free_port()
+        scratch = self.root / "maple-restore-scratch"
+        scratch.mkdir(mode=0o700)
+        self.config = {"scratch_dir": scratch, "timeout_seconds": 60, "port": self.restore_port, "tools": MONGO_TOOLS}
+
+    @staticmethod
+    def free_port():
+        for port in range(53452, 53552):
+            try:
+                restore_check.verify_port(port)
+            except backup.JobError:
+                continue
+            return port
+        raise AssertionError("no free disposable test port")
+
+    def shell(self, uri, script):
+        return backup.mongo_run(self.runner, [MONGO_TOOLS["mongosh"], "--norc", "--quiet", uri, "--eval", script],
+                                timeout=5)
+
+    def generation(self, label, *, document_label=None):
+        encrypted = self.root / label
+        encrypted.mkdir(mode=0o700)
+        source = self.root / f"{label}.txt"
+        source.write_text(f"synthetic file for generation {label}")
+        self.shell(self.uri, f"db.sample.updateOne({{_id:1}},{{$set:{{value:{json.dumps(document_label or label)}}}}})")
+        capture = type("Capture", (), {"sources": {"config": source}, "exclusions": (), "database": "synthetic"})()
+        raw = io.BytesIO()
+        snapshot = backup.validate_summary(backup.mongo_run(
+            self.runner, backup.mongo_summary_args(MONGO_TOOLS["mongosh"], "synthetic", port=self.source_port),
+            timeout=8))
+        backup.pack_files(capture, snapshot, raw)
+        gen = backup.new_generation(NOW)
+        prefix = f"maple-{self.job_id}-{gen}"
+        paths = {archive: encrypted / (prefix + "." + archive) for archive in backup.ARCHIVES}
+        age = [MONGO_TOOLS["age"], "-r", self.public]
+        with os.fdopen(os.open(paths["database.age"], os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), "wb") as db:
+            self.runner.chain([[MONGO_TOOLS["mongodump"], "--uri", self.uri, "--archive", "--gzip"], age],
+                              timeout=15, output=db)
+        with os.fdopen(os.open(paths["files.tar.age"], os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), "wb") as files:
+            self.runner.chain([age], timeout=10, output=files, input_data=raw.getvalue())
+        manifest = encrypted / (prefix + ".manifest.json")
+        backup.atomic_json(manifest, {
+            "version": 1, "jobId": self.job_id, "generation": gen, "createdAt": backup.timestamp(NOW),
+            "revision": "1" * 40, "recipientId": "2" * 64,
+            "tools": {tool: "1.2.3" for tool in ("age", "mongodump", "mongosh", "rclone")},
+            "archives": {name: backup.file_digest(path) for name, path in paths.items()},
+        })
+        return encrypted, paths, manifest
+
+    def send(self, paths, stream):
+        with subprocess.Popen(("/bin/cat", str(paths["files.tar.age"])), stdout=subprocess.PIPE) as files:
+            with subprocess.Popen(("/bin/cat", str(paths["database.age"])), stdout=subprocess.PIPE) as db:
+                restore_check.send_stream(MONGO_TOOLS["age"], files.stdout.fileno(), db.stdout.fileno(),
+                                          self.identity, output=stream.fileno(), timeout=15)
+
+    def test_receipt_binds_the_generation_actually_decrypted(self):
+        wrong_dir, _, _ = self.generation("different")
+        correct_dir, actual_paths, actual_manifest = self.generation("actual")
+        evidence = self.root / "receipt.json"
+        with tempfile.TemporaryFile() as frames:
+            self.send(actual_paths, frames)
+            frames.seek(0)
+            with self.assertRaises(backup.JobError):
+                restore_check.check(wrong_dir, self.job_id, self.config, b"", evidence, framed_input=frames.fileno())
+            self.assertFalse(evidence.exists())
+            frames.seek(0)
+            restore_check.check(correct_dir, self.job_id, self.config, b"", evidence, framed_input=frames.fileno())
+        # Re-encrypt the same Mongo snapshot under a fresh ephemeral age file header.
+        # The contents are identical but the database ciphertext no longer matches the manifest.
+        _, equivalent_paths, _ = self.generation("actual-reencoded", document_label="actual")
+        mixed = {**actual_paths, "database.age": equivalent_paths["database.age"]}
+        wrong_database_receipt = self.root / "wrong-db-receipt.json"
+        with tempfile.TemporaryFile() as frames:
+            self.send(mixed, frames)
+            frames.seek(0)
+            with self.assertRaisesRegex(backup.JobError, "stream_ciphertext_mismatch"):
+                restore_check.check(correct_dir, self.job_id, self.config, b"", wrong_database_receipt,
+                                    framed_input=frames.fileno())
+            self.assertFalse(wrong_database_receipt.exists())
+        receipt = json.loads(evidence.read_bytes())
+        self.assertEqual(receipt["manifestSha256"], hashlib.sha256(actual_manifest.read_bytes()).hexdigest())
+        self.assertEqual(receipt["generation"], json.loads(actual_manifest.read_bytes())["generation"])
+        self.assertFalse(list(self.config["scratch_dir"].iterdir()))
+
+    def test_unrelated_loopback_client_cannot_read_or_write_restored_records(self):
+        encrypted, paths, _ = self.generation("private")
+        evidence = self.root / "receipt.json"
+        original = restore_check.pipe_mongo
+        checked = []
+
+        def inspect_while_running(runner, args, source, end):
+            original(runner, args, source, end)
+            with self.assertRaises(OSError):
+                with socket.create_connection(("127.0.0.1", self.restore_port), timeout=0.4):
+                    pass
+            config = Path(args[args.index("--config") + 1])
+            config_mode = config.stat().st_mode & 0o777
+            self.assertEqual(config_mode, 0o600)
+            # Even a client that knows the Unix socket path needs the temporary password.
+            uri = "mongodb://" + json.loads(config.read_bytes())["uri"].split("@", 1)[1]
+            for operation in ("db.sample.findOne()", "db.sample.insertOne({_id:2})"):
+                script = f"try {{ {operation}; print('access granted') }} catch (error) {{ print(error.code) }}"
+                self.assertEqual(self.shell(uri, script).strip(), b"13")
+            checked.append(True)
+
+        with tempfile.TemporaryFile() as frames:
+            self.send(paths, frames)
+            frames.seek(0)
+            with mock.patch.object(restore_check, "pipe_mongo", side_effect=inspect_while_running):
+                restore_check.check(encrypted, self.job_id, self.config, b"", evidence, framed_input=frames.fileno())
+        self.assertEqual(checked, [True])
+        self.assertTrue(evidence.exists())
+        self.assertFalse(list(self.config["scratch_dir"].iterdir()))
+        local_evidence = self.root / "local-receipt.json"
+        restore_check.check(encrypted, self.job_id, self.config, self.identity, local_evidence)
+        self.assertEqual(json.loads(local_evidence.read_bytes())["manifestSha256"],
+                         json.loads(evidence.read_bytes())["manifestSha256"])
+        self.assertFalse(list(self.config["scratch_dir"].iterdir()))
 
 
 if __name__ == "__main__":

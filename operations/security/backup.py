@@ -31,6 +31,7 @@ API = "maple-studios-api"
 APPS = (WEB, API)
 HEALTH = {WEB: "http://127.0.0.1:3006/", API: "http://127.0.0.1:4006/readyz"}
 RETENTION = timedelta(days=30)
+EXPIRY_AGE = RETENTION - timedelta(days=1)
 MAX_STATUS_AGE = timedelta(hours=26)
 ARCHIVES = ("database.age", "files.tar.age")
 METADATA = ("pending.json", "manifest.json")
@@ -45,7 +46,7 @@ SHA256 = re.compile(r"[a-f0-9]{64}")
 CODES = {
     "app_state", "backup_interrupted", "backup_stale", "command_failed", "command_timeout",
     "config_invalid", "disk_low", "drive_invalid", "drive_quota", "expiry_failed",
-    "internal_error", "maintenance_interrupted", "recovery_failed", "snapshot_failed",
+    "internal_error", "maintenance_interrupted", "recovery_failed", "retention_overdue", "snapshot_failed",
     "upload_failed", "upload_mismatch",
 }
 
@@ -759,8 +760,9 @@ class Drive:
             raise JobError("drive_quota")
 
     def expire(self, now):
+        overdue = False
         for gen, files in sorted(self.items().items()):
-            if now - generation_time(gen) < RETENTION:
+            if now - generation_time(gen) < EXPIRY_AGE:
                 continue
             # The pending marker is uploaded and verified before archives. Keep it
             # until all other files have been deleted to allow retry after interruption.
@@ -768,8 +770,10 @@ class Drive:
                 raise JobError("expiry_failed")
             raw = self.cat(gen, "pending.json", limit=MANIFEST_LIMIT)
             manifest = validate_manifest(decode_json(raw), self.cfg.job_id, gen)
-            if now - datetime_value(manifest["createdAt"]) < RETENTION:
+            age = now - datetime_value(manifest["createdAt"])
+            if age < EXPIRY_AGE:
                 continue
+            overdue |= age >= RETENTION
             if "manifest.json" in files and self.cat(gen, "manifest.json", limit=MANIFEST_LIMIT) != raw:
                 raise JobError("expiry_failed")
             for suffix in ARCHIVES:
@@ -785,19 +789,22 @@ class Drive:
                     self.run("deletefile", self.remote(self.name(gen, suffix)))
             if gen in self.items():
                 raise JobError("expiry_failed")
+        return overdue
 
 
 def local_dir_name(cfg, gen):
     return f"maple-{cfg.job_id}-{gen}"
 
 
-def expire(cfg, runner, now, *, drive=None):
+def expire_local(cfg, now):
+    overdue = False
     for directory in cfg.output_dir.iterdir():
         prefix = f"maple-{cfg.job_id}-"
         gen = directory.name.removeprefix(prefix)
         if not directory.name.startswith(prefix) or not valid_str(GENERATION, gen):
             continue
-        if now - generation_time(gen) < RETENTION:
+        age = now - generation_time(gen)
+        if age < EXPIRY_AGE:
             continue
         private_dir(directory)
         entries = {entry.name: entry for entry in directory.iterdir()}
@@ -806,7 +813,8 @@ def expire(cfg, runner, now, *, drive=None):
         # The job exclusively creates these private, random generation directories.
         if "pending.json" in entries:
             manifest = validate_manifest(decode_json(private_read(entries["pending.json"], MANIFEST_LIMIT)), cfg.job_id, gen)
-            if now - datetime_value(manifest["createdAt"]) < RETENTION:
+            age = now - datetime_value(manifest["createdAt"])
+            if age < EXPIRY_AGE:
                 continue
             expected = json_bytes(manifest)
             if "manifest.json" in entries and private_read(entries["manifest.json"], MANIFEST_LIMIT) != expected:
@@ -822,9 +830,28 @@ def expire(cfg, runner, now, *, drive=None):
         for name in (*META_TEMP.values(), "manifest.json", *ARCHIVES, "pending.json"):
             if name in entries:
                 entries[name].unlink()
+        overdue |= age >= RETENTION
         directory.rmdir()
         sync_dir(cfg.output_dir)
-    (drive or Drive(cfg, runner, time.monotonic() + cfg.transfer_seconds)).expire(now)
+    return overdue
+
+
+def expire(cfg, runner, now, *, drive=None):
+    overdue = False
+    failure = False
+    # A failed local check must not block the remote expiry attempt, or vice versa.
+    remote = drive or Drive(cfg, runner, time.monotonic() + cfg.transfer_seconds)
+    for sweep in (lambda: expire_local(cfg, now), lambda: remote.expire(now)):
+        try:
+            overdue |= sweep()
+        except Interrupted:
+            raise
+        except (JobError, OSError, ValueError, KeyError, TypeError, AttributeError):
+            failure = True
+    if overdue:
+        raise JobError("retention_overdue")
+    if failure:
+        raise JobError("expiry_failed")
 
 
 def default_status():
@@ -984,7 +1011,7 @@ def _run_locked(cfg, runner, now, expiry_only):
             if code != "recovery_failed":
                 code = str(error)
         elif isinstance(error, JobError) and str(error) in CODES - {"command_failed", "command_timeout"}:
-            if code != "expiry_failed":
+            if code != "expiry_failed" or str(error) == "retention_overdue":
                 code = str(error)
         if code == "snapshot_failed" and directory is not None and not (directory / "pending.json").exists():
             for archive in ARCHIVES:
