@@ -1039,10 +1039,10 @@ export const FOOTER_DATA = {
   phone: "+91 9211079534",
   socialLabel: "SOCIAL",
   socials: [
-    { name: "Linkedin", href: "https://linkedin.com" },
+    { name: "LinkedIn", href: "https://www.linkedin.com/company/maplestudios-ai/" },
     { name: "Facebook", href: "https://facebook.com" },
     { name: "Whatsapp", href: "https://wa.me/919211079534" },
-    { name: "Instagram", href: "https://instagram.com" },
+    { name: "Instagram", href: "https://www.instagram.com/maplestudios.ai/" },
   ],
   giant: "Maple Studios",
 };
